@@ -5,4 +5,5 @@
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.6.0"]
                  [enlive "1.1.5"]
-                 [clojurewerkz/urly "1.0.0"]])
+                 [clojurewerkz/neocons "3.1.0-beta2"]
+                 [clojurewerkz/urly "2.0.0-alpha5"]])
