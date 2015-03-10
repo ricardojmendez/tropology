@@ -23,7 +23,7 @@
   [res property]
   (-> (e/select res [[:meta (e/attr= :property property)]]) first (get-in [:attrs :content])))
 
-(defn meta-as-map
+(defn node-from-meta
   "Returns the relevant metadata of a html-resource as a map, including things
   we care about like the node label."
   [res]
@@ -59,9 +59,9 @@
 (defn save-page-links
   "Saves all page links to the database"
   [res]
-  (let [{label :label :as meta} (meta-as-map res)
+  (let [{label :label :as meta} (node-from-meta res)
         conn (db/get-connection)]
-    (db/create-node conn label meta)))
+    (db/create-or-update-node conn label meta)))
 
 
 
