@@ -1,13 +1,13 @@
-(ns com.numergent.tropeflow
+(ns com.numergent.tropefest
   (:require [clojure.string :as s]
             [clojurewerkz.urly.core :as u]
             [com.numergent.url-tools :as ut]
-            [com.numergent.tropeflow.db :as db]
+            [com.numergent.tropefest.db :as db]
             [net.cgrand.enlive-html :as e])
   (:import (java.net URL)))
 
 
-; Alternate namespace: tropemagnet
+; Alternate namespace: tropefest
 
 (defn load-resource-url [url]
   (-> url URL. e/html-resource))
