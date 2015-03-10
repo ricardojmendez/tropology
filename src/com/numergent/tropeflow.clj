@@ -41,7 +41,7 @@
   [^String id]
   (-> id (s/split #"/") first (ut/if-empty "Unknown")))
 
-(defn node-from-meta
+(defn node-data-from-meta
   "Returns the relevant metadata of a html-resource as a map, including things
   we care about like the node label."
   [res]
@@ -60,7 +60,7 @@
      :id    id
      :label label}))
 
-(defn node-from-url
+(defn node-data-from-url
   "Returns a map with the metadata we can infer about a new from its URL.
   Assumes the url string conforms to the defined base-url, or will return nil."
   [^String url]
@@ -92,9 +92,14 @@
 (defn save-page-links
   "Saves all page links to the database"
   [res]
-  (let [{label :label :as meta} (node-from-meta res)
-        conn (db/get-connection)]
-    (db/create-or-update-node conn label meta)))
+  (let [{label :label :as meta} (node-data-from-meta res)
+        conn (db/get-connection)
+        node (db/create-or-merge-node conn meta)]
+    (->>
+      (get-wiki-links res (:host meta))
+      (pmap node-data-from-url)
+      (pmap #(db/create-or-merge-node conn %))
+      (pmap #(db/relate-nodes conn :LINKSTO node %)))))
 
 
 

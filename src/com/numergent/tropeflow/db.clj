@@ -2,7 +2,8 @@
   (:require [clojurewerkz.neocons.rest :as nr]
             [clojurewerkz.neocons.rest.nodes :as nn]
             [clojurewerkz.neocons.rest.labels :as nl]
-            [clojurewerkz.neocons.rest.cypher :as cy]))
+            [clojurewerkz.neocons.rest.cypher :as cy]
+            [clojurewerkz.neocons.rest.relationships :as nrl]))
 
 
 ; TODO:
@@ -47,12 +48,19 @@
 (defn create-or-merge-node
   "Creates a node from a connection with a label. If a node with the id
   already exists, label is ignored and the data-items are merged with
-  the existing ones."
-  [conn label data-items]
+  the existing ones.
+
+  Data-items is expected to include the label."
+  [conn data-items]
   (let [existing (query-by-id conn (:id data-items))
         id (get-in existing [:metadata :id])]
     (if (empty? existing)
-      (create-node conn label data-items)
+      (create-node conn (:label data-items) data-items)
       (merge-node conn id data-items))))
+
+(defn relate-nodes
+  "Links two nodes by a relationship"
+  [conn relationship n1 n2]
+  (nrl/create conn n1 n2 relationship))
 
 ; TODO: Add transaction support
