@@ -23,6 +23,24 @@
   [res property]
   (-> (e/select res [[:meta (e/attr= :property property)]]) first (get-in [:attrs :content])))
 
+(defn label-from-id
+  "Returns the node label from a node id. Node id is expected to be of the
+  form Category/SubCategory.
+
+  Previously I used the og-type as the node label, but a lot of them are too
+  generic. For instance, 'article' is used both for the main trope articles as
+  well as for the articles on different genres, whereas the root is more
+  specific to the topic at hand.
+
+  As an example:
+
+  http://tvtropes.org/pmwiki/pmwiki.php/ComicBook/SpiderManLovesMaryJane
+
+  has the og:type 'article', but ComicBook is a lot more descriptive.
+  "
+  [^String id]
+  (-> id (s/split #"/") first (ut/if-empty "Unknown")))
+
 (defn node-from-meta
   "Returns the relevant metadata of a html-resource as a map, including things
   we care about like the node label."
@@ -32,25 +50,28 @@
         og-title (content-from-meta res "og:title")
         og-image (content-from-meta res "og:image")
         og-type (-> (content-from-meta res "og:type") (ut/if-nil ""))
-        main-type (-> og-type (s/split #"\.") first s/capitalize (ut/if-empty "Unknown"))]
+        id (-> (u/path-of og-url) (s/replace base-path ""))
+        label (label-from-id id)]
     {:url   og-url
      :host  og-host
      :title og-title
      :image og-image
      :type  og-type
-     :id    (-> (u/path-of og-url) (s/replace base-path ""))
-     :label main-type}))
+     :id    id
+     :label label}))
 
 (defn node-from-url
   "Returns a map with the metadata we can infer about a new from its URL.
   Assumes the url string conforms to the defined base-url, or will return nil."
   [^String url]
   (if (.startsWith url base-url)
-    (let [og-host (ut/host-string-of url)]
-      {:url   url
+    (let [og-host (ut/host-string-of url)
+          id (-> (u/path-of url) (s/replace base-path ""))
+          label (label-from-id id)]
+      {:label label
+       :id    id
        :host  og-host
-       :label "Unknown"
-       :id    (-> (u/path-of url) (s/replace base-path ""))})
+       :url   url})
     nil))
 
 (defn get-wiki-links
