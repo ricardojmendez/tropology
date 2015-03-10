@@ -41,6 +41,18 @@
      :id    (-> (u/path-of og-url) (s/replace base-path ""))
      :label main-type}))
 
+(defn node-from-url
+  "Returns a map with the metadata we can infer about a new from its URL.
+  Assumes the url string conforms to the defined base-url, or will return nil."
+  [^String url]
+  (if (.startsWith url base-url)
+    (let [og-host (ut/host-string-of url)]
+      {:url   url
+       :host  og-host
+       :label "Unknown"
+       :id    (-> (u/path-of url) (s/replace base-path ""))})
+    nil))
+
 (defn get-wiki-links
   "Obtains the wiki links from a html-resource.  Assumes that there will be a
    meta tag with property og:url where it can get the site url from."
