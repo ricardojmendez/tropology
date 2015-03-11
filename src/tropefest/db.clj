@@ -1,21 +1,19 @@
 (ns tropefest.db
-  (:require [clojurewerkz.neocons.rest :as nr]
+  (:require [joda-time :as j]
+            [clojurewerkz.neocons.rest :as nr]
             [clojurewerkz.neocons.rest.nodes :as nn]
             [clojurewerkz.neocons.rest.labels :as nl]
             [clojurewerkz.neocons.rest.cypher :as cy]
             [clojurewerkz.neocons.rest.relationships :as nrl]))
 
 
-; TODO:
-; - Get a connection
-; - Create a trope node
-; - Create a trope node for each link referenced, if it doesn't exist
-; - Add all the references
-
 (defn get-connection
   "Trivial. Returns a local connection."
   []
   (nr/connect "http://localhost:7474/db/data/"))
+
+
+(def update-period (j/days 5))
 
 
 (defn query-by-id
@@ -38,12 +36,21 @@
 
 (defn merge-node
   "Updates an existing node, replacing all data items with the ones received,
-   and retrieves the existing node."
+  and retrieves the existing node."
   [conn ^long id data-items]
-  (let [merged (-> (nn/get conn id) (:data) (merge data-items)) ]
+  (let [merged (-> (nn/get conn id) (:data) (merge data-items))]
     (do
       (nn/update conn id merged)
       (nn/get conn id))))                                   ; Notice that we get it again to retrieve the updated values
+
+(defn timestamp-data
+  "Updates a data hashmap with the current time and the next time for update,
+  in milliseconds.
+  See http://joda-time.sourceforge.net/apidocs/org/joda/time/Instant.html"
+   [data]
+  (let [now (j/date-time)]
+    (assoc data :timestamp (.getMillis now)
+                :nextupdate (.getMillis (j/plus now update-period)))))
 
 (defn create-or-merge-node
   "Creates a node from a connection with a label. If a node with the id
@@ -53,10 +60,11 @@
   Data-items is expected to include the label."
   [conn data-items]
   (let [existing (query-by-id conn (:id data-items))
+        data-ts (timestamp-data data-items)
         id (get-in existing [:metadata :id])]
     (if (empty? existing)
-      (create-node conn (:label data-items) data-items)
-      (merge-node conn id data-items))))
+      (create-node conn (:label data-items) data-ts)
+      (merge-node conn id data-ts))))
 
 (defn relate-nodes
   "Links two nodes by a relationship"

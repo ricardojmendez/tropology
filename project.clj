@@ -1,5 +1,4 @@
 (defproject tropefest "0.1.0-SNAPSHOT"
-
   :description "FIXME: write description"
   :url "http://example.com/FIXME"
 
@@ -21,6 +20,7 @@
                  [enlive "1.1.5"]
                  [clojurewerkz/neocons "3.1.0-beta2"]
                  [clojurewerkz/urly "2.0.0-alpha5"]
+                 [clojure.joda-time "0.2.0"]
                  ]
 
   :min-lein-version "2.0.0"
