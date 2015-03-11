@@ -4,13 +4,13 @@
             [com.numergent.url-tools :as ut]
             [com.numergent.tropefest.db :as db]
             [net.cgrand.enlive-html :as e])
-  (:import (java.net URL)))
+  (:import (java.net URI)))
 
 
 ; Alternate namespace: tropefest
 
 (defn load-resource-url [url]
-  (-> url URL. e/html-resource))
+  (-> url URI. e/html-resource))
 
 ; (def sample-res (load-resource-url "http://tvtropes.org/pmwiki/pmwiki.php/Anime/CowboyBebop"))
 
