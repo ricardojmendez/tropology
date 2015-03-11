@@ -1,4 +1,4 @@
-(ns com.numergent.tropefest.db
+(ns tropefest.db
   (:require [clojurewerkz.neocons.rest :as nr]
             [clojurewerkz.neocons.rest.nodes :as nn]
             [clojurewerkz.neocons.rest.labels :as nl]
