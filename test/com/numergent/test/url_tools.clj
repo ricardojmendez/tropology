@@ -1,4 +1,4 @@
-(ns com.numergent.url-tools-test
+(ns com.numergent.test.url-tools
   (:require [clojure.test :refer :all]
             [com.numergent.url-tools :refer :all]))
 

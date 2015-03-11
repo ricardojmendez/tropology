@@ -1,13 +1,11 @@
-(ns com.numergent.tropefest
+(ns tropefest.parsing
   (:require [clojure.string :as s]
             [clojurewerkz.urly.core :as u]
             [com.numergent.url-tools :as ut]
-            [com.numergent.tropefest.db :as db]
-            [net.cgrand.enlive-html :as e])
+            [net.cgrand.enlive-html :as e]
+            [tropefest.db :as db])
   (:import (java.net URI)))
 
-
-; Alternate namespace: tropefest
 
 (defn load-resource-url [url]
   (-> url URI. e/html-resource))

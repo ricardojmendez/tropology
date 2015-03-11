@@ -1,6 +1,6 @@
-(ns com.numergent.tropefest-test
+(ns tropefest.test.parsing
   (:require [clojure.test :refer :all]
-            [com.numergent.tropefest :refer :all]))
+            [tropefest.parsing :refer :all]))
 
 
 (deftest test-label-from-id
