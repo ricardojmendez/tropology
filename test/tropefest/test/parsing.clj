@@ -12,10 +12,10 @@
 
 (deftest test-node-data-from-url
   (are [url result] (is (= (node-data-from-url url) result))
-       "http://tvtropes.org/pmwiki/pmwiki.php/Anime/CowboyBebop"  {:label "Anime" :id "Anime/CowboyBebop" :host "http://tvtropes.org/" :url "http://tvtropes.org/pmwiki/pmwiki.php/Anime/CowboyBebop"}
-       "http://tvtropes.org/pmwiki/pmwiki.php/Main/HomePage"      {:label "Main" :id "Main/HomePage" :host "http://tvtropes.org/" :url "http://tvtropes.org/pmwiki/pmwiki.php/Main/HomePage"}
-       "http://tvtropes.org/pmwiki/pmwiki.php/Film/TheMatrix"     {:label "Film" :id "Film/TheMatrix" :host "http://tvtropes.org/" :url "http://tvtropes.org/pmwiki/pmwiki.php/Film/TheMatrix"}
-       "http://tvtropes.org/pmwiki/pmwiki.php/Film/TheMatrix?q=1" {:label "Film" :id "Film/TheMatrix" :host "http://tvtropes.org/" :url "http://tvtropes.org/pmwiki/pmwiki.php/Film/TheMatrix?q=1"}
+       "http://tvtropes.org/pmwiki/pmwiki.php/Anime/CowboyBebop"  {:label "Anime" :id "Anime/CowboyBebop" :host "http://tvtropes.org/" :url "http://tvtropes.org/pmwiki/pmwiki.php/Anime/CowboyBebop" :isredirect false}
+       "http://tvtropes.org/pmwiki/pmwiki.php/Main/HomePage"      {:label "Main" :id "Main/HomePage" :host "http://tvtropes.org/" :url "http://tvtropes.org/pmwiki/pmwiki.php/Main/HomePage" :isredirect false}
+       "http://tvtropes.org/pmwiki/pmwiki.php/Film/TheMatrix"     {:label "Film" :id "Film/TheMatrix" :host "http://tvtropes.org/" :url "http://tvtropes.org/pmwiki/pmwiki.php/Film/TheMatrix" :isredirect false}
+       "http://tvtropes.org/pmwiki/pmwiki.php/Film/TheMatrix?q=1" {:label "Film" :id "Film/TheMatrix" :host "http://tvtropes.org/" :url "http://tvtropes.org/pmwiki/pmwiki.php/Film/TheMatrix?q=1" :isredirect false}
        "tvtropes.org/pmwiki/pmwiki.php/Film/TheMatrix"            nil
        "http://tvtropes.org/pmwiki/title_search_form.php"         nil))
 
@@ -45,7 +45,8 @@
       :image "http://static.tvtropes.org/pmwiki/pub/images/cowboy_bebop_lineup_7846.jpg"
       :type  "video.tv_show"
       :id    "Anime/CowboyBebop"
-      :label "Anime")))
+      :label "Anime"
+      :isredirect false)))
 
 (deftest test-get-wiki-links
   (let [name      (str test-file-path "CowboyBebop.html")

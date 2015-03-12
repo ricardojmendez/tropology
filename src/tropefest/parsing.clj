@@ -56,12 +56,13 @@
   (let [og-url (content-from-meta res "og:url")
         id (-> (u/path-of og-url) (s/replace base-path ""))]
     {:id    id
+     :label (label-from-id id)
      :url   og-url
+     :isredirect false                                      ; Nodes have to be explicitly tagged as being redirects
      :host  (ut/host-string-of og-url)
      :title (content-from-meta res "og:title")
      :image (content-from-meta res "og:image")
-     :type  (-> (content-from-meta res "og:type") (ut/if-nil ""))
-     :label (label-from-id id)}))
+     :type  (-> (content-from-meta res "og:type") (ut/if-nil ""))}))
 
 (defn node-data-from-url
   "Returns a map with the metadata we can infer about a new from its URL.
@@ -72,7 +73,9 @@
       {:label (label-from-id id)
        :id    id
        :host  (ut/host-string-of url)
-       :url   url})
+       :url   url
+       :isredirect false                                    ; Nodes have to be explicitly tagged as being redirects
+       })
     nil))
 
 (defn get-wiki-links
@@ -91,13 +94,15 @@
      (filter #(.startsWith % base-url)))))
 
 (defn save-page-links
-  "Saves all page links to the database"
-  ([res]
-   (save-page-links (db/get-connection) res))
-  ([conn res]
-   (let [meta (node-data-from-meta res)
-         meta-ts (db/timestamp-next-update meta)
-         node (db/create-or-merge-node conn meta-ts)]
+  "Saves all page links to the database. It expects a hashmap with two
+  paramets: :url for the originally requested URL, and :res for the resulting
+  html-resource."
+  ([pack]
+   (save-page-links (db/get-connection) pack))
+  ([conn {url :url res :res}]
+   (let [meta (-> (node-data-from-meta res) db/timestamp-next-update)
+         meta-rd (assoc meta :isredirect (= url (:url meta)))
+         node (db/create-or-merge-node conn meta-rd)]
      (->>
        (get-wiki-links res (:host meta))
        (pmap node-data-from-url)
@@ -105,16 +110,9 @@
        (pmap #(db/relate-nodes conn :LINKSTO node %)))))    ; Add link
   )
 
-; TODO: Handle redirects. We need to validate that the node data that we
-; get from the HTML matches the original URL, otherwise we should tag it
-; as a redirect
-; We could potentially also tag those that fail to update, and when one
-; fails to update serveral times, not query for it again.
-
 
 (defn crawl-and-update
   [conn limit]
   (->> (db/query-nodes-to-crawl conn limit)
        (map load-resource-url)
-       (pmap :res)
        (pmap #(save-page-links conn %))))
