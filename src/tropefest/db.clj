@@ -4,13 +4,14 @@
             [clojurewerkz.neocons.rest.nodes :as nn]
             [clojurewerkz.neocons.rest.labels :as nl]
             [clojurewerkz.neocons.rest.cypher :as cy]
-            [clojurewerkz.neocons.rest.relationships :as nrl]))
+            [clojurewerkz.neocons.rest.relationships :as nrl]
+            [environ.core :refer [env]]))
 
 
 (defn get-connection
   "Trivial. Returns a local connection."
   []
-  (nr/connect "http://localhost:7474/db/data/"))
+  (nr/connect (:db-url env)))
 
 
 ;
@@ -109,7 +110,7 @@
         id (get-in existing [:metadata :id])]
     (if (empty? existing)
       (create-node conn (:label data-items) data-items)
-      (nn/get conn id ))))
+      (nn/get conn id))))
 
 (defn relate-nodes
   "Links two nodes by a relationship"

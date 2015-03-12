@@ -54,10 +54,8 @@
                         [ring/ring-devel "1.3.2"]
                         [pjstadig/humane-test-output "0.6.0"]
                         ]
-
-
-
-
          :injections [(require 'pjstadig.humane-test-output)
                       (pjstadig.humane-test-output/activate!)]
-         :env {:dev true}}})
+         :env {:dev true
+               :db-url "http://localhost:7474/db/data/"
+               }}})
