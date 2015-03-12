@@ -23,6 +23,24 @@
                  [clojure.joda-time "0.2.0"]
                  ]
 
+  :cljsbuild {:builds
+              [{:source-paths ["src-cljs"],
+                :id           "dev",
+                :compiler
+                              {:output-dir    "resources/public/js/",
+                               :optimizations :none,
+                               :output-to     "resources/public/js/app.js",
+                               :source-map    true,
+                               :pretty-print  true}}
+               {:source-paths ["src-cljs"],
+                :id           "release",
+                :compiler
+                              {:closure-warnings {:non-standard-jsdoc :off},
+                               :optimizations    :advanced,
+                               :output-to        "resources/public/js/app.js",
+                               :output-wrapper   false,
+                               :pretty-print     false}}]}
+
   :min-lein-version "2.0.0"
   :uberjar-name "tropefest.jar"
   :repl-options {:init-ns tropefest.handler}
@@ -31,6 +49,7 @@
   :main tropefest.core
 
   :plugins [[lein-ring "0.9.1"]
+            [lein-cljsbuild "1.0.5"]
             [lein-environ "1.0.0"]
             [lein-ancient "0.6.0"]]
 
