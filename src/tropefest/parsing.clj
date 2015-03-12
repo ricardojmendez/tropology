@@ -93,7 +93,8 @@
   [res]
   (let [{label :label :as meta} (node-data-from-meta res)
         conn (db/get-connection)
-        node (db/create-or-merge-node conn meta)]
+        meta-ts (db/timestamp-next-update meta)
+        node (db/create-or-merge-node conn meta-ts)]
     (->>
       (get-wiki-links res (:host meta))
       (pmap node-data-from-url)

@@ -13,8 +13,40 @@
   (nr/connect "http://localhost:7474/db/data/"))
 
 
+;
+; Timestamp functions
+;
+
 (def update-period (j/days 5))
 
+(defn timestamp-next-update
+  "Updates a data hashmap with the current time and the next time for update,
+  in milliseconds.
+  See http://joda-time.sourceforge.net/apidocs/org/joda/time/Instant.html"
+  [data]
+  (let [now (j/date-time)]
+    (assoc data :timestamp (.getMillis now)
+                :nextupdate (.getMillis (j/plus now update-period)))))
+
+(defn timestamp-update
+  "Updates a data hashmap with the current time and the next time for update,
+  in milliseconds.
+  See http://joda-time.sourceforge.net/apidocs/org/joda/time/Instant.html"
+  [data]
+    (assoc data :timestamp (.getMillis (j/date-time))))
+
+(defn timestamp-create
+  "Updates a data hashmap with the current time and the next time for update,
+  in milliseconds.
+  See http://joda-time.sourceforge.net/apidocs/org/joda/time/Instant.html"
+  [data]
+  (let [now (j/date-time)]
+    (assoc data :timestamp (.getMillis now)
+                :nextupdate (.getMillis now))))
+
+;
+; Query and creation functions
+;
 
 (defn query-by-id
   "Queries for a node id on the properties. Does not filter by label. Notice
@@ -29,7 +61,7 @@
 (defn create-node
   "Creates a node from a connection with a label"
   [conn label data-items]
-  (let [node (nn/create conn data-items)]
+  (let [node (nn/create conn (timestamp-create data-items))]
     (do
       (nl/add conn node label)
       node)))
@@ -38,19 +70,10 @@
   "Updates an existing node, replacing all data items with the ones received,
   and retrieves the existing node."
   [conn ^long id data-items]
-  (let [merged (-> (nn/get conn id) (:data) (merge data-items))]
+  (let [merged (-> (nn/get conn id) (:data) (merge data-items) (timestamp-update))]
     (do
       (nn/update conn id merged)
       (nn/get conn id))))                                   ; Notice that we get it again to retrieve the updated values
-
-(defn timestamp-data
-  "Updates a data hashmap with the current time and the next time for update,
-  in milliseconds.
-  See http://joda-time.sourceforge.net/apidocs/org/joda/time/Instant.html"
-   [data]
-  (let [now (j/date-time)]
-    (assoc data :timestamp (.getMillis now)
-                :nextupdate (.getMillis (j/plus now update-period)))))
 
 (defn create-or-merge-node
   "Creates a node from a connection with a label. If a node with the id
@@ -60,11 +83,10 @@
   Data-items is expected to include the label."
   [conn data-items]
   (let [existing (query-by-id conn (:id data-items))
-        data-ts (timestamp-data data-items)
         id (get-in existing [:metadata :id])]
     (if (empty? existing)
-      (create-node conn (:label data-items) data-ts)
-      (merge-node conn id data-ts))))
+      (create-node conn (:label data-items) data-items)
+      (merge-node conn id data-items))))
 
 (defn relate-nodes
   "Links two nodes by a relationship"
