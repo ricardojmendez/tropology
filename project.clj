@@ -44,7 +44,9 @@
 
   :profiles
   {:uberjar {:omit-source true
-             :env {:production true}
+             :env {:production true
+                   :db-url "https://54fe2764bbadc:M6vQ5ilIMd0RsQp45wz1CpfudRN2wMfo0Zn2QL59@neo-54fe2764bbadc-364459c455.do-stories.graphstory.com:7473/db/data/"
+                   }
 
              :aot :all}
    :production {:ring {:open-browser? false
