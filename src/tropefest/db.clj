@@ -61,15 +61,14 @@
 
 (defn query-nodes-to-crawl
   "Return the nodes that need to be crawled according to their nextupdate timestamp"
-  [conn]
-  (let [now (.getMillis (j/date-time))
-        matches (cy/tquery conn "MATCH (v) WHERE v.nextupdate < {now} RETURN v" {:now now})]
-    (if (empty? matches)
-      matches
-      (->> matches
-           (map #(% "v"))
-           (map #(select-keys % [:data :metadata])))
-      )))
+  ([conn]
+   (query-nodes-to-crawl conn 100))
+  ([conn limit]
+   (let [now (.getMillis (j/date-time))
+         matches (cy/tquery conn "MATCH (v) WHERE v.nextupdate < {now} RETURN v.url LIMIT {limit}" {:now now :limit limit})]
+     (->> matches
+          (map #(% "v.url")))))
+  )
 
 (defn create-node
   "Creates a node from a connection with a label"
@@ -117,3 +116,7 @@
   (nrl/create conn n1 n2 relationship))
 
 ; TODO: Add transaction support
+
+; SNIPPETS
+; Update code:
+; MATCH (v:Main) SET v.nextupdate = 1426172758403;

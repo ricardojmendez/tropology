@@ -107,8 +107,6 @@
 
 (defn crawl-and-update
   [conn limit]
-  (->> (db/query-nodes-to-crawl conn)
-      (map #(get-in % [:data :url]))
-      (take limit)
-      (map load-resource-url)
-      (pmap #(save-page-links conn %))))
+  (->> (db/query-nodes-to-crawl conn limit)
+       (map load-resource-url)
+       (pmap #(save-page-links conn %))))
