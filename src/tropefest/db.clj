@@ -36,13 +36,13 @@
   (assoc data :timestamp (.getMillis (j/date-time))))
 
 (defn timestamp-create
-  "Updates a data hashmap with the current time and the next time for update,
-  in milliseconds.
+  "Adds to a data hashmap the current time and the next time for update,
+  in milliseconds.  If the hashmap already contains either of these values,
+  they are preseved.
   See http://joda-time.sourceforge.net/apidocs/org/joda/time/Instant.html"
   [data]
-  (let [now (j/date-time)]
-    (assoc data :timestamp (.getMillis now)
-                :nextupdate (.getMillis now))))
+  (let [now (.getMillis (j/date-time))]
+    (merge {:timestamp now :nextupdate now} data)))
 
 ;
 ; Query and creation functions

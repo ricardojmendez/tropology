@@ -13,6 +13,22 @@
     (is (= (:b data) 2.5))
     (is (= (:timestamp data) (:nextupdate data)))))         ; timestamp and nextupdate should match on creation
 
+(deftest test-timestamp-create-with-both-existing
+  (let [data (timestamp-create {:nextupdate 20 :timestamp 1})]
+    (is (contains? data :timestamp))                        ; We add a new timestamp if one isn't present
+    (is (contains? data :nextupdate))                       ; We add a new nextupdate if one isn't present
+    (is (< (:timestamp data) (:nextupdate data)))           ; timestamp and nextupdate should match on creation
+    (is (= (:nextupdate data) 20))
+    (is (= (:timestamp data) 1))))
+
+(deftest test-timestamp-create-with-next-update-existing
+  (let [data (timestamp-create {:nextupdate 20})]
+    (is (contains? data :timestamp))                        ; We add a new timestamp if one isn't present
+    (is (contains? data :nextupdate))                       ; We add a new nextupdate if one isn't present
+    (is (> (:timestamp data) (:nextupdate data)))           ; timestamp and nextupdate should match on creation
+    (is (= (:nextupdate data) 20))))
+
+
 (deftest test-timestamp-update
   (let [now (.getMillis (jt/date-time))]
     (is (contains? (timestamp-update {}) :timestamp))       ; We add a new timestamp if one isn' present
