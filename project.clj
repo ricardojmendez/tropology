@@ -63,8 +63,10 @@
 
             :profiles
             {:uberjar    {:omit-source true
-                          :env         {:production true
-                                        :db-url     "https://54fe2764bbadc:M6vQ5ilIMd0RsQp45wz1CpfudRN2wMfo0Zn2QL59@neo-54fe2764bbadc-364459c455.do-stories.graphstory.com:7473/db/data/"
+                          :env         {:production  true
+                                        :db-url      "https://54fe2764bbadc:M6vQ5ilIMd0RsQp45wz1CpfudRN2wMfo0Zn2QL59@neo-54fe2764bbadc-364459c455.do-stories.graphstory.com:7473/db/data/"
+                                        :update-cron "/60 * * * * * *"
+                                        :update-size 5
                                         }
 
                           :aot         :all}
@@ -77,6 +79,8 @@
                                          ]
                           :injections   [(require 'pjstadig.humane-test-output)
                                          (pjstadig.humane-test-output/activate!)]
-                          :env          {:dev    true
-                                         :db-url "http://localhost:7474/db/data/"
+                          :env          {:dev         true
+                                         :db-url      "http://localhost:7474/db/data/"
+                                         :update-cron "/120 * * * * * *"
+                                         :update-size 5
                                          }}})
