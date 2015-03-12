@@ -33,7 +33,7 @@
   in milliseconds.
   See http://joda-time.sourceforge.net/apidocs/org/joda/time/Instant.html"
   [data]
-    (assoc data :timestamp (.getMillis (j/date-time))))
+  (assoc data :timestamp (.getMillis (j/date-time))))
 
 (defn timestamp-create
   "Updates a data hashmap with the current time and the next time for update,
@@ -87,6 +87,16 @@
     (if (empty? existing)
       (create-node conn (:label data-items) data-items)
       (merge-node conn id data-items))))
+
+(defn create-or-retrieve-node
+  "Creates a node from a connection with a label. If a node with the id
+  already exists, the note is retrieved and returned."
+  [conn data-items]
+  (let [existing (query-by-id conn (:id data-items))
+        id (get-in existing [:metadata :id])]
+    (if (empty? existing)
+      (create-node conn (:label data-items) data-items)
+      (nn/get conn id ))))
 
 (defn relate-nodes
   "Links two nodes by a relationship"
