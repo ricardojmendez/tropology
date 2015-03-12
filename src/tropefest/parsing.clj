@@ -8,8 +8,10 @@
 
 
 (defn load-resource-url [url]
-  "Loads a html-resource from a URL."
-  (-> url URI. e/html-resource))
+  "Loads a html-resource from a URL. Returns a map with the original :url and
+  :res for the resource"
+  (let [res (-> url URI. e/html-resource)]
+    {:url url :res res}))
 
 ; (def sample-res (load-resource-url "http://tvtropes.org/pmwiki/pmwiki.php/Anime/CowboyBebop"))
 
@@ -54,12 +56,13 @@
   (let [og-url (content-from-meta res "og:url")
         id (-> (u/path-of og-url) (s/replace base-path ""))]
     {:id    id
+     :label (label-from-id id)
      :url   og-url
+     :isredirect false                                      ; Nodes have to be explicitly tagged as being redirects
      :host  (ut/host-string-of og-url)
      :title (content-from-meta res "og:title")
      :image (content-from-meta res "og:image")
-     :type  (-> (content-from-meta res "og:type") (ut/if-nil ""))
-     :label (label-from-id id)}))
+     :type  (-> (content-from-meta res "og:type") (ut/if-nil ""))}))
 
 (defn node-data-from-url
   "Returns a map with the metadata we can infer about a new from its URL.
@@ -70,7 +73,9 @@
       {:label (label-from-id id)
        :id    id
        :host  (ut/host-string-of url)
-       :url   url})
+       :url   url
+       :isredirect false                                    ; Nodes have to be explicitly tagged as being redirects
+       })
     nil))
 
 (defn get-wiki-links
@@ -89,14 +94,15 @@
      (filter #(.startsWith % base-url)))))
 
 (defn save-page-links
-  "Saves all page links to the database"
-  ([res]
-   (save-page-links (db/get-connection) res))
-  (
-   [conn res]
-   (let [meta (node-data-from-meta res)
-         meta-ts (db/timestamp-next-update meta)
-         node (db/create-or-merge-node conn meta-ts)]
+  "Saves all page links to the database. It expects a hashmap with two
+  paramets: :url for the originally requested URL, and :res for the resulting
+  html-resource."
+  ([pack]
+   (save-page-links (db/get-connection) pack))
+  ([conn {url :url res :res}]
+   (let [meta (-> (node-data-from-meta res) db/timestamp-next-update)
+         meta-rd (assoc meta :isredirect (= url (:url meta)))
+         node (db/create-or-merge-node conn meta-rd)]
      (->>
        (get-wiki-links res (:host meta))
        (pmap node-data-from-url)
