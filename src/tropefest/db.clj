@@ -65,7 +65,7 @@
    (query-nodes-to-crawl conn 100))
   ([conn limit]
    (let [now (.getMillis (j/date-time))
-         matches (cy/tquery conn "MATCH (v) WHERE v.nextupdate < {now} RETURN v.url LIMIT {limit}" {:now now :limit limit})]
+         matches (cy/tquery conn "MATCH (v) WHERE v.isredirect = FALSE AND v.nextupdate < {now} RETURN v.url LIMIT {limit}" {:now now :limit limit})]
      (->> matches
           (map #(% "v.url")))))
   )
