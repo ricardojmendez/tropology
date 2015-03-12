@@ -8,8 +8,10 @@
 
 
 (defn load-resource-url [url]
-  "Loads a html-resource from a URL."
-  (-> url URI. e/html-resource))
+  "Loads a html-resource from a URL. Returns a map with the original :url and
+  :res for the resource"
+  (let [res (-> url URI. e/html-resource)]
+    {:url url :res res}))
 
 ; (def sample-res (load-resource-url "http://tvtropes.org/pmwiki/pmwiki.php/Anime/CowboyBebop"))
 
@@ -92,8 +94,7 @@
   "Saves all page links to the database"
   ([res]
    (save-page-links (db/get-connection) res))
-  (
-   [conn res]
+  ([conn res]
    (let [meta (node-data-from-meta res)
          meta-ts (db/timestamp-next-update meta)
          node (db/create-or-merge-node conn meta-ts)]
@@ -104,9 +105,16 @@
        (pmap #(db/relate-nodes conn :LINKSTO node %)))))    ; Add link
   )
 
+; TODO: Handle redirects. We need to validate that the node data that we
+; get from the HTML matches the original URL, otherwise we should tag it
+; as a redirect
+; We could potentially also tag those that fail to update, and when one
+; fails to update serveral times, not query for it again.
+
 
 (defn crawl-and-update
   [conn limit]
   (->> (db/query-nodes-to-crawl conn limit)
        (map load-resource-url)
+       (pmap :res)
        (pmap #(save-page-links conn %))))
