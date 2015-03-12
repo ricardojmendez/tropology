@@ -90,13 +90,25 @@
 
 (defn save-page-links
   "Saves all page links to the database"
-  [res]
-  (let [{label :label :as meta} (node-data-from-meta res)
-        conn (db/get-connection)
-        meta-ts (db/timestamp-next-update meta)
-        node (db/create-or-merge-node conn meta-ts)]
-    (->>
-      (get-wiki-links res (:host meta))
-      (pmap node-data-from-url)
-      (pmap #(db/create-or-retrieve-node conn %))           ; Nodes are only retrieved when linking to, not updated
-      (pmap #(db/relate-nodes conn :LINKSTO node %)))))     ; Add link
+  ([res]
+   (save-page-links (db/get-connection) res))
+  (
+   [conn res]
+   (let [meta (node-data-from-meta res)
+         meta-ts (db/timestamp-next-update meta)
+         node (db/create-or-merge-node conn meta-ts)]
+     (->>
+       (get-wiki-links res (:host meta))
+       (pmap node-data-from-url)
+       (pmap #(db/create-or-retrieve-node conn %))          ; Nodes are only retrieved when linking to, not updated
+       (pmap #(db/relate-nodes conn :LINKSTO node %)))))    ; Add link
+  )
+
+
+(defn crawl-and-update
+  [conn limit]
+  (->> (db/query-nodes-to-crawl conn)
+      (map #(get-in % [:data :url]))
+      (take limit)
+      (map load-resource-url)
+      (pmap #(save-page-links conn %))))

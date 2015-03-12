@@ -60,6 +60,7 @@
           (select-keys [:data :metadata])))))
 
 (defn query-nodes-to-crawl
+  "Return the nodes that need to be crawled according to their nextupdate timestamp"
   [conn]
   (let [now (.getMillis (j/date-time))
         matches (cy/tquery conn "MATCH (v) WHERE v.nextupdate < {now} RETURN v" {:now now})]
@@ -69,8 +70,6 @@
            (map #(% "v"))
            (map #(select-keys % [:data :metadata])))
       )))
-
-
 
 (defn create-node
   "Creates a node from a connection with a label"
