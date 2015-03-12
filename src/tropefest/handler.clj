@@ -3,6 +3,8 @@
             [tropefest.routes.home :refer [home-routes]]
             [tropefest.middleware
              :refer [development-middleware production-middleware]]
+            [tropefest.db :as db]
+            [tropefest.parsing :as p]
             [tropefest.session :as session]
             [ring.middleware.defaults :refer [site-defaults]]
             [compojure.route :as route]
@@ -10,11 +12,30 @@
             [taoensso.timbre.appenders.rotor :as rotor]
             [selmer.parser :as parser]
             [environ.core :refer [env]]
-            [cronj.core :as cronj]))
+            [cronj.core :as cronj]
+            [tropefest.db :as db]))
 
 (defroutes base-routes
-  (route/resources "/")
-  (route/not-found "Not Found"))
+           (route/resources "/")
+           (route/not-found "Not Found"))
+
+
+(defn seed-database []
+  (let [seed (p/load-resource-url "http://tvtropes.org/pmwiki/pmwiki.php/Anime/CowboyBebop")]
+    (p/save-page-links seed)))
+
+(defn update-handler [t opts]
+  (print (str "Remaining " (count (db/query-nodes-to-crawl (db/get-connection) 9999999)) " updating " (:total opts) "... "))
+  (p/crawl-and-update (db/get-connection) (:total opts))
+  (println "Done"))
+
+(def update-task
+  {:id "update-task"
+   :handler update-handler
+   :schedule (:update-cron env)
+   :opts {:total (:update-size env)}})
+
+(def cj (cronj/cronj :entries [update-task]))
 
 (defn init
   "init will be called once when
@@ -22,13 +43,19 @@
    an app server such as Tomcat
    put any initialization code here"
   []
+
+  (println (str "Updating " (:update-size env) " using " (:update-cron env)))
+
+  (seed-database)
+  (cronj/start! cj)
+
   (timbre/set-config!
     [:appenders :rotor]
-    {:min-level :info
-     :enabled? true
-     :async? false ; should be always false for rotor
+    {:min-level             :info
+     :enabled?              true
+     :async?                false                           ; should be always false for rotor
      :max-message-per-msecs nil
-     :fn rotor/appender-fn})
+     :fn                    rotor/appender-fn})
 
   (timbre/set-config!
     [:shared-appender-config :rotor]
