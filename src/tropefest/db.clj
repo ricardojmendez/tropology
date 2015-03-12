@@ -58,6 +58,19 @@
       (-> (match "v")
           (select-keys [:data :metadata])))))
 
+(defn query-nodes-to-crawl
+  [conn]
+  (let [now (.getMillis (j/date-time))
+        matches (cy/tquery conn "MATCH (v) WHERE v.nextupdate < {now} RETURN v" {:now now})]
+    (if (empty? matches)
+      matches
+      (->> matches
+           (map #(% "v"))
+           (map #(select-keys % [:data :metadata])))
+      )))
+
+
+
 (defn create-node
   "Creates a node from a connection with a label"
   [conn label data-items]
