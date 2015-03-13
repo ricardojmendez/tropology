@@ -72,7 +72,12 @@
                           :aot         :all}
              :production {:ring {:open-browser? false
                                  :stacktraces?  false
-                                 :auto-reload?  false}}
+                                 :auto-reload?  false}
+                          :env  {:db-url      "https://54fe2764bbadc:M6vQ5ilIMd0RsQp45wz1CpfudRN2wMfo0Zn2QL59@neo-54fe2764bbadc-364459c455.do-stories.graphstory.com:7473/db/data/"
+                                 :update-cron "/60 * * * * * *"
+                                 :update-size 5}
+                          :aot  :all
+                          }
              :dev        {:dependencies [[ring-mock "0.1.5"]
                                          [ring/ring-devel "1.3.2"]
                                          [pjstadig/humane-test-output "0.6.0"]
