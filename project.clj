@@ -85,7 +85,7 @@
                           :injections   [(require 'pjstadig.humane-test-output)
                                          (pjstadig.humane-test-output/activate!)]
                           :env          {:dev         true
-                                         :db-url      "http://localhost:7474/db/data/"
+                                         :db-url      "http://neo4j:testneo4j@localhost:7474/db/data/"
                                          :update-cron "/120 * * * * * *"
                                          :update-size 5
                                          }}})
