@@ -70,6 +70,13 @@
           (map #(% "v.url")))))
   )
 
+(defn mark-if-redirect
+  "Marks all nodes identified by a URL as being a redirect, if true"
+  [conn url is-redirect]
+  (if is-redirect
+    (cy/tquery conn "MATCH (v) WHERE v.url = {url} SET v.isredirect = true" {:url url})
+    nil))
+
 (defn create-node
   "Creates a node from a connection with a label"
   [conn label data-items]

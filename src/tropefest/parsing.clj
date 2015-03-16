@@ -55,14 +55,14 @@
   [res]
   (let [og-url (content-from-meta res "og:url")
         id (-> (u/path-of og-url) (s/replace base-path ""))]
-    {:id    id
-     :label (label-from-id id)
-     :url   og-url
+    {:id         id
+     :label      (label-from-id id)
+     :url        og-url
      :isredirect false                                      ; Nodes have to be explicitly tagged as being redirects
-     :host  (ut/host-string-of og-url)
-     :title (content-from-meta res "og:title")
-     :image (content-from-meta res "og:image")
-     :type  (-> (content-from-meta res "og:type") (ut/if-nil ""))}))
+     :host       (ut/host-string-of og-url)
+     :title      (content-from-meta res "og:title")
+     :image      (content-from-meta res "og:image")
+     :type       (-> (content-from-meta res "og:type") (ut/if-nil ""))}))
 
 (defn node-data-from-url
   "Returns a map with the metadata we can infer about a new from its URL.
@@ -70,10 +70,10 @@
   [^String url]
   (if (.startsWith url base-url)
     (let [id (-> (u/path-of url) (s/replace base-path ""))]
-      {:label (label-from-id id)
-       :id    id
-       :host  (ut/host-string-of url)
-       :url   url
+      {:label      (label-from-id id)
+       :id         id
+       :host       (ut/host-string-of url)
+       :url        url
        :isredirect false                                    ; Nodes have to be explicitly tagged as being redirects
        })
     nil))
@@ -93,6 +93,7 @@
      (distinct)
      (filter #(.startsWith % base-url)))))
 
+
 (defn save-page-links
   "Saves all page links to the database. It expects a hashmap with two
   paramets: :url for the originally requested URL, and :res for the resulting
@@ -101,14 +102,16 @@
    (save-page-links (db/get-connection) pack))
   ([conn {url :url res :res}]
    (let [meta (-> (node-data-from-meta res) db/timestamp-next-update)
-         meta-rd (assoc meta :isredirect (= url (:url meta)))
+         is-redirect (not= url (:url meta))
+         meta-rd (assoc meta :isredirect is-redirect)
          node (db/create-or-merge-node conn meta-rd)]
-     (do-all
+     (db/mark-if-redirect conn url is-redirect)             ; Feels like a hack, review.
+     (doall
        (->>
          (get-wiki-links res (:host meta))
          (pmap node-data-from-url)
-         (pmap #(db/create-or-retrieve-node conn %))         ; Nodes are only retrieved when linking to, not updated
-         (pmap #(db/relate-nodes conn :LINKSTO node %))))   ; Add link
+         (pmap #(db/create-or-retrieve-node conn %))        ; Nodes are only retrieved when linking to, not updated
+         (pmap #(db/relate-nodes conn :LINKSTO node %))))   ;Add link
      )))
 
 
