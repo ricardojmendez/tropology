@@ -19,15 +19,15 @@
            (route/resources "/")
            (route/not-found "Not Found"))
 
-
 (defn seed-database []
+  (timbre/info "Seeding...")
   (let [seed (p/load-resource-url "http://tvtropes.org/pmwiki/pmwiki.php/Anime/CowboyBebop")]
     (p/save-page-links seed)))
 
 (defn update-handler [t opts]
-  (print (str "Remaining " (count (db/query-nodes-to-crawl (db/get-connection) 9999999)) " updating " (:total opts) "... "))
-  (p/crawl-and-update (db/get-connection) (:total opts))
-  (println "Done"))
+  (timbre/info (str "Remaining " (count (db/query-nodes-to-crawl (db/get-connection) 9999999)) " updating " (:total opts) "... "))
+  (p/crawl-and-update (db/get-connection) (Integer. (:total opts)))
+  (timbre/info "Done"))
 
 (def update-task
   {:id "update-task"
@@ -44,11 +44,6 @@
    put any initialization code here"
   []
 
-  (println (str "Updating " (:update-size env) " using " (:update-cron env)))
-
-  (seed-database)
-  (cronj/start! cj)
-
   (timbre/set-config!
     [:appenders :rotor]
     {:min-level             :info
@@ -61,11 +56,20 @@
     [:shared-appender-config :rotor]
     {:path "tropefest.log" :max-size (* 512 1024) :backlog 10})
 
+
+  (timbre/info (str "Updating " (:update-size env) " using " (:update-cron env)))
+  (seed-database)
+  (cronj/start! cj)
+
   (if (env :dev) (parser/cache-off!))
+
+
   ;;start the expired session cleanup job
   (cronj/start! session/cleanup-job)
   (timbre/info "\n-=[ tropefest started successfully"
                (when (env :dev) "using the development profile") "]=-"))
+
+
 
 (defn destroy
   "destroy will be called when your application
