@@ -102,7 +102,7 @@
 
 (defn create-or-retrieve-node
   "Creates a node from a connection with a label. If a node with the id
-  already exists, the note is retrieved and returned."
+  already exists, the node is retrieved and returned."
   [conn data-items]
   (let [existing (query-by-id conn (:id data-items))
         id (get-in existing [:metadata :id])]
@@ -111,9 +111,9 @@
       (nn/get conn id))))
 
 (defn relate-nodes
-  "Links two nodes by a relationship"
+  "Links two nodes by a relationship if they aren't yet linked"
   [conn relationship n1 n2]
-  (nrl/create conn n1 n2 relationship))
+  (nrl/maybe-create conn n1 n2 relationship))
 
 ; TODO: Add transaction support
 
