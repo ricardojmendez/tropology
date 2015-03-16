@@ -64,18 +64,18 @@
             :profiles
             {:uberjar    {:omit-source true
                           :env         {:production  true
-                                        :db-url      "https://54fe2764bbadc:M6vQ5ilIMd0RsQp45wz1CpfudRN2wMfo0Zn2QL59@neo-54fe2764bbadc-364459c455.do-stories.graphstory.com:7473/db/data/"
+                                        :db-url      "http://localhost:7474/db/data/"
                                         :update-cron "/60 * * * * * *"
                                         :update-size 5
                                         }
 
                           :aot         :all}
-             :production {:ring {:open-browser? false
+             :prod {:ring {:open-browser? false
                                  :stacktraces?  false
                                  :auto-reload?  false}
-                          :env  {:db-url      "https://54fe2764bbadc:M6vQ5ilIMd0RsQp45wz1CpfudRN2wMfo0Zn2QL59@neo-54fe2764bbadc-364459c455.do-stories.graphstory.com:7473/db/data/"
-                                 :update-cron "/60 * * * * * *"
-                                 :update-size 5}
+                          :env  {:db-url      "http://localhost:7474/db/data/"
+                                 :update-cron "/180 * * * * * *"
+                                 :update-size 10}
                           :aot  :all
                           }
              :dev        {:dependencies [[ring-mock "0.1.5"]
