@@ -5,6 +5,7 @@
             [clojurewerkz.neocons.rest.labels :as nl]
             [clojurewerkz.neocons.rest.cypher :as cy]
             [clojurewerkz.neocons.rest.relationships :as nrl]
+            [clojurewerkz.neocons.rest.index :as nri]
             [environ.core :refer [env]]))
 
 
@@ -83,6 +84,8 @@
   (let [node (nn/create conn (timestamp-create data-items))]
     (do
       (nl/add conn node label)
+      (nri/create conn label "id")
+      (nri/create conn label "nextupdate")
       node)))
 
 (defn merge-node
