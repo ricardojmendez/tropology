@@ -21,8 +21,9 @@
 
 (defn seed-database []
   (timbre/info "Seeding...")
-  (let [seed (p/load-resource-url "http://tvtropes.org/pmwiki/pmwiki.php/Anime/CowboyBebop")]
-    (p/save-page-links seed)))
+  (->
+    (p/load-resource-url "http://tvtropes.org/pmwiki/pmwiki.php/Anime/CowboyBebop")
+    p/save-page-links))
 
 (defn update-handler [t opts]
   (timbre/info (str "Remaining " (count (db/query-nodes-to-crawl (db/get-connection) 9999999)) " updating " (:total opts) "... "))

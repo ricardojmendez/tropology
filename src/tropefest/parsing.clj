@@ -103,12 +103,13 @@
    (let [meta (-> (node-data-from-meta res) db/timestamp-next-update)
          meta-rd (assoc meta :isredirect (= url (:url meta)))
          node (db/create-or-merge-node conn meta-rd)]
-     (->>
-       (get-wiki-links res (:host meta))
-       (pmap node-data-from-url)
-       (pmap #(db/create-or-retrieve-node conn %))          ; Nodes are only retrieved when linking to, not updated
-       (pmap #(db/relate-nodes conn :LINKSTO node %)))))    ; Add link
-  )
+     (do-all
+       (->>
+         (get-wiki-links res (:host meta))
+         (pmap node-data-from-url)
+         (pmap #(db/create-or-retrieve-node conn %))         ; Nodes are only retrieved when linking to, not updated
+         (pmap #(db/relate-nodes conn :LINKSTO node %))))   ; Add link
+     )))
 
 
 (defn crawl-and-update
