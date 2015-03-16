@@ -70,7 +70,7 @@
                                         }
 
                           :aot         :all}
-             :prod {:ring {:open-browser? false
+             :production {:ring {:open-browser? false
                                  :stacktraces?  false
                                  :auto-reload?  false}
                           :env  {:db-url      "http://localhost:7474/db/data/"

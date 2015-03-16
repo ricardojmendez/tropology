@@ -27,7 +27,7 @@
 
 (defn update-handler [t opts]
   (timbre/info (str "Remaining " (count (db/query-nodes-to-crawl (db/get-connection) 9999999)) " updating " (:total opts) "... "))
-  (p/crawl-and-update (db/get-connection) (Integer. (:total opts)))
+  (doall (p/crawl-and-update (db/get-connection) (Integer. (:total opts))))
   (timbre/info "Done"))
 
 (def update-task
@@ -59,6 +59,7 @@
 
 
   (timbre/info (str "Updating " (:update-size env) " using " (:update-cron env)))
+
   (seed-database)
   (cronj/start! cj)
 
