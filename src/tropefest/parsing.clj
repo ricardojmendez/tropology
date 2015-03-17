@@ -94,30 +94,30 @@
      (filter #(.startsWith % base-url)))))
 
 
-(defn save-page-links
+(defn save-page-links!
   "Saves all page links to the database. It expects a hashmap with two
   paramets: :url for the originally requested URL, and :res for the resulting
   html-resource."
   ([pack]
-   (save-page-links (db/get-connection) pack))
+   (save-page-links! (db/get-connection) pack))
   ([conn {url :url res :res}]
    (let [meta (-> (node-data-from-meta res) db/timestamp-next-update)
          is-redirect (not= url (:url meta))
          meta-rd (assoc meta :isredirect is-redirect)
-         node (db/create-or-merge-node conn meta-rd)]
-     (db/mark-if-redirect conn url is-redirect)             ; Feels like a hack, review.
+         node (db/create-or-merge-node! conn meta-rd)]
+     (db/mark-if-redirect! conn url is-redirect)             ; Feels like a hack, review.
      (->>
        (get-wiki-links res (:host meta))
        (pmap node-data-from-url)
-       (map #(db/create-or-retrieve-node conn %))           ; Nodes are only retrieved when linking to, not updated
-       (map #(db/relate-nodes conn :LINKSTO node %))        ; Add link
+       (map #(db/create-or-retrieve-node! conn %))           ; Nodes are only retrieved when linking to, not updated
+       (map #(db/relate-nodes! conn :LINKSTO node %))        ; Add link
        doall))
     ))
 
 
-(defn crawl-and-update
+(defn crawl-and-update!
   [conn limit]
   (->> (db/query-nodes-to-crawl conn limit)
        (map load-resource-url)
-       (pmap #(save-page-links conn %))
+       (pmap #(save-page-links! conn %))
        doall))

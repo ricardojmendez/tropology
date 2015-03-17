@@ -11,7 +11,7 @@
   (let [name      (str tp/test-file-path "CowboyBebop.html")
         conn      (tdb/get-test-connection)
         loaded    (load-resource-url name)
-        saved     (save-page-links conn loaded)]
+        saved     (save-page-links! conn loaded)]
     ; (println saved)
     (is (= (count saved) 732))
     ))
