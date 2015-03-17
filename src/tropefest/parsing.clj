@@ -110,7 +110,8 @@
        (get-wiki-links res (:host meta))
        (pmap node-data-from-url)
        (map #(db/create-or-retrieve-node conn %))           ; Nodes are only retrieved when linking to, not updated
-       (map #(db/relate-nodes conn :LINKSTO node %))))      ; Add link
+       (map #(db/relate-nodes conn :LINKSTO node %))        ; Add link
+       doall))
     ))
 
 
@@ -118,4 +119,5 @@
   [conn limit]
   (->> (db/query-nodes-to-crawl conn limit)
        (map load-resource-url)
-       (pmap #(save-page-links conn %))))
+       (pmap #(save-page-links conn %))
+       doall))
