@@ -68,8 +68,7 @@
    (let [now (.getMillis (j/date-time))
          matches (cy/tquery conn "MATCH (v) WHERE v.isredirect = FALSE AND v.nextupdate < {now} RETURN v.url LIMIT {limit}" {:now now :limit limit})]
      (->> matches
-          (map #(% "v.url")))))
-  )
+          (map #(% "v.url"))))))
 
 (defn mark-if-redirect
   "Marks all nodes identified by a URL as being a redirect, if true"
@@ -84,8 +83,9 @@
   (let [node (nn/create conn (timestamp-create data-items))]
     (do
       (nl/add conn node label)
-      (nri/create conn label "id")
-      (nri/create conn label "nextupdate")
+      ; TODO Create indexes only if we don' know the node
+      ; (nri/create conn label "id")
+      ; (nri/create conn label "nextupdate")
       node)))
 
 (defn merge-node
