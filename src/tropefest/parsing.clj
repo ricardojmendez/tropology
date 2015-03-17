@@ -109,8 +109,8 @@
      (->>
        (get-wiki-links res (:host meta))
        (pmap node-data-from-url)
-       (pmap #(db/create-or-retrieve-node conn %))          ; Nodes are only retrieved when linking to, not updated
-       (pmap #(db/relate-nodes conn :LINKSTO node %))))     ; Add link
+       (map #(db/create-or-retrieve-node conn %))           ; Nodes are only retrieved when linking to, not updated
+       (map #(db/relate-nodes conn :LINKSTO node %))))      ; Add link
     ))
 
 
