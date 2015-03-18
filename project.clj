@@ -21,6 +21,7 @@
                            [clojurewerkz/neocons "3.1.0-beta2"]
                            [clojurewerkz/urly "2.0.0-alpha5"]
                            [clojure.joda-time "0.4.0"]
+                           [http-kit "2.1.16"]
                            ]
 
             :cljsbuild {:builds
