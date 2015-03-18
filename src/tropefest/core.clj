@@ -1,8 +1,9 @@
 (ns tropefest.core
-  (:require [tropefest.handler :refer [app]]
-    [ring.adapter.jetty :refer [run-jetty]])
+  (:require [tropefest.handler :refer [app init]]
+            [org.httpkit.server :refer [run-server]])
   (:gen-class))
 
 (defn -main [& args]
   (let [port (Integer/parseInt (or (System/getenv "PORT") "3000"))]
-    (run-jetty app {:port port :join? false})))
+    (init)                                                  ; Init doesn't get called on uberjar
+    (run-server app {:port port})))

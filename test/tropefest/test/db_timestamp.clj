@@ -1,4 +1,4 @@
-(ns tropefest.test.parsing
+(ns tropefest.test.db-timestamp
   (:require [clojure.test :refer :all]
             [joda-time :as jt]
             [tropefest.db :refer :all]))

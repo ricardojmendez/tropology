@@ -5,6 +5,7 @@
             [clojurewerkz.neocons.rest.labels :as nl]
             [clojurewerkz.neocons.rest.cypher :as cy]
             [clojurewerkz.neocons.rest.relationships :as nrl]
+            [clojurewerkz.neocons.rest.index :as nri]
             [environ.core :refer [env]]))
 
 
@@ -67,15 +68,24 @@
    (let [now (.getMillis (j/date-time))
          matches (cy/tquery conn "MATCH (v) WHERE v.isredirect = FALSE AND v.nextupdate < {now} RETURN v.url LIMIT {limit}" {:now now :limit limit})]
      (->> matches
-          (map #(% "v.url")))))
-  )
+          (map #(% "v.url"))))))
 
-(defn create-node
+(defn mark-if-redirect!
+  "Marks all nodes identified by a URL as being a redirect, if true"
+  [conn url is-redirect]
+  (if is-redirect
+    (cy/tquery conn "MATCH (v) WHERE v.url = {url} SET v.isredirect = true" {:url url})
+    nil))
+
+(defn create-node!
   "Creates a node from a connection with a label"
   [conn label data-items]
   (let [node (nn/create conn (timestamp-create data-items))]
     (do
       (nl/add conn node label)
+      ; TODO Create indexes only if we don' know the node
+      ; (nri/create conn label "id")
+      ; (nri/create conn label "nextupdate")
       node)))
 
 (defn merge-node
@@ -87,7 +97,7 @@
       (nn/update conn id merged)
       (nn/get conn id))))                                   ; Notice that we get it again to retrieve the updated values
 
-(defn create-or-merge-node
+(defn create-or-merge-node!
   "Creates a node from a connection with a label. If a node with the id
   already exists, label is ignored and the data-items are merged with
   the existing ones.
@@ -97,23 +107,23 @@
   (let [existing (query-by-id conn (:id data-items))
         id (get-in existing [:metadata :id])]
     (if (empty? existing)
-      (create-node conn (:label data-items) data-items)
+      (create-node! conn (:label data-items) data-items)
       (merge-node conn id data-items))))
 
-(defn create-or-retrieve-node
+(defn create-or-retrieve-node!
   "Creates a node from a connection with a label. If a node with the id
-  already exists, the note is retrieved and returned."
+  already exists, the node is retrieved and returned."
   [conn data-items]
   (let [existing (query-by-id conn (:id data-items))
         id (get-in existing [:metadata :id])]
     (if (empty? existing)
-      (create-node conn (:label data-items) data-items)
+      (create-node! conn (:label data-items) data-items)
       (nn/get conn id))))
 
-(defn relate-nodes
-  "Links two nodes by a relationship"
+(defn relate-nodes!
+  "Links two nodes by a relationship if they aren't yet linked"
   [conn relationship n1 n2]
-  (nrl/create conn n1 n2 relationship))
+  (nrl/maybe-create conn n1 n2 relationship))
 
 ; TODO: Add transaction support
 
