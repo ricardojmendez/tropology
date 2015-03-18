@@ -62,19 +62,19 @@
 
 
             :profiles
-            {:uberjar    {:omit-source true
+            {
+             :uberjar    {:omit-source true
                           :env         {:production  true
                                         :db-url      "http://localhost:7474/db/data/"
-                                        :update-cron "/60 * * * * * *"
+                                        :update-cron "0 /3 * * * * *"
                                         :update-size 5
                                         }
-
                           :aot         :all}
              :production {:ring {:open-browser? false
                                  :stacktraces?  false
                                  :auto-reload?  false}
                           :env  {:db-url      "http://localhost:7474/db/data/"
-                                 :update-cron "/180 * * * * * *"
+                                 :update-cron "0 /3 * * * * *"
                                  :update-size 10}
                           :aot  :all
                           }
@@ -86,6 +86,6 @@
                                          (pjstadig.humane-test-output/activate!)]
                           :env          {:dev         true
                                          :db-url      "http://neo4j:testneo4j@localhost:7474/db/data/"
-                                         :update-cron "/120 * * * * * *"
+                                         :update-cron "0 /3 * * * * *"
                                          :update-size 2
                                          }}})
