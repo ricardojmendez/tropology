@@ -35,10 +35,10 @@
   (timbre/info "Done"))
 
 (def update-task
-  {:id "update-task"
-   :handler update-handler
+  {:id       "update-task"
+   :handler  update-handler
    :schedule (:update-cron env)
-   :opts {:total (:update-size env)}})
+   :opts     {:total (:update-size env)}})
 
 (def cj (cronj/cronj :entries [update-task]))
 
@@ -68,7 +68,6 @@
   (cronj/start! cj)
 
   (if (env :dev) (parser/cache-off!))
-
 
   ;;start the expired session cleanup job
   (cronj/start! session/cleanup-job)

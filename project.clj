@@ -66,15 +66,15 @@
             {
              :uberjar    {:omit-source true
                           :env         {:production  true
-                                        :db-url      "http://localhost:7474/db/data/"
+                                        :db-url      "http://neo4j:testneo4j@localhost:7474/db/data/"
                                         :update-cron "0 /3 * * * * *"
-                                        :update-size 5
+                                        :update-size 3
                                         }
                           :aot         :all}
              :production {:ring {:open-browser? false
                                  :stacktraces?  false
                                  :auto-reload?  false}
-                          :env  {:db-url      "http://localhost:7474/db/data/"
+                          :env  {:db-url      "http://neo4j:testneo4j@localhost:7474/db/data/"
                                  :update-cron "0 /3 * * * * *"
                                  :update-size 10}
                           :aot  :all
@@ -87,6 +87,6 @@
                                          (pjstadig.humane-test-output/activate!)]
                           :env          {:dev         true
                                          :db-url      "http://neo4j:testneo4j@localhost:7474/db/data/"
-                                         :update-cron "0 /3 * * * * *"
+                                         :update-cron "0 /5 * * * * *"
                                          :update-size 2
                                          }}})
