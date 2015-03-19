@@ -11,4 +11,5 @@ pom.xml.asc
 /.nrepl-port
 *~
 /app.js
-tropefest.log
+*.log
+resources/public/js/
