@@ -91,6 +91,8 @@
                                          [ring/ring-devel "1.3.2"]
                                          [pjstadig/humane-test-output "0.7.0"]
                                          [figwheel "0.2.5"]
+                                         [weasel "0.6.0"]
+                                         [com.cemerick/piggieback "0.1.6-SNAPSHOT"]
                                          ]
                           :plugins      [[lein-figwheel "0.2.3-SNAPSHOT"]]
 
@@ -102,8 +104,9 @@
                                          :ring-handler     todelete.handler/app}
                           :injections   [(require 'pjstadig.humane-test-output)
                                          (pjstadig.humane-test-output/activate!)]
-                          :env          {:dev         true
-                                         :db-url      "http://neo4j:testneo4j@localhost:7474/db/data/"
-                                         :update-cron "0 /5 * * * * *"
-                                         :update-size 2
+                          :env          {:dev             true
+                                         :db-url          "http://neo4j:testneo4j@localhost:7474/db/data/"
+                                         :update-cron     "0 /5 * * * * *"
+                                         :update-size     2
+                                         :update-disabled true
                                          }}})
