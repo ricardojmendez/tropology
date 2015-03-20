@@ -69,13 +69,25 @@
   [:div
    [:h2 "Welcome to ClojureScript"]])
 
+; Graph!
+
+(defn create-graph []
+  (js/sigma.parsers.json "/static/test-data/basic-graph.json"
+                         (clj->js {:container "container"
+                                   :settings  {:defaultNodeColor "#ec5148"}})))
+
+
 (defn plot []
-  [:div {:id "content"} "Empty"])
+  [:div
+   [:input {:type     "button" :value "Graph!"
+            :on-click #(create-graph)}]
+   [:div {:id "container"}]])
 
 (def pages
   {:home  home-page
    :about about-page
    :plot  plot})
+
 
 
 
@@ -93,6 +105,8 @@
   (session/put! :page :home)
   (reagent/render-component [navbar] (.getElementById js/document "navbar"))
   (reagent/render-component [page] (.getElementById js/document "app")))
+
+
 
 
 
