@@ -1,13 +1,15 @@
-(defproject tropefest "0.1.0-SNAPSHOT"
+(defproject tropefest "0.0.1-SNAPSHOT"
             :description "FIXME: write description"
             :url "http://example.com/FIXME"
 
             :dependencies [[org.clojure/clojure "1.6.0"]
+                           [org.clojure/clojurescript "0.0-3123" :scope "provided"]
+                           [cljs-ajax "0.3.10"]
                            [ring-server "0.4.0"]
                            [selmer "0.8.2"]
                            [com.taoensso/timbre "3.4.0"]
                            [com.taoensso/tower "3.0.2"]
-                           [markdown-clj "0.9.64"]
+                           [markdown-clj "0.9.65"]
                            [environ "1.0.0"]
                            [im.chit/cronj "1.4.3"]
                            [compojure "1.3.2"]
@@ -21,26 +23,25 @@
                            [clojurewerkz/neocons "3.1.0-beta2"]
                            [clojurewerkz/urly "2.0.0-alpha5"]
                            [clojure.joda-time "0.4.0"]
-                           [http-kit "2.1.16"]
+                           [http-kit "2.1.19"]
+                           [reagent-forms "0.4.6"]
+                           [reagent-utils "0.1.4"]
+                           [secretary "1.2.2"]
                            ]
 
+
             :cljsbuild {:builds
-                        [{:source-paths ["src-cljs"],
-                          :id           "dev",
+                        {:app
+                         {:source-paths ["src-cljs"]
                           :compiler
-                                        {:output-dir    "resources/public/js/",
-                                         :optimizations :none,
-                                         :output-to     "resources/public/js/app.js",
-                                         :source-map    true,
-                                         :pretty-print  true}}
-                         {:source-paths ["src-cljs"],
-                          :id           "release",
-                          :compiler
-                                        {:closure-warnings {:non-standard-jsdoc :off},
-                                         :optimizations    :advanced,
-                                         :output-to        "resources/public/js/app.js",
-                                         :output-wrapper   false,
-                                         :pretty-print     false}}]}
+                                        {:output-dir    "resources/public/js/out"
+                                         :externs       ["react/externs/react.js"]
+                                         :optimizations :none
+                                         :output-to     "resources/public/js/app.js"
+                                         :source-map    "resources/public/js/out.js.map"
+                                         :pretty-print  true}}}}
+
+            :clean-targets ^{:protect false} ["resources/public/js/out"]
 
             :min-lein-version "2.0.0"
             :uberjar-name "tropefest.jar"
@@ -50,7 +51,7 @@
             :main tropefest.core
 
             :plugins [[lein-ring "0.9.1"]
-                      [lein-cljsbuild "1.0.5"]
+                      [lein-cljsbuild "1.0.4"]
                       [lein-environ "1.0.0"]
                       [lein-ancient "0.6.0"]]
 
@@ -70,6 +71,14 @@
                                         :update-cron "0 /3 * * * * *"
                                         :update-size 3
                                         }
+                          :hooks       ['leiningen.cljsbuild]
+                          :cljsbuild
+                                       {:jar true
+                                        :builds
+                                             {:app
+                                              {:source-paths ["env/prod/cljs"]
+                                               :compiler     {:optimizations :advanced :pretty-print false}}}}
+
                           :aot         :all}
              :production {:ring {:open-browser? false
                                  :stacktraces?  false
@@ -82,11 +91,25 @@
              :dev        {:dependencies [[ring-mock "0.1.5"]
                                          [ring/ring-devel "1.3.2"]
                                          [pjstadig/humane-test-output "0.7.0"]
-                                         ]
+                                         [leiningen "2.5.1"]
+                                         [figwheel "0.2.5"]
+                                         [weasel "0.6.0"]
+                                         [com.cemerick/piggieback "0.1.6-SNAPSHOT"]]
+                          :plugins      [[lein-figwheel "0.2.3-SNAPSHOT"]]
+
+                          :figwheel
+                                        {:http-server-root "public"
+                                         :server-port      3449
+                                         :css-dirs         ["resources/public/css"]
+                                         :ring-handler     tropefest.handler/app}
+                          :repl-options {:init-ns tropefest.repl}
                           :injections   [(require 'pjstadig.humane-test-output)
                                          (pjstadig.humane-test-output/activate!)]
-                          :env          {:dev         true
-                                         :db-url      "http://neo4j:testneo4j@localhost:7474/db/data/"
-                                         :update-cron "0 /5 * * * * *"
-                                         :update-size 2
+                          :source-paths ["env/dev/clj"]
+                          :cljsbuild    {:builds {:app {:source-paths ["env/dev/cljs"]}}}
+                          :env          {:dev             true
+                                         :db-url          "http://neo4j:testneo4j@localhost:7474/db/data/"
+                                         :update-cron     "0 /5 * * * * *"
+                                         :update-size     2
+                                         :update-disabled true
                                          }}})
