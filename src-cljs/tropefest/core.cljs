@@ -79,26 +79,35 @@
                                                  goog.object/getKeys)) ; The graph keeps the neighbors as properties
                                            ))
 
+
+(defn in-seq? [s x]
+  (some? (some #{x} s)))
+
 (defn create-graph []
   (js/sigma.parsers.json "/static/test-data/basic-graph.json"
                          (clj->js {:container "container"
                                    :settings  {:defaultNodeColor "#ec5148"}})
                          (fn [s]
-                           (.log js/console s)
-                           (.log js/console (-> s .-graph .nodes))
-                           (map #(.log js/console %) (-> s .-graph .nodes))
+                           (goog.object/forEach (-> s .-graph .nodes)
+                                                #(aset % "originalColor" "#ff0000"))
                            (.bind s "clickNode"
                                   (fn [clicked]
-                                    (let [node-id (-> clicked .-data .-node .-id)
-                                          to-keep (.neighbors (.-graph s) (-> clicked .-data .-node .-id))]
-                                      (.log js/console (str "ID " node-id))
-                                      (.log js/console to-keep))
-                                    (.log js/console (str "Click: " clicked))))
-                           (map (fn [n1] (.log js/console (str "N: " n1))) (-> s .-graph .nodes))
-                           ;(.graph.nodes.forEach s (fn [n1] (.log js/console (str "N: " n1))))
-                           ;(.graph.edges.forEach s (fn [e1] (.log js/console (str "E: " e1))))
-                           ;(.bind "clickNode" s (fn [clicked] (.log js/console (str "Click: " clicked))))
-                           )
+                                    (let [nodes (-> s .-graph .nodes) ; Re-bind in case it changed
+                                          edges (-> s .-graph .edges)
+                                          node-id (-> clicked .-data .-node .-id)
+                                          nodes-to-keep (-> (.neighbors (.-graph s) node-id) (.concat node-id))
+                                          groups (group-by #(in-seq? nodes-to-keep (.-id %)) nodes)]
+                                      (doseq [node (groups true)] (aset node "color" "#ff0000"))
+                                      (doseq [node (groups false)] (aset node "color" "#eee"))
+                                      (.forEach edges       ; One idiomatic, one not as much
+                                                (fn [edge]
+                                                  (if (and
+                                                        (in-seq? nodes-to-keep (.-source edge))
+                                                        (in-seq? nodes-to-keep (.-target edge)))
+                                                    (aset edge "color" "#ff0000")
+                                                    (aset edge "color" "#eee"))))
+                                      (.refresh s)))
+                                  ))
                          ))
 
 

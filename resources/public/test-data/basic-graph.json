@@ -33,7 +33,8 @@
       "label": "edge case",
       "x": 3.25,
       "y": 2,
-      "size": 2
+      "size": 2,
+      "color": "#ff0000"
     }
   ],
   "edges": [
