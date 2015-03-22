@@ -20,6 +20,20 @@
       "x": 1,
       "y": 3,
       "size": 1
+    },
+    {
+      "id": "n3",
+      "label": "... ok an extra",
+      "x": 2.5,
+      "y": 3,
+      "size": 1.5
+    },
+    {
+      "id": "n4",
+      "label": "edge case",
+      "x": 3.25,
+      "y": 2,
+      "size": 2
     }
   ],
   "edges": [
@@ -37,6 +51,27 @@
       "id": "e2",
       "source": "n2",
       "target": "n0"
+    },
+    {
+      "id": "e3",
+      "source": "n3",
+      "target": "n0"
+    },
+    {
+      "id": "e4",
+      "source": "n3",
+      "target": "n1"
+    },
+    {
+      "id": "e5",
+      "source": "n4",
+      "target": "n1"
+    },
+    {
+      "id": "e6",
+      "source": "n4",
+      "target": "n3"
     }
+
   ]
 }

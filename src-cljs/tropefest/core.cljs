@@ -71,10 +71,35 @@
 
 ; Graph!
 
+(-> js/sigma .-classes .-graph (.addMethod "neighbors",
+                                           (fn [node-id]
+                                             (-> (js* "this")
+                                                 .-allNeighborsIndex
+                                                 (aget node-id)
+                                                 goog.object/getKeys)) ; The graph keeps the neighbors as properties
+                                           ))
+
 (defn create-graph []
   (js/sigma.parsers.json "/static/test-data/basic-graph.json"
                          (clj->js {:container "container"
-                                   :settings  {:defaultNodeColor "#ec5148"}})))
+                                   :settings  {:defaultNodeColor "#ec5148"}})
+                         (fn [s]
+                           (.log js/console s)
+                           (.log js/console (-> s .-graph .nodes))
+                           (map #(.log js/console %) (-> s .-graph .nodes))
+                           (.bind s "clickNode"
+                                  (fn [clicked]
+                                    (let [node-id (-> clicked .-data .-node .-id)
+                                          to-keep (.neighbors (.-graph s) (-> clicked .-data .-node .-id))]
+                                      (.log js/console (str "ID " node-id))
+                                      (.log js/console to-keep))
+                                    (.log js/console (str "Click: " clicked))))
+                           (map (fn [n1] (.log js/console (str "N: " n1))) (-> s .-graph .nodes))
+                           ;(.graph.nodes.forEach s (fn [n1] (.log js/console (str "N: " n1))))
+                           ;(.graph.edges.forEach s (fn [e1] (.log js/console (str "E: " e1))))
+                           ;(.bind "clickNode" s (fn [clicked] (.log js/console (str "Click: " clicked))))
+                           )
+                         ))
 
 
 (defn plot []
