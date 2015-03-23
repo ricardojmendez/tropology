@@ -71,7 +71,7 @@
                                         :update-cron "0 /3 * * * * *"
                                         :update-size 3
                                         }
-                          :hooks       ['leiningen.cljsbuild]
+                          :hooks       [leiningen.cljsbuild]
                           :cljsbuild
                                        {:jar true
                                         :builds
