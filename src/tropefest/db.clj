@@ -6,6 +6,7 @@
             [clojurewerkz.neocons.rest.cypher :as cy]
             [clojurewerkz.neocons.rest.relationships :as nrl]
             [clojurewerkz.neocons.rest.index :as nri]
+            [tropefest.base :as b]
             [environ.core :refer [env]]))
 
 
@@ -54,7 +55,9 @@
   "Queries for a node id on the properties. Does not filter by label. Notice
   that this is not the same as getting the node directly via its internal id."
   [conn id]
-  (let [match (first (cy/tquery conn "MATCH (v {id:{id}}) RETURN v" {:id id}))]
+  (let [label (b/label-from-id id)
+        query-str (str "MATCH (v:" label " {id:{id}}) RETURN v") ; Not a fan of not being able to pass the label as a parameter, but them's the breaks
+        match (first (cy/tquery conn query-str {:id id}))]
     (if (nil? match)
       nil
       (-> (match "v")

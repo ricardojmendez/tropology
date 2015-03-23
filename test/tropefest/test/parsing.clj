@@ -1,14 +1,7 @@
 (ns tropefest.test.parsing
   (:require [clojure.test :refer :all]
+            [tropefest.base :as b]
             [tropefest.parsing :refer :all]))
-
-
-(deftest test-label-from-id
-  (are [id label] (is (= (label-from-id id) label))
-        "Anime/CowboyBebop"     "Anime"
-        "Film/TheMatrix"        "Film"
-        "Some-Invalid-Format"   "Some-Invalid-Format"
-        ""                      "Unknown"))
 
 (deftest test-node-data-from-url
   (are [url result] (is (= (node-data-from-url url) result))
@@ -54,5 +47,5 @@
         node-data (-> loaded :res node-data-from-meta)
         links     (get-wiki-links (:res loaded) (:host node-data))]
     (is (= (count links) 732))
-    (is (= (count (filter #(.startsWith % base-url) links)) 732)))) ; All links start with the known base url
+    (is (= (count (filter #(.startsWith % b/base-url) links)) 732)))) ; All links start with the known base url
 
