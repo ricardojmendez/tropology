@@ -1,4 +1,4 @@
-(defproject tropefest "0.0.1-SNAPSHOT"
+(defproject tropefest "0.0.2-SNAPSHOT"
             :description "FIXME: write description"
             :url "http://example.com/FIXME"
 
