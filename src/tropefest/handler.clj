@@ -64,8 +64,14 @@
 
   (timbre/info (str "Updating " (:update-size env) " using " (:update-cron env)))
 
-  (seed-database)
-  (cronj/start! cj)
+
+  ; TODO: Make crawling a separate process we can start
+  (if (:update-disabled env)
+    (timbre/warn "AUTO-UPDATES ARE DISABLED")
+    (do
+      (seed-database)
+      (cronj/start! cj)))
+
 
   (if (env :dev) (parser/cache-off!))
 

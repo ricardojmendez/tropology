@@ -10,5 +10,6 @@ pom.xml.asc
 /.lein-*
 /.nrepl-port
 *~
-/app.js
-tropefest.log
+resources/public/js/app.js
+*.log
+resources/public/js/out/

@@ -1,0 +1,78 @@
+{
+  "nodes": [
+    {
+      "id": "n0",
+      "label": "A node",
+      "x": 0,
+      "y": 0,
+      "size": 3
+    },
+    {
+      "id": "n1",
+      "label": "Another node",
+      "x": 3,
+      "y": 1,
+      "size": 2
+    },
+    {
+      "id": "n2",
+      "label": "And a last one",
+      "x": 1,
+      "y": 3,
+      "size": 1
+    },
+    {
+      "id": "n3",
+      "label": "... ok an extra",
+      "x": 2.5,
+      "y": 3,
+      "size": 1.5
+    },
+    {
+      "id": "n4",
+      "label": "edge case",
+      "x": 3.25,
+      "y": 2,
+      "size": 2,
+      "color": "#ff0000"
+    }
+  ],
+  "edges": [
+    {
+      "id": "e0",
+      "source": "n0",
+      "target": "n1"
+    },
+    {
+      "id": "e1",
+      "source": "n1",
+      "target": "n2"
+    },
+    {
+      "id": "e2",
+      "source": "n2",
+      "target": "n0"
+    },
+    {
+      "id": "e3",
+      "source": "n3",
+      "target": "n0"
+    },
+    {
+      "id": "e4",
+      "source": "n3",
+      "target": "n1"
+    },
+    {
+      "id": "e5",
+      "source": "n4",
+      "target": "n1"
+    },
+    {
+      "id": "e6",
+      "source": "n4",
+      "target": "n3"
+    }
+
+  ]
+}
