@@ -40,17 +40,19 @@
 
     <script src="//code.jquery.com/jquery-2.0.3.min.js" type="text/javascript"></script>
     <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
-    <script src="/static/js/sigma.min.js"></script>
-    <script src="/static/js/sigma.parsers.json.min.js"></script>
+    <script src="/static/lib/sigma.min.js"></script>
+    <script src="/static/lib/sigma.parsers.json.min.js"></script>
     <script type="text/javascript">
         var context = "{{servlet-context}}";
     </script>
     {% if dev %}
+      DEV
       <script src="//cdnjs.cloudflare.com/ajax/libs/react/0.11.2/react.js"></script>
       {% script "/js/out/goog/base.js" %}
       {% script "/js/app.js" %}
       <script type="text/javascript">goog.require("tropefest.app");</script>
     {% else %}
+      NO DEV
       <script src="//cdnjs.cloudflare.com/ajax/libs/react/0.11.2/react.min.js"></script>
       {% script "/js/app.js" %}
     {% endif %}

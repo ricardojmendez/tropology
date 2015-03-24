@@ -41,7 +41,7 @@
                                          :source-map    "resources/public/js/out.js.map"
                                          :pretty-print  true}}}}
 
-            :clean-targets ^{:protect false} ["resources/public/js/out"]
+            :clean-targets ^{:protect false} ["resources/public/js"]
 
             :min-lein-version "2.0.0"
             :uberjar-name "tropefest.jar"
