@@ -84,7 +84,7 @@
   (some? (some #{x} s)))
 
 (defn create-graph []
-  (js/sigma.parsers.json "/static/test-data/basic-graph.json"
+  (js/sigma.parsers.json "/api/network/Anime/CowboyBebop"     ; "/static/test-data/basic-graph.json"
                          (clj->js {:container "container"
                                    :settings  {:defaultNodeColor "#ec5148"}})
                          (fn [s]
