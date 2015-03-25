@@ -79,6 +79,19 @@
         (query-nodes-to-crawl (get-test-connection) 20 5))) ; ... so we can check every node returned is indeed under
   )
 
+(deftest test-query-nodes-sort-order
+  (wipe-test-db)
+  (create-test-nodes 20 false)
+  (dotimes [i 16]
+    ; We are going to limit the number of nodes every time we query.
+    ; Given that the nextupdate is used as the url (for this test), and
+    ; that the nodes should be sorted by nextupdate, every url returned
+    ; should be lower than the limit
+    (is (every?
+          #(< (Integer. %) i)
+          (query-nodes-to-crawl (get-test-connection) i)))
+    ))
+
 
 
 

@@ -70,8 +70,10 @@
   ([conn node-limit]
    (query-nodes-to-crawl conn node-limit (.getMillis (j/date-time))))
   ([conn node-limit time-limit]
-   (->> (cy/tquery conn "MATCH (v) WHERE v.isredirect = FALSE AND v.nextupdate < {now} RETURN v.url LIMIT {limit}" {:now time-limit :limit node-limit})
-        (map #(% "v.url")))))
+   (if (> node-limit 0)                                     ; If we pass a limit of 0, applying ORDER BY will raise an exception
+     (->> (cy/tquery conn "MATCH (v) WHERE v.isredirect = FALSE AND v.nextupdate < {now} RETURN v.url ORDER BY v.nextupdate LIMIT {limit}" {:now time-limit :limit node-limit})
+          (map #(% "v.url")))
+     '())))
 
 (defn mark-if-redirect!
   "Marks all nodes identified by a URL as being a redirect, if true"
