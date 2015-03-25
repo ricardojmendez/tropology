@@ -1,5 +1,6 @@
 (ns tropefest.handler
   (:require [compojure.core :refer [defroutes routes]]
+            [tropefest.routes.api :refer [api-routes]]
             [tropefest.routes.home :refer [home-routes]]
             [tropefest.middleware
              :refer [development-middleware production-middleware]]
@@ -92,6 +93,7 @@
 
 (def app
   (-> (routes
+        api-routes
         home-routes
         base-routes)
       development-middleware

@@ -27,6 +27,8 @@
                            [reagent-forms "0.4.6"]
                            [reagent-utils "0.1.4"]
                            [secretary "1.2.2"]
+                           [liberator "0.12.2"]
+                           [cheshire "5.4.0"]
                            ]
 
 
