@@ -3,6 +3,7 @@
              :refer [defresource resource request-method-in]]
             [compojure.core :refer [defroutes GET ANY]]
             [com.numergent.url-tools :as ut]
+            [tropefest.api :as api]
             [tropefest.db :as db]))
 
 (defresource home
@@ -26,14 +27,8 @@
              :allowed-methods [:get]
              :handle-ok (fn [request]
                           (let [{{{label :label, name :name} :params} :request} request
-                                id (str label "/" name)]
-                            {:nodes [{:id "n0" :label "A node" :x 0 :y 0 :size 3}
-                                     {:id "n1" :label "Another node" :x 3 :y 1 :size 2}
-                                     {:id "n2" :label "And a last node" :x 1 :y 3 :size 1}
-                                     ]
-                             :edges [{:id "e1" :source "n0" :target "n1"}
-                                     {:id "e2" :source "n1" :target "n2"}
-                                     {:id "e3" :source "n2" :target "n0"}]}))
+                                code (str label "/" name)]
+                            (api/network-from-node code)))
              :available-media-types ["application/json"])
 
 
