@@ -67,11 +67,13 @@
   "Return the nodes that need to be crawled according to their nextupdate timestamp"
   ([conn]
    (query-nodes-to-crawl conn 100))
-  ([conn limit]
-   (let [now (.getMillis (j/date-time))
-         matches (cy/tquery conn "MATCH (v) WHERE v.isredirect = FALSE AND v.nextupdate < {now} RETURN v.url LIMIT {limit}" {:now now :limit limit})]
-     (->> matches
-          (map #(% "v.url"))))))
+  ([conn node-limit]
+   (query-nodes-to-crawl conn node-limit (.getMillis (j/date-time))))
+  ([conn node-limit time-limit]
+   (if (> node-limit 0)                                     ; If we pass a limit of 0, applying ORDER BY will raise an exception
+     (->> (cy/tquery conn "MATCH (v) WHERE v.isredirect = FALSE AND v.nextupdate < {now} RETURN v.url ORDER BY v.nextupdate LIMIT {limit}" {:now time-limit :limit node-limit})
+          (map #(% "v.url")))
+     '())))
 
 (defn mark-if-redirect!
   "Marks all nodes identified by a URL as being a redirect, if true"
