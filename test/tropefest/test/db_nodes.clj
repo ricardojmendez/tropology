@@ -46,8 +46,32 @@
                          ))))
 
 
+(deftest test-query-nodes-when-empty
+  (wipe-test-db)
+  (is (= (count (query-nodes-to-crawl (get-test-connection) 100)) 0))
+  (is (= (query-nodes-to-crawl (get-test-connection) 100) '())))
+
+
+(defn create-test-nodes [n isredirect]
+  (dotimes [i n]
+    (create-node! (get-test-connection) "TestNode" {:id         (str "TestNode/" i)
+                                                    :nextupdate i
+                                                    :isredirect isredirect})))
+
+(deftest test-query-nodes-node-limit
+  (wipe-test-db)
+  (create-test-nodes 30 false)                              ; Create non-redirect nodes
+  (is (= (count (query-nodes-to-crawl (get-test-connection) 100)) 30))
+  (is (= (count (query-nodes-to-crawl (get-test-connection) 15)) 15))
+  (is (= (query-nodes-to-crawl (get-test-connection) 0) '())))
+
+
+
+
+
+
 (deftest test-relate-nodes
-  ; We don' wipe the db to ensure association works even if there were previous nodes
+  ; We don't wipe the db to ensure association works even if there were previous nodes
   (let [conn (get-test-connection)
         n1 (create-node! conn "TestNode" {:id "TestNode/N1"})
         n2 (create-node! conn "TestNode" {:id "TestNode/N2"})
