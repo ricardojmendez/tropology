@@ -56,6 +56,7 @@
   (dotimes [i n]
     (create-node! (get-test-connection) "TestNode" {:id         (str "TestNode/" i)
                                                     :nextupdate i
+                                                    :url        (str i) ; Keep the i as the url for ease of testing
                                                     :isredirect isredirect})))
 
 (deftest test-query-nodes-node-limit
@@ -66,6 +67,17 @@
   (is (= (query-nodes-to-crawl (get-test-connection) 0) '())))
 
 
+(deftest test-query-nodes-time-limit
+  (wipe-test-db)
+  (create-test-nodes 15 false)
+  (create-test-nodes 3 true)
+  (dotimes [i 16]
+    (is (= (count (query-nodes-to-crawl (get-test-connection) 100 i)) i))) ; The number of nodes where the nextupdate time is under i is the i itself
+  (is (= (count (query-nodes-to-crawl (get-test-connection) 100 20)) 15)) ; All nodes are older than 100, we should get all
+  (is (every?
+        #(< (Integer. %) 5)                                 ; We were keeping in the URL, which will be the returned value, the same limit...
+        (query-nodes-to-crawl (get-test-connection) 20 5))) ; ... so we can check every node returned is indeed under
+  )
 
 
 
