@@ -11,14 +11,9 @@
 
 (defn wipe-test-db []
   (let [conn (get-test-connection)]
-    (cy/tquery conn "MATCH (n)-[r]-() DELETE n,r")          ; Delete notes with relationships
+    (cy/tquery conn "MATCH (n)-[r]-(m) DELETE n,r,m")       ; Delete notes with relationships
     (cy/tquery conn "MATCH (n) DELETE n")                   ; Delete singletons
     ))
-
-
-(deftest test-query-nodes-when-empty
-  (is (= (count (query-nodes-to-crawl (get-test-connection) 100)) 0))
-  (is (= (query-nodes-to-crawl (get-test-connection) 100) '())))
 
 
 (deftest test-create-node
