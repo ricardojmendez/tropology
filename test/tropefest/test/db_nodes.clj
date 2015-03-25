@@ -113,7 +113,7 @@
   (let [conn (get-test-connection)
         node (create-node! conn "TestNode" {:id "TestNode/First" :nextupdate 5 :url "http://localhost/"})
         id (:id node)
-        merged (merge-node conn id {:url "http://localhost/redirected/"})
+        merged (merge-node! conn id {:url "http://localhost/redirected/"})
         ]
     (is (= (:id node) (:id merged)))
     (is (= (get-in merged [:data :url]) "http://localhost/redirected/"))

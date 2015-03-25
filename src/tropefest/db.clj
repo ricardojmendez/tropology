@@ -93,7 +93,7 @@
       ; (nri/create conn label "nextupdate")
       node)))
 
-(defn merge-node
+(defn merge-node!
   "Updates an existing node, replacing all data items with the ones received,
   and retrieves the existing node."
   [conn ^long id data-items]
@@ -113,7 +113,7 @@
         id (get-in existing [:metadata :id])]
     (if (empty? existing)
       (create-node! conn (:label data-items) data-items)
-      (merge-node conn id data-items))))
+      (merge-node! conn id data-items))))
 
 (defn create-or-retrieve-node!
   "Creates a node from a connection with a label. If a node with the id
