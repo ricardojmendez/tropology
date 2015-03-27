@@ -87,13 +87,13 @@
          is-redirect (not= url (:url meta))
          meta-rd (assoc meta :isredirect is-redirect)
          node (db/create-or-merge-node! conn meta-rd)]
-     (db/mark-if-redirect! conn url is-redirect)             ; Feels like a hack, review.
+     (db/mark-if-redirect! conn url is-redirect)            ; Feels like a hack, review.
      (->>
        (get-wiki-links res (:host meta))
        (pmap node-data-from-url)
-       (map #(db/create-or-retrieve-node! conn %))           ; Nodes are only retrieved when linking to, not updated
-       (map #(db/relate-nodes! conn :LINKSTO node %))        ; Add link
-       doall))
+       (map #(db/create-or-retrieve-node! conn %))          ; Nodes are only retrieved when linking to, not updated
+       (map #(db/relate-nodes! conn :LINKSTO node %))       ; Add link
+       doall))                                              ; I could probably change this for a doseq to use less RAM
     ))
 
 

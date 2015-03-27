@@ -16,6 +16,13 @@
     ))
 
 
+(deftest test-id-to-match
+  (is (= (id-to-match "pref" "Label/Name") "(pref:Label {id:{id}})"))
+  (is (= (id-to-match "pref" "L/N" "idx") "(pref:L {id:{idx}})"))
+  (is (= (id-to-match "l" "N/Id") "(l:N {id:{id}})")))
+
+
+
 (deftest test-create-node
   (wipe-test-db)
   (let [node (create-node! (get-test-connection) "TestNode" {:id "TestNode/First" :nextupdate 5 :url "http://localhost/"})]
@@ -93,8 +100,6 @@
     ))
 
 
-
-
 (deftest test-relate-nodes
   ; We don't wipe the db to ensure association works even if there were previous nodes
   (let [conn (get-test-connection)
@@ -108,12 +113,56 @@
                         (:end rel) (:location-uri n2))
     ))
 
+
+(deftest test-query-from
+  (let [conn (get-test-connection)
+        n1 (create-node! conn "TestNode" {:id "TestNode/N1"})
+        n2 (create-node! conn "TestNode" {:id "TestNode/N2"})
+        n3 (create-node! conn "TestNode" {:id "TestNode/N3"})
+        _ (relate-nodes! conn :LINKSTO n1 n2)
+        _ (relate-nodes! conn :LINKSTO n1 n3)
+        _ (relate-nodes! conn :LINKSTO n2 n3)
+        ]
+    (let [r (query-from conn "TestNode/N1" :LINKSTO)]
+      (is (= (count r) 2))
+      (is (some #(= (% "id") "TestNode/N2") r))
+      (is (some #(= (% "id") "TestNode/N3") r)))
+    (let [r (query-from conn "TestNode/N2" :LINKSTO)]
+      (is (= (count r) 1))
+      (is (some #(= (% "id") "TestNode/N3") r)))
+    (let [r (query-from conn "TestNode/N3" :LINKSTO)]
+      (is (empty? r)))
+    ))
+
+(deftest test-query-to
+  (let [conn (get-test-connection)
+        n1 (create-node! conn "TestNode" {:id "TestNode/N1"})
+        n2 (create-node! conn "TestNode" {:id "TestNode/N2"})
+        n3 (create-node! conn "TestNode" {:id "TestNode/N3"})
+        _ (relate-nodes! conn :LINKSTO n1 n2)
+        _ (relate-nodes! conn :LINKSTO n1 n3)
+        _ (relate-nodes! conn :LINKSTO n2 n3)
+        ]
+    (let [r (query-to conn :LINKSTO "TestNode/N3")]
+      (is (= (count r) 2))
+      (is (some #(= (% "id") "TestNode/N1") r))
+      (is (some #(= (% "id") "TestNode/N2") r)))
+    (let [r (query-to conn :LINKSTO "TestNode/N2")]
+      (is (= (count r) 1))
+      (is (some #(= (% "id") "TestNode/N1") r)))
+    (let [r (query-to conn :LINKSTO "TestNode/N1")]
+      (is (empty? r)))
+    ))
+
+
+
+
 (deftest test-merge-node
   ; No need to wipe the db
   (let [conn (get-test-connection)
         node (create-node! conn "TestNode" {:id "TestNode/First" :nextupdate 5 :url "http://localhost/"})
         id (:id node)
-        merged (merge-node conn id {:url "http://localhost/redirected/"})
+        merged (merge-node! conn id {:url "http://localhost/redirected/"})
         ]
     (is (= (:id node) (:id merged)))
     (is (= (get-in merged [:data :url]) "http://localhost/redirected/"))
