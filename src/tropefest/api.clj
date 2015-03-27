@@ -17,7 +17,8 @@
   [i from to]
   {:id     (str "e" i)
    :source from
-   :target to})
+   :target to
+   :type "arrow"})                                    ; Could be line, curve, arrow or curvedArrow
 
 (defn edge-collection
   [node links-from links-to]

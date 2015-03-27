@@ -84,9 +84,14 @@
   (some? (some #{x} s)))
 
 (defn create-graph []
-  (js/sigma.parsers.json "/api/network/Anime/SamuraiFlamenco"     ; "/static/test-data/basic-graph.json"
-                         (clj->js {:container "container"
-                                   :settings  {:defaultNodeColor "#ec5148"}})
+  (js/sigma.parsers.json "/api/network/Anime/SamuraiFlamenco" ; "/static/test-data/basic-graph.json"
+                         (clj->js {
+                                   :renderer {:container (.getElementById js/document "container")
+                                              :type      "canvas"
+                                              }
+                                   :settings {:defaultNodeColor "#ec5148"
+                                              :edgeLabelSize    "proportional"
+                                              }})
                          (fn [s]
                            (goog.object/forEach (-> s .-graph .nodes)
                                                 #(aset % "originalColor" "#ff0000"))
