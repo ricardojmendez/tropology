@@ -14,17 +14,18 @@
 
 (defn edge
   "Returns an edge map"
-  [i from to]
+  [i from to color]
   {:id     (str "e" i)
    :source from
    :target to
-   :type "arrow"})                                    ; Could be line, curve, arrow or curvedArrow
+   :color  color
+   :type   "arrow"})                                        ; Could be line, curve, arrow or curvedArrow
 
 (defn edge-collection
   [node links-from links-to]
   (let [c (count links-from)
-        edges-from (map-indexed #(edge %1 (:id node) (%2 "id")) links-from)
-        edges-to (map-indexed #(edge (+ %1 c) (%2 "id") (:id node)) links-to)]
+        edges-from (map-indexed #(edge %1 (:id node) (%2 "id") "#ff3300") links-from)
+        edges-to (map-indexed #(edge (+ %1 c) (%2 "id") (:id node) "#0066ff") links-to)]
     (concat edges-from edges-to)))
 
 (defn node-range [n]
