@@ -20,7 +20,7 @@
                            [bouncer "0.3.2"]
                            [prone "0.8.1"]
                            [enlive "1.1.5"]
-                           [org.clojars.ricardojmendez/neocons "3.1.0-beta3-SNAPSHOT"]
+                           [clojurewerkz/neocons "3.1.0-beta3"]
                            [com.curiosity/urly "2.0.0-alpha6"]
                            [clojure.joda-time "0.4.0"]
                            [http-kit "2.1.19"]
