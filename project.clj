@@ -37,11 +37,12 @@
                          {:source-paths ["src-cljs"]
                           :compiler
                                         {:output-dir    "resources/public/js/out"
-                                         :externs       ["react/externs/react.js"]
+                                         :externs       ["react/externs/react.js" "resources/externs/sigma.js"]
                                          :optimizations :none
                                          :output-to     "resources/public/js/app.js"
                                          :source-map    "resources/public/js/out.js.map"
-                                         :pretty-print  true}}}}
+                                         :pretty-print  true
+                                         }}}}
 
             :clean-targets ^{:protect false} ["resources/public/js"]
 
