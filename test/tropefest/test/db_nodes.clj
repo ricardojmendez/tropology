@@ -11,14 +11,16 @@
 
 (defn wipe-test-db []
   (let [conn (get-test-connection)]
-    (cy/tquery conn "MATCH (n)-[r]-() DELETE n,r")          ; Delete notes with relationships
+    (cy/tquery conn "MATCH (n)-[r]-(m) DELETE n,r,m")       ; Delete notes with relationships
     (cy/tquery conn "MATCH (n) DELETE n")                   ; Delete singletons
     ))
 
 
-(deftest test-query-nodes-when-empty
-  (is (= (count (query-nodes-to-crawl (get-test-connection) 100)) 0))
-  (is (= (query-nodes-to-crawl (get-test-connection) 100) '())))
+(deftest test-id-to-match
+  (is (= (id-to-match "pref" "Label/Name") "(pref:Label {id:{id}})"))
+  (is (= (id-to-match "pref" "L/N" "idx") "(pref:L {id:{idx}})"))
+  (is (= (id-to-match "l" "N/Id") "(l:N {id:{id}})")))
+
 
 
 (deftest test-create-node
@@ -51,8 +53,55 @@
                          ))))
 
 
+(deftest test-query-nodes-when-empty
+  (wipe-test-db)
+  (is (= (count (query-nodes-to-crawl (get-test-connection) 100)) 0))
+  (is (= (query-nodes-to-crawl (get-test-connection) 100) '())))
+
+
+(defn create-test-nodes [n isredirect]
+  (dotimes [i n]
+    (create-node! (get-test-connection) "TestNode" {:id         (str "TestNode/" i)
+                                                    :nextupdate i
+                                                    :url        (str i) ; Keep the i as the url for ease of testing
+                                                    :isredirect isredirect})))
+
+(deftest test-query-nodes-node-limit
+  (wipe-test-db)
+  (create-test-nodes 30 false)                              ; Create non-redirect nodes
+  (is (= (count (query-nodes-to-crawl (get-test-connection) 100)) 30))
+  (is (= (count (query-nodes-to-crawl (get-test-connection) 15)) 15))
+  (is (= (query-nodes-to-crawl (get-test-connection) 0) '())))
+
+
+(deftest test-query-nodes-time-limit
+  (wipe-test-db)
+  (create-test-nodes 15 false)
+  (create-test-nodes 3 true)
+  (dotimes [i 16]
+    (is (= (count (query-nodes-to-crawl (get-test-connection) 100 i)) i))) ; The number of nodes where the nextupdate time is under i is the i itself
+  (is (= (count (query-nodes-to-crawl (get-test-connection) 100 20)) 15)) ; All nodes are older than 100, we should get all
+  (is (every?
+        #(< (Integer. %) 5)                                 ; We were keeping in the URL, which will be the returned value, the same limit...
+        (query-nodes-to-crawl (get-test-connection) 20 5))) ; ... so we can check every node returned is indeed under
+  )
+
+(deftest test-query-nodes-sort-order
+  (wipe-test-db)
+  (create-test-nodes 20 false)
+  (dotimes [i 16]
+    ; We are going to limit the number of nodes every time we query.
+    ; Given that the nextupdate is used as the url (for this test), and
+    ; that the nodes should be sorted by nextupdate, every url returned
+    ; should be lower than the limit
+    (is (every?
+          #(< (Integer. %) i)
+          (query-nodes-to-crawl (get-test-connection) i)))
+    ))
+
+
 (deftest test-relate-nodes
-  ; We don' wipe the db to ensure association works even if there were previous nodes
+  ; We don't wipe the db to ensure association works even if there were previous nodes
   (let [conn (get-test-connection)
         n1 (create-node! conn "TestNode" {:id "TestNode/N1"})
         n2 (create-node! conn "TestNode" {:id "TestNode/N2"})
@@ -64,12 +113,56 @@
                         (:end rel) (:location-uri n2))
     ))
 
+
+(deftest test-query-from
+  (let [conn (get-test-connection)
+        n1 (create-node! conn "TestNode" {:id "TestNode/N1"})
+        n2 (create-node! conn "TestNode" {:id "TestNode/N2"})
+        n3 (create-node! conn "TestNode" {:id "TestNode/N3"})
+        _ (relate-nodes! conn :LINKSTO n1 n2)
+        _ (relate-nodes! conn :LINKSTO n1 n3)
+        _ (relate-nodes! conn :LINKSTO n2 n3)
+        ]
+    (let [r (query-from conn "TestNode/N1" :LINKSTO)]
+      (is (= (count r) 2))
+      (is (some #(= (% "id") "TestNode/N2") r))
+      (is (some #(= (% "id") "TestNode/N3") r)))
+    (let [r (query-from conn "TestNode/N2" :LINKSTO)]
+      (is (= (count r) 1))
+      (is (some #(= (% "id") "TestNode/N3") r)))
+    (let [r (query-from conn "TestNode/N3" :LINKSTO)]
+      (is (empty? r)))
+    ))
+
+(deftest test-query-to
+  (let [conn (get-test-connection)
+        n1 (create-node! conn "TestNode" {:id "TestNode/N1"})
+        n2 (create-node! conn "TestNode" {:id "TestNode/N2"})
+        n3 (create-node! conn "TestNode" {:id "TestNode/N3"})
+        _ (relate-nodes! conn :LINKSTO n1 n2)
+        _ (relate-nodes! conn :LINKSTO n1 n3)
+        _ (relate-nodes! conn :LINKSTO n2 n3)
+        ]
+    (let [r (query-to conn :LINKSTO "TestNode/N3")]
+      (is (= (count r) 2))
+      (is (some #(= (% "id") "TestNode/N1") r))
+      (is (some #(= (% "id") "TestNode/N2") r)))
+    (let [r (query-to conn :LINKSTO "TestNode/N2")]
+      (is (= (count r) 1))
+      (is (some #(= (% "id") "TestNode/N1") r)))
+    (let [r (query-to conn :LINKSTO "TestNode/N1")]
+      (is (empty? r)))
+    ))
+
+
+
+
 (deftest test-merge-node
   ; No need to wipe the db
   (let [conn (get-test-connection)
         node (create-node! conn "TestNode" {:id "TestNode/First" :nextupdate 5 :url "http://localhost/"})
         id (:id node)
-        merged (merge-node conn id {:url "http://localhost/redirected/"})
+        merged (merge-node! conn id {:url "http://localhost/redirected/"})
         ]
     (is (= (:id node) (:id merged)))
     (is (= (get-in merged [:data :url]) "http://localhost/redirected/"))

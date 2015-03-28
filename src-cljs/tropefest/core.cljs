@@ -84,12 +84,20 @@
   (some? (some #{x} s)))
 
 (defn create-graph []
-  (js/sigma.parsers.json "/static/test-data/basic-graph.json"
-                         (clj->js {:container "container"
-                                   :settings  {:defaultNodeColor "#ec5148"}})
+  (js/sigma.parsers.json "/api/network/Anime/CowboyBebop" ; "/static/test-data/basic-graph.json"
+                         (clj->js {
+                                   :renderer {:container (.getElementById js/document "container")
+                                              :type      "canvas"
+                                              }
+                                   :settings {:defaultNodeColor "#ec5148"
+                                              :edgeLabelSize    "proportional"
+                                              }})
                          (fn [s]
                            (goog.object/forEach (-> s .-graph .nodes)
                                                 #(aset % "originalColor" "#ff0000"))
+                           (goog.object/forEach (-> s .-graph .edges)
+                                                #(aset % "originalColor" (aget % "color")))
+
                            (.bind s "clickNode"
                                   (fn [clicked]
                                     (let [nodes (-> s .-graph .nodes) ; Re-bind in case it changed
@@ -104,7 +112,7 @@
                                                   (if (and
                                                         (in-seq? nodes-to-keep (.-source edge))
                                                         (in-seq? nodes-to-keep (.-target edge)))
-                                                    (aset edge "color" "#ff0000")
+                                                    (aset edge "color" (aget edge "originalColor"))
                                                     (aset edge "color" "#eee"))))
                                       (.refresh s)))
                                   ))

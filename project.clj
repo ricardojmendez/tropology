@@ -20,13 +20,15 @@
                            [bouncer "0.3.2"]
                            [prone "0.8.1"]
                            [enlive "1.1.5"]
-                           [clojurewerkz/neocons "3.1.0-beta2"]
-                           [clojurewerkz/urly "2.0.0-alpha5"]
+                           [org.clojars.ricardojmendez/neocons "3.1.0-beta3-SNAPSHOT"]
+                           [com.curiosity/urly "2.0.0-alpha6"]
                            [clojure.joda-time "0.4.0"]
                            [http-kit "2.1.19"]
                            [reagent-forms "0.4.6"]
                            [reagent-utils "0.1.4"]
                            [secretary "1.2.2"]
+                           [liberator "0.12.2"]
+                           [cheshire "5.4.0"]
                            ]
 
 
@@ -41,7 +43,7 @@
                                          :source-map    "resources/public/js/out.js.map"
                                          :pretty-print  true}}}}
 
-            :clean-targets ^{:protect false} ["resources/public/js/out"]
+            :clean-targets ^{:protect false} ["resources/public/js"]
 
             :min-lein-version "2.0.0"
             :uberjar-name "tropefest.jar"
