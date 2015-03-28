@@ -73,6 +73,7 @@
                                         :db-url      "http://neo4j:testneo4j@localhost:7474/db/data/"
                                         :update-cron "0 /3 * * * * *"
                                         :update-size 3
+                                        :expiration  14
                                         }
                           :hooks       [leiningen.cljsbuild]
                           :cljsbuild
@@ -88,7 +89,8 @@
                                  :auto-reload?  false}
                           :env  {:db-url      "http://neo4j:testneo4j@localhost:7474/db/data/"
                                  :update-cron "0 /3 * * * * *"
-                                 :update-size 10}
+                                 :update-size 10
+                                 :expiration  14}
                           :aot  :all
                           }
              :dev        {:dependencies [[ring-mock "0.1.5"]
@@ -115,4 +117,5 @@
                                          :update-cron     "0 /5 * * * * *"
                                          :update-size     2
                                          :update-disabled true
+                                         :expiration      14
                                          }}})

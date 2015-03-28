@@ -20,7 +20,7 @@
 ; Timestamp functions
 ;
 
-(def update-period (j/days 7))
+(def update-period (j/days (Integer. (:expiration env))))
 
 (defn timestamp-next-update
   "Updates a data hashmap with the current time and the next time for update,
