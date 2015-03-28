@@ -33,7 +33,6 @@
       (js/setTimeout #(swap! seconds-elapsed inc) 1000)
       [:div
        "Seconds Elapsed: " @seconds-elapsed])))
-()
 
 (defn set-html! [el content]
   (set! (.-innerHTML el) content))
@@ -55,7 +54,6 @@
      [:ul.nav.navbar-nav
       (nav-item :home "Home" "")
       (nav-item :about "About" "about")
-      (nav-item :plot "Plot" "plot")
       ]]]])
 
 (defn about-page []
@@ -65,9 +63,6 @@
    ]
   )
 
-(defn home-page []
-  [:div
-   [:h2 "Welcome to ClojureScript"]])
 
 ; Graph!
 
@@ -126,9 +121,8 @@
    [:div {:id "container"}]])
 
 (def pages
-  {:home  home-page
-   :about about-page
-   :plot  plot})
+  {:home  plot
+   :about about-page})
 
 
 
@@ -138,8 +132,6 @@
 
 (defroute "/" [] (session/put! :page :home))
 (defroute "/about" [] (session/put! :page :about))
-(defroute "/plot" [] (session/put! :page :plot))
-(defroute "/plot" [] (session/put! :page :plot))
 
 
 (defn init! []
