@@ -7,6 +7,16 @@
   (:require-macros [secretary.core :refer [defroute]]))
 
 
+(defn row [label & body]
+  [:div.row
+   [:div.col-md-2 [:span label]]
+   [:div.col-md-3 body]])
+
+(defn text-input [id label]
+  (row label [:input.form-control {:field :text
+                                   :id    id}]))
+
+
 
 ; Some example functions from http://holmsand.github.io/reagent/
 ; Currently using them to test reagent via figwheel
@@ -60,11 +70,13 @@
   [:div
    [:main]
    [:div "this is the story of tropefest... work in progress"]
-   ]
-  )
+   ])
 
 
 ; Graph!
+
+
+(def state (atom {:graph null}))
 
 (-> js/sigma .-classes .-graph (.addMethod "neighbors",
                                            (fn [node-id]
@@ -78,8 +90,8 @@
 (defn in-seq? [s x]
   (some? (some #{x} s)))
 
-(defn create-graph []
-  (js/sigma.parsers.json "/api/network/Anime/CowboyBebop" ; "/static/test-data/basic-graph.json"
+(defn create-graph [code]
+  (js/sigma.parsers.json (str js/context "/api/network/" code)
                          (clj->js {
                                    :renderer {:container (.getElementById js/document "container")
                                               :type      "canvas"
@@ -88,6 +100,10 @@
                                               :edgeLabelSize    "proportional"
                                               }})
                          (fn [s]
+                           ; Feel a bit dirty about using an atom here, but calling this function
+                           ; is not returning the sigma object
+                           (swap! state assoc :graph s)
+                           ; Set the colors
                            (goog.object/forEach (-> s .-graph .nodes)
                                                 #(aset % "originalColor" "#ff0000"))
                            (goog.object/forEach (-> s .-graph .edges)
@@ -113,18 +129,26 @@
                                   ))
                          ))
 
+(defn redraw-graph []
+  (let [current (:graph @state)]                            ; Must be set by importer on creation
+    (if current
+      (do
+        (.kill current)
+        (swap! state assoc :graph nil)))
+    (create-graph (-> (.getElementById js/document "trope-code") .-value))
+    ))
+
 
 (defn plot []
   [:div
+   (text-input :trope-code "Trope code:")
    [:input {:type     "button" :value "Graph!"
-            :on-click #(create-graph)}]
+            :on-click #(redraw-graph)}]
    [:div {:id "container"}]])
 
 (def pages
   {:home  plot
    :about about-page})
-
-
 
 
 (defn page []
