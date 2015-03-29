@@ -70,7 +70,7 @@
   that this is not the same as getting the node directly via its internal id."
   [conn id]
   (let [query-str (str "MATCH  " (id-to-match "v" id) " RETURN v")
-        match (first (cy/tquery conn query-str {:id id}))]
+        match     (first (cy/tquery conn query-str {:id id}))]
     (if (nil? match)
       nil
       (-> (match "v")
@@ -142,7 +142,7 @@
   Data-items is expected to include the label."
   [conn data-items]
   (let [existing (query-by-id conn (:id data-items))
-        id (get-in existing [:metadata :id])]
+        id       (get-in existing [:metadata :id])]
     (if (empty? existing)
       (create-node! conn (:label data-items) data-items)
       (merge-node! conn id data-items))))
@@ -152,7 +152,7 @@
   already exists, the node is retrieved and returned."
   [conn data-items]
   (let [existing (query-by-id conn (:id data-items))
-        id (get-in existing [:metadata :id])]
+        id       (get-in existing [:metadata :id])]
     (if (empty? existing)
       (create-node! conn (:label data-items) data-items)
       (nn/get conn id))))

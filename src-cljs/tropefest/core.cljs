@@ -113,11 +113,11 @@
 
                            (.bind s "clickNode"
                                   (fn [clicked]
-                                    (let [nodes (-> s .-graph .nodes) ; Re-bind in case it changed
-                                          edges (-> s .-graph .edges)
-                                          node-id (-> clicked .-data .-node .-id)
+                                    (let [nodes         (-> s .-graph .nodes) ; Re-bind in case it changed
+                                          edges         (-> s .-graph .edges)
+                                          node-id       (-> clicked .-data .-node .-id)
                                           nodes-to-keep (-> (.neighbors (.-graph s) node-id) (.concat node-id))
-                                          groups (group-by #(in-seq? nodes-to-keep (.-id %)) nodes)]
+                                          groups        (group-by #(in-seq? nodes-to-keep (.-id %)) nodes)]
                                       (doseq [node (groups true)] (aset node "color" "#ff0000"))
                                       (doseq [node (groups false)] (aset node "color" "#eee"))
                                       (.forEach edges       ; One idiomatic, one not as much
