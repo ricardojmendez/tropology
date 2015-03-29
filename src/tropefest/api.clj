@@ -2,14 +2,23 @@
   (:require [tropefest.db :as db]))
 
 
+(defn node-size [rel-count]
+  (cond
+    (nil? rel-count) 0.5
+    (< rel-count 10) 2
+    (< rel-count 100) 4
+    (< rel-count 500) 8
+    (< rel-count 1000) 16
+    :else 32
+    ))
 
 (defn transform-node
   "Transforms a node into the expected map values adds the coordinates"
   [node x y]
-  (let [stringed (clojure.walk/stringify-keys node)]
+  (let [stringed (clojure.walk/stringify-keys node)]        ; Stringify them for consistency, since we'll get some notes that are from a query
     (-> stringed
         (select-keys ["id" "url" "title"])
-        (assoc "x" x "y" y "size" 3 "label" (stringed "id")))))
+        (assoc "x" x "y" y "size" (node-size (stringed "incoming")) "label" (stringed "id")))))
 
 (defn edge
   "Returns an edge map"

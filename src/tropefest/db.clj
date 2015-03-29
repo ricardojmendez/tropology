@@ -109,7 +109,7 @@
   We could probably write it getting the relationships and walking through
   them, but going with cypher for now to test."
   [conn ^String code rel]
-  (let [query-str (str "MATCH " (id-to-match "o" code "id") "-[" rel "]->(v) RETURN DISTINCT v.id as id,v.url as url, v.title as title")]
+  (let [query-str (str "MATCH " (id-to-match "o" code "id") "-[" rel "]->(v) RETURN DISTINCT v.id as id,v.url as url, v.title as title, v.incoming as incoming")]
     (cy/tquery conn query-str {:id code})))
 
 (defn query-to
@@ -117,7 +117,7 @@
   Yes, the parameter order is the opposite from query-links-from,
   since I think it better indicates the relationship."
   [conn rel ^String code]
-  (let [query-str (str "MATCH " (id-to-match "o" code "id") "<-[" rel "]-(v) RETURN DISTINCT v.id as id,v.url as url, v.title as title")]
+  (let [query-str (str "MATCH " (id-to-match "o" code "id") "<-[" rel "]-(v) RETURN DISTINCT v.id as id,v.url as url, v.title as title, v.incoming as incoming")]
     (cy/tquery conn query-str {:id code})))
 
 
