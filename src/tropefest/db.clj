@@ -20,7 +20,7 @@
 ; Timestamp functions
 ;
 
-(def update-period (j/days 7))
+(def update-period (j/days (Integer. (:expiration env))))
 
 (defn timestamp-next-update
   "Updates a data hashmap with the current time and the next time for update,
@@ -84,7 +84,7 @@
    (query-nodes-to-crawl conn node-limit (.getMillis (j/date-time))))
   ([conn node-limit time-limit]
    (if (> node-limit 0)                                     ; If we pass a limit of 0, applying ORDER BY will raise an exception
-     (->> (cy/tquery conn "MATCH (v) WHERE v.isredirect = FALSE AND v.nextupdate < {now} RETURN v.url ORDER BY v.nextupdate LIMIT {limit}" {:now time-limit :limit node-limit})
+     (->> (cy/tquery conn "MATCH (v) WHERE v.isredirect = FALSE AND v.error is null AND v.nextupdate < {now} RETURN v.url ORDER BY v.nextupdate LIMIT {limit}" {:now time-limit :limit node-limit})
           (map #(% "v.url")))
      '())))
 
