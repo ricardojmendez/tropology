@@ -1,6 +1,6 @@
-(defproject tropefest "0.0.2-SNAPSHOT"
-            :description "FIXME: write description"
-            :url "http://example.com/FIXME"
+(defproject tropefest "0.0.4-SNAPSHOT"
+            :description "Tropefest! ... While we get a better name..."
+            :url "http://numergent.com/"
 
             :dependencies [[org.clojure/clojure "1.6.0"]
                            [org.clojure/clojurescript "0.0-3123" :scope "provided"]
