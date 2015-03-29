@@ -17,38 +17,6 @@
                                    :id    id}]))
 
 
-
-; Some example functions from http://holmsand.github.io/reagent/
-; Currently using them to test reagent via figwheel
-;
-; For instance:
-;
-; (def e (aget (js/document.getElementsByTagName "main") 0))
-; (reagent/render [c/timer-component] e)
-; (reagent/render [c/counting-component] e)
-
-(def click-count (atom 0))
-(def seconds-elapsed (atom 0))
-
-(defn counting-component []
-  [:div
-   "The atom " [:code "click-count"] " has value: "
-   @click-count ". "
-   [:input {:type     "button" :value "Click me!"
-            :on-click #(swap! click-count inc)}]])
-
-(defn timer-component []
-  (let [seconds-elapsed (atom 0)]
-    (fn []
-      (js/setTimeout #(swap! seconds-elapsed inc) 1000)
-      [:div
-       "Seconds Elapsed: " @seconds-elapsed])))
-
-(defn set-html! [el content]
-  (set! (.-innerHTML el) content))
-
-
-
 ; Original code:
 
 (defn nav-item [tag label url]
