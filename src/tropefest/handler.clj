@@ -20,28 +20,58 @@
            (route/resources "/")
            (route/not-found "Not Found"))
 
-(defn seed-database []
-  (timbre/info "Seeding...")
-  (if-not (db/query-by-id (db/get-connection) "Anime/SamuraiFlamenco")
-    (->
-      (p/load-resource-url "http://tvtropes.org/pmwiki/pmwiki.php/Anime/SamuraiFlamenco")
-      p/save-page-links!)))
 
-(defn update-handler [t opts]
+;
+; Tasks
+;
+
+(defn crawl-handler [t opts]
   (timbre/info (str "Remaining " (count (db/query-nodes-to-crawl (db/get-connection) 9999999)) " updating " (:total opts) "... "))
   (try
     (p/crawl-and-update! (db/get-connection) (Integer. (:total opts)))
+    (catch Throwable t (timbre/error (str "Exception while crawling: " t)))
+    )
+  (timbre/info "Done crawling."))
+
+(defn update-handler [t opts]
+  (timbre/info "Updating link totals")
+  (try
+    (db/update-link-count! (db/get-connection))
     (catch Throwable t (timbre/error (str "Exception while updating: " t)))
     )
-  (timbre/info "Done"))
+  (timbre/info "Done updating."))
+
+
+
+(def crawl-task
+  {:id       "crawl-task"
+   :handler  crawl-handler
+   :schedule (:update-cron env)
+   :opts     {:total (:update-size env)}})
 
 (def update-task
   {:id       "update-task"
    :handler  update-handler
-   :schedule (:update-cron env)
-   :opts     {:total (:update-size env)}})
+   :schedule "0 0 /2 * * * *"
+   :opts     {}})
 
-(def cj (cronj/cronj :entries [update-task]))
+(def cj (cronj/cronj :entries [crawl-task update-task]))
+
+
+;
+; Functions
+;
+
+(defn seed-database []
+  (do
+    (timbre/info "Seeding...")
+    (if-not (db/query-by-id (db/get-connection) "Anime/SamuraiFlamenco")
+      (->
+        (p/load-resource-url "http://tvtropes.org/pmwiki/pmwiki.php/Anime/SamuraiFlamenco")
+        p/save-page-links!))
+    (update-handler nil nil)
+    (timbre/info "Done seeding.")))
+
 
 (defn init
   "init will be called once when
