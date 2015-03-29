@@ -20,9 +20,10 @@
         t             (Throwable. "Oopsy")
         logged-node   (log-node-exception! conn url t)]
     (is (not= logged-node nil))
-    (is (get-in original-node [:data :isredirect]))                        ; We did create a redirect node
-    (is (get-in logged-node [:data :isredirect]))                 ; Redirect value did not change
+    (is (get-in original-node [:data :isredirect]))         ; We did create a redirect node
+    (is (get-in logged-node [:data :isredirect]))           ; Redirect value did not change
     (is (nil? (get-in original-node [:data :error])))
+    (is (get-in logged-node [:data :hasError]))
     (is (= (get-in logged-node [:data :error]) "Oopsy"))))
 
 
@@ -31,14 +32,12 @@
 ; Parsing
 ;
 
-(deftest test-save-page-links-local
+
+(deftest test-record-page-local
   ; Slow test, saving 732 nodes ain't cheap
   (tdb/wipe-test-db)
-  (let [name   (str tp/test-file-path "CowboyBebop.html")
-        conn   (tdb/get-test-connection)
-        loaded (load-resource-url name)
-        saved  (save-page-links! conn loaded)]
-    ; (println saved)
+  (let [path  (str tp/test-file-path "CowboyBebop.html")
+        conn  (tdb/get-test-connection)
+        saved (record-page! conn path)]
     (is (= (count saved) 732))
     ))
-

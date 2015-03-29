@@ -64,20 +64,21 @@
     (create-node! (get-test-connection) "TestNode" {:id         (str "TestNode/" i)
                                                     :nextupdate i
                                                     :url        (str i) ; Keep the i as the url for ease of testing
-                                                    :isredirect isredirect})))
+                                                    :isredirect isredirect
+                                                    :hasError   false})))
 
 (deftest test-query-nodes-node-limit
   (wipe-test-db)
   (create-test-nodes 30 false)                              ; Create non-redirect nodes
-  (is (= (count (query-nodes-to-crawl (get-test-connection) 100)) 30))
-  (is (= (count (query-nodes-to-crawl (get-test-connection) 15)) 15))
+  (is (= 30 (count (query-nodes-to-crawl (get-test-connection) 100))))
+  (is (= 15 (count (query-nodes-to-crawl (get-test-connection) 15))))
   (is (= (query-nodes-to-crawl (get-test-connection) 0) '())))
 
 
 (deftest test-query-nodes-node-skip-errors
   (wipe-test-db)
   (create-test-nodes 30 false)
-  (create-or-merge-node! (get-test-connection) {:id "TestNode/10" :label "TestNode" :error "Oopsy"})
+  (create-or-merge-node! (get-test-connection) {:id "TestNode/10" :label "TestNode" :hasError true :error "Oopsy"})
   (is (= (count (query-nodes-to-crawl (get-test-connection) 100)) 29)) ; We skip the error node
   (is (= (count (query-nodes-to-crawl (get-test-connection) 15)) 15)) ; We can still find 15 nodes to crawl
   )
@@ -112,9 +113,9 @@
 (deftest test-relate-nodes
   ; We don't wipe the db to ensure association works even if there were previous nodes
   (let [conn (get-test-connection)
-        n1 (create-node! conn "TestNode" {:id "TestNode/N1"})
-        n2 (create-node! conn "TestNode" {:id "TestNode/N2"})
-        rel (relate-nodes! conn :LINKSTO n1 n2)]
+        n1   (create-node! conn "TestNode" {:id "TestNode/N1"})
+        n2   (create-node! conn "TestNode" {:id "TestNode/N2"})
+        rel  (relate-nodes! conn :LINKSTO n1 n2)]
     (is (not= rel nil))
     (are [query result] (= query result)
                         (:type rel) "LINKSTO"
@@ -125,12 +126,12 @@
 
 (deftest test-query-from
   (let [conn (get-test-connection)
-        n1 (create-node! conn "TestNode" {:id "TestNode/N1"})
-        n2 (create-node! conn "TestNode" {:id "TestNode/N2"})
-        n3 (create-node! conn "TestNode" {:id "TestNode/N3"})
-        _ (relate-nodes! conn :LINKSTO n1 n2)
-        _ (relate-nodes! conn :LINKSTO n1 n3)
-        _ (relate-nodes! conn :LINKSTO n2 n3)
+        n1   (create-node! conn "TestNode" {:id "TestNode/N1"})
+        n2   (create-node! conn "TestNode" {:id "TestNode/N2"})
+        n3   (create-node! conn "TestNode" {:id "TestNode/N3"})
+        _    (relate-nodes! conn :LINKSTO n1 n2)
+        _    (relate-nodes! conn :LINKSTO n1 n3)
+        _    (relate-nodes! conn :LINKSTO n2 n3)
         ]
     (let [r (query-from conn "TestNode/N1" :LINKSTO)]
       (is (= (count r) 2))
@@ -145,12 +146,12 @@
 
 (deftest test-query-to
   (let [conn (get-test-connection)
-        n1 (create-node! conn "TestNode" {:id "TestNode/N1"})
-        n2 (create-node! conn "TestNode" {:id "TestNode/N2"})
-        n3 (create-node! conn "TestNode" {:id "TestNode/N3"})
-        _ (relate-nodes! conn :LINKSTO n1 n2)
-        _ (relate-nodes! conn :LINKSTO n1 n3)
-        _ (relate-nodes! conn :LINKSTO n2 n3)
+        n1   (create-node! conn "TestNode" {:id "TestNode/N1"})
+        n2   (create-node! conn "TestNode" {:id "TestNode/N2"})
+        n3   (create-node! conn "TestNode" {:id "TestNode/N3"})
+        _    (relate-nodes! conn :LINKSTO n1 n2)
+        _    (relate-nodes! conn :LINKSTO n1 n3)
+        _    (relate-nodes! conn :LINKSTO n2 n3)
         ]
     (let [r (query-to conn :LINKSTO "TestNode/N3")]
       (is (= (count r) 2))
@@ -168,9 +169,9 @@
 
 (deftest test-merge-node
   ; No need to wipe the db
-  (let [conn (get-test-connection)
-        node (create-node! conn "TestNode" {:id "TestNode/First" :nextupdate 5 :url "http://localhost/"})
-        id (:id node)
+  (let [conn   (get-test-connection)
+        node   (create-node! conn "TestNode" {:id "TestNode/First" :nextupdate 5 :url "http://localhost/"})
+        id     (:id node)
         merged (merge-node! conn id {:url "http://localhost/redirected/"})
         ]
     (is (= (:id node) (:id merged)))
@@ -185,9 +186,9 @@
 (deftest test-create-or-merge
   (wipe-test-db)
   ; First let's test creating from scratch
-  (let [conn (get-test-connection)
+  (let [conn       (get-test-connection)
         data-items {:id "TestNode/CoM" :label "TestNode" :url "http://changeme"}
-        node (create-or-merge-node! conn data-items)]
+        node       (create-or-merge-node! conn data-items)]
     (is (not= node nil))
     (is (= (get-in node [:data :id]) "TestNode/CoM"))
     (is (= (get-in node [:data :url]) "http://changeme"))
@@ -202,9 +203,9 @@
 (deftest test-create-or-retrieve
   (wipe-test-db)
   ; First let's test creating from scratch
-  (let [conn (get-test-connection)
+  (let [conn       (get-test-connection)
         data-items {:id "TestNode/CoM" :label "TestNode" :url "http://original"}
-        node (create-or-retrieve-node! conn data-items)]
+        node       (create-or-retrieve-node! conn data-items)]
     (is (not= node nil))
     (is (= (get-in node [:data :id]) "TestNode/CoM"))
     (is (= (get-in node [:data :url]) "http://original"))

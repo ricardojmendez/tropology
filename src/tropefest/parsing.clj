@@ -37,11 +37,12 @@
   we care about like the node label."
   [res]
   (let [og-url (content-from-meta res "og:url")
-        id (-> (u/path-of og-url) (s/replace b/base-path ""))]
+        id     (-> (u/path-of og-url) (s/replace b/base-path ""))]
     {:id         id
      :label      (b/label-from-id id)
      :url        og-url
      :isredirect false                                      ; Nodes have to be explicitly tagged as being redirects
+     :hasError   false
      :host       (ut/host-string-of og-url)
      :title      (content-from-meta res "og:title")
      :image      (content-from-meta res "og:image")
@@ -58,6 +59,7 @@
        :host       (ut/host-string-of url)
        :url        url
        :isredirect false                                    ; Nodes have to be explicitly tagged as being redirects
+       :hasError   false
        })
     nil))
 
@@ -65,7 +67,7 @@
   "Obtains the wiki links from a html-resource.  Assumes that there will be a
    meta tag with property og:url where it can get the site url from."
   ([res]
-   (let [og-url (content-from-meta res "og:url")
+   (let [og-url  (content-from-meta res "og:url")
          og-host (ut/host-string-of og-url)]
      (get-wiki-links res og-host)))
   ([res host]
@@ -84,10 +86,10 @@
   ([pack]
    (save-page-links! (db/get-connection) pack))
   ([conn {url :url res :res}]
-   (let [meta (-> (node-data-from-meta res) db/timestamp-next-update)
+   (let [meta        (-> (node-data-from-meta res) db/timestamp-next-update)
          is-redirect (not= url (:url meta))
-         meta-rd (assoc meta :isredirect is-redirect)
-         node (db/create-or-merge-node! conn meta-rd)]
+         meta-rd     (assoc meta :isredirect is-redirect)
+         node        (db/create-or-merge-node! conn meta-rd)]
      (db/mark-if-redirect! conn url is-redirect)            ; Feels like a hack, review.
      (->>
        (get-wiki-links res (:host meta))
@@ -103,23 +105,23 @@
   [conn ^String url ^Throwable t]
   (let [update-data (-> (node-data-from-url url)
                         (select-keys [:id :label])
-                        (assoc :error (.getMessage t)))]
+                        (assoc :hasError true :error (.getMessage t)))]
     (timbre/error (str "Exception on " url " : " (.getMessage t)))
     (doall (db/create-or-merge-node! conn update-data))))
 
 (defn record-page!
-  "Attempts to crawl a url. If there's an exception, it marks the url as having an error.
+  "Attempts to obtain the links from a url and save them.
+  If there's an exception, it marks the url as having an error.
   Created this because at least one page is causing a 'too many redirects' error."
   [conn url]
   (try
-    (->> url
-         (map load-resource-url)
-         (pmap #(save-page-links! conn %))
-         doall)
+    (->> (load-resource-url url)
+         (save-page-links! conn))
     (catch Throwable t (log-node-exception! conn url t))))
 
 
 (defn crawl-and-update!
   [conn limit]
   (->> (db/query-nodes-to-crawl conn limit)
-       (record-page! conn)))
+       (pmap #(record-page! conn %))
+       doall))
