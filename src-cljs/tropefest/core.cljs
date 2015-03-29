@@ -76,7 +76,7 @@
 ; Graph!
 
 
-(def state (atom {:graph null}))
+(def state (atom {:sigma null}))
 
 (-> js/sigma .-classes .-graph (.addMethod "neighbors",
                                            (fn [node-id]
@@ -102,7 +102,9 @@
                          (fn [s]
                            ; Feel a bit dirty about using an atom here, but calling this function
                            ; is not returning the sigma object
-                           (swap! state assoc :graph s)
+                           (swap! state assoc :sigma s)
+                           (.startForceAtlas2 s {:worker true :barnesHutOptimize false})
+                           (js/setTimeout #(.stopForceAtlas2 s) 1500)
                            ; Set the colors
                            (goog.object/forEach (-> s .-graph .nodes)
                                                 #(aset % "originalColor" "#ff0000"))
@@ -130,11 +132,11 @@
                          ))
 
 (defn redraw-graph []
-  (let [current (:graph @state)]                            ; Must be set by importer on creation
+  (let [current (:sigma @state)]                            ; Must be set by importer on creation
     (if current
       (do
         (.kill current)
-        (swap! state assoc :graph nil)))
+        (swap! state assoc :sigma nil)))
     (create-graph (-> (.getElementById js/document "trope-code") .-value))
     ))
 
