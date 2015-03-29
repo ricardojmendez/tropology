@@ -165,6 +165,35 @@
     ))
 
 
+(deftest test-update-link-count
+  (wipe-test-db)
+  (let [conn     (get-test-connection)
+        n1       (create-node! conn "TestNode" {:id "TestNode/N1"})
+        n2       (create-node! conn "TestNode" {:id "TestNode/N2"})
+        n3       (create-node! conn "TestNode" {:id "TestNode/N3"})
+        n4       (create-node! conn "TestNode" {:id "TestNode/N4"})
+        _        (relate-nodes! conn :LINKSTO n1 n2)
+        _        (relate-nodes! conn :LINKSTO n1 n3)
+        _        (relate-nodes! conn :LINKSTO n2 n3)
+        _        (relate-nodes! conn :LINKSTO n3 n4)
+        original (cy/tquery conn "MATCH (n:TestNode) RETURN n.id, n.incoming, n.outgoing ")
+        _        (update-link-count! conn)                  ; Does not actually return a value, we just care about executing it
+        updated  (cy/tquery conn "MATCH (n:TestNode) RETURN n.id, n.incoming, n.outgoing ")
+        ]
+    (is (every? #(= nil (% "n.incoming") (% "n.outgoing")) original)) ; Original list does not have any incoming or outgoing values
+    (are [id key count] (= ((first (filter #(= (% "n.id") id) updated)) key) count)
+                        "TestNode/N1" "n.incoming" 0
+                        "TestNode/N1" "n.outgoing" 2
+                        "TestNode/N2" "n.incoming" 1
+                        "TestNode/N2" "n.outgoing" 1
+                        "TestNode/N3" "n.incoming" 2
+                        "TestNode/N3" "n.outgoing" 1
+                        "TestNode/N4" "n.incoming" 1
+                        "TestNode/N4" "n.outgoing" 0
+                        )
+    ))
+
+
 
 
 (deftest test-merge-node
