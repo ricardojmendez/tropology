@@ -3,6 +3,7 @@
             [clojurewerkz.urly.core :as u]
             [com.numergent.url-tools :as ut]
             [net.cgrand.enlive-html :as e]
+            [taoensso.timbre :as timbre]
             [tropefest.base :as b]
             [tropefest.db :as db])
   (:import (java.net URI)))
@@ -103,6 +104,7 @@
   (let [update-data (-> (node-data-from-url url)
                         (select-keys [:id :label])
                         (assoc :error (.getMessage t)))]
+    (timbre/error (str "Exception on " url " : " (.getMessage t)))
     (doall (db/create-or-merge-node! conn update-data))))
 
 (defn record-page!
