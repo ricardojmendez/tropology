@@ -97,9 +97,27 @@
     ))
 
 
+(defn log-node-exception!
+  "Logs an exception for a url record"
+  [conn ^String url ^Throwable t]
+  (let [update-data (-> (node-data-from-url url)
+                        (select-keys [:id :label])
+                        (assoc :error (.getMessage t)))]
+    (doall (db/create-or-merge-node! conn update-data))))
+
+(defn record-page!
+  "Attempts to crawl a url. If there's an exception, it marks the url as having an error.
+  Created this because at least one page is causing a 'too many redirects' error."
+  [conn url]
+  (try
+    (->> url
+         (map load-resource-url)
+         (pmap #(save-page-links! conn %))
+         doall)
+    (catch Throwable t (log-node-exception! conn url t))))
+
+
 (defn crawl-and-update!
   [conn limit]
   (->> (db/query-nodes-to-crawl conn limit)
-       (map load-resource-url)
-       (pmap #(save-page-links! conn %))
-       doall))
+       (record-page! conn)))
