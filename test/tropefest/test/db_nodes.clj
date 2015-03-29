@@ -74,6 +74,15 @@
   (is (= (query-nodes-to-crawl (get-test-connection) 0) '())))
 
 
+(deftest test-query-nodes-node-skip-errors
+  (wipe-test-db)
+  (create-test-nodes 30 false)
+  (create-or-merge-node! (get-test-connection) {:id "TestNode/10" :label "TestNode" :error "Oopsy"})
+  (is (= (count (query-nodes-to-crawl (get-test-connection) 100)) 29)) ; We skip the error node
+  (is (= (count (query-nodes-to-crawl (get-test-connection) 15)) 15)) ; We can still find 15 nodes to crawl
+  )
+
+
 (deftest test-query-nodes-time-limit
   (wipe-test-db)
   (create-test-nodes 15 false)
