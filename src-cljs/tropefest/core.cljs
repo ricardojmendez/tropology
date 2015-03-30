@@ -44,7 +44,7 @@
 ; Graph!
 
 
-(def state (atom {:sigma null}))
+(def state (atom {:sigma nil}))
 
 (-> js/sigma .-classes .-graph (.addMethod "neighbors",
                                            (fn [node-id]
