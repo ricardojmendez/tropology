@@ -58,46 +58,73 @@
 (defn in-seq? [s x]
   (some? (some #{x} s)))
 
-(defn create-graph [code]
-  (js/sigma.parsers.json (str js/context "/api/network/" code)
-                         (clj->js {
-                                   :renderer {:container (.getElementById js/document "container")
-                                              :type      "canvas"
-                                              }
-                                   :settings {:defaultNodeColor "#ec5148"
-                                              :edgeLabelSize    "proportional"
-                                              }})
-                         (fn [s]
-                           ; Feel a bit dirty about using an atom here, but calling this function
-                           ; is not returning the sigma object
-                           (swap! state assoc :sigma s)
-                           (.startForceAtlas2 s {:worker true :barnesHutOptimize false})
-                           (js/setTimeout #(.stopForceAtlas2 s) 1500)
-                           ; Set the colors
-                           (goog.object/forEach (-> s .-graph .nodes)
-                                                #(aset % "originalColor" "#ff0000"))
-                           (goog.object/forEach (-> s .-graph .edges)
-                                                #(aset % "originalColor" (aget % "color")))
+(defn refresh-graph [sig centerNodeId]
+  (let [db    (aget sig "db")
+        graph (-> sig .-graph)]
+    (.killForceAtlas2 sig)
+    (-> sig .-camera (.goTo (clj->js {:x 0 :y 0 :angle 0 :ratio 1})))
+    (.clear graph)
+    (.read graph (.neighborhood db centerNodeId))
+    (let [nodes (.nodes graph)
+          len   (.-length nodes)]
+      (map-indexed (fn [i node]
+                     (aset node "x" (Math/cos (/ (* 2 i Math/PI) len)))
+                     (aset node "y" (Math/cos (/ (* 2 i Math/PI) len))))
+                   nodes))
+    (.refresh sig)
+    (.startForceAtlas2 sig {:worker true :barnesHutOptimize false})
+    (js/setTimeout #(.stopForceAtlas2 sig) 5000)
+    (swap! state assoc :sigma sig)
+    )
+  )
 
-                           (.bind s "clickNode"
-                                  (fn [clicked]
-                                    (let [nodes         (-> s .-graph .nodes) ; Re-bind in case it changed
-                                          edges         (-> s .-graph .edges)
-                                          node-id       (-> clicked .-data .-node .-id)
-                                          nodes-to-keep (-> (.neighbors (.-graph s) node-id) (.concat node-id))
-                                          groups        (group-by #(in-seq? nodes-to-keep (.-id %)) nodes)]
-                                      (doseq [node (groups true)] (aset node "color" "#ff0000"))
-                                      (doseq [node (groups false)] (aset node "color" "#eee"))
-                                      (.forEach edges       ; One idiomatic, one not as much
-                                                (fn [edge]
-                                                  (if (and
-                                                        (in-seq? nodes-to-keep (.-source edge))
-                                                        (in-seq? nodes-to-keep (.-target edge)))
-                                                    (aset edge "color" (aget edge "originalColor"))
-                                                    (aset edge "color" "#eee"))))
-                                      (.refresh s)))
-                                  ))
-                         ))
+(defn create-graph [code]
+  (let [sig     (js/sigma. (clj->js {:renderer
+                                               {:type      "canvas"
+                                                :container (.getElementById js/document "graph-container")}
+                                     :settings {:defaultNodeColor "#ec5148"
+                                                :labelSizeRation  2
+                                                :edgeLabelSize    "proportional"
+                                                }}))
+        db      (js/sigma.plugins.neighborhoods.)
+        on-done (fn []
+                  (do
+                    (.bind sig "doubleClickNode", #((if-not (-> % .-data .-node .-center)
+                                                      (refresh-graph sig (-> % .-data .-node .-id)))))
+                    (refresh-graph sig code)
+                    (.startForceAtlas2 sig {:worker true :barnesHutOptimize false})
+                    (js/setTimeout #(.stopForceAtlas2 sig) 5000)
+                    ; Set the colors
+                    (goog.object/forEach (-> sig .-graph .nodes)
+                                         #(aset % "originalColor" (aget % "color")))
+                    (goog.object/forEach (-> sig .-graph .edges)
+                                         #(aset % "originalColor" (aget % "color")))
+
+                    (.bind sig "clickNode"
+                           (fn [clicked]
+                             (let [nodes         (-> sig .-graph .nodes) ; Re-bind in case it changed
+                                   edges         (-> sig .-graph .edges)
+                                   node-id       (-> clicked .-data .-node .-id)
+                                   nodes-to-keep (-> (.neighbors (.-graph sig) node-id) (.concat node-id))
+                                   groups        (group-by #(in-seq? nodes-to-keep (.-id %)) nodes)]
+                               (doseq [node (groups true)] (aset node "color" "#ff0000"))
+                               (doseq [node (groups false)] (aset node "color" "#eee"))
+                               (.forEach edges              ; One idiomatic, one not as much
+                                         (fn [edge]
+                                           (if (and
+                                                 (in-seq? nodes-to-keep (.-source edge))
+                                                 (in-seq? nodes-to-keep (.-target edge)))
+                                             (aset edge "color" (aget edge "originalColor"))
+                                             (aset edge "color" "#eee"))))
+                               (.refresh sig)))
+                           )
+                    ))
+        ]
+    (aset sig "db" db)
+    (swap! state assoc :sigma sig)
+    (.load db (str js/context "/api/network/" code) on-done)
+
+    ))
 
 (defn redraw-graph []
   (let [current (:sigma @state)]                            ; Must be set by importer on creation
@@ -114,7 +141,7 @@
    (text-input :trope-code "Trope code:")
    [:input {:type     "button" :value "Graph!"
             :on-click #(redraw-graph)}]
-   [:div {:id "container"}]])
+   [:div {:id "graph-container"}]])
 
 (def pages
   {:home  plot
