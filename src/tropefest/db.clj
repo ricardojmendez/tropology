@@ -20,7 +20,7 @@
 ; Timestamp functions
 ;
 
-(def update-period (j/days (Integer. (:expiration env))))
+(def expiration-period (j/days (Integer. (:expiration env))))
 
 (defn timestamp-next-update
   "Updates a data hashmap with the current time and the next time for update,
@@ -29,7 +29,7 @@
   [data]
   (let [now (j/date-time)]
     (assoc data :timestamp (.getMillis now)
-                :nextupdate (.getMillis (j/plus now update-period)))))
+                :nextupdate (.getMillis (j/plus now expiration-period)))))
 
 (defn timestamp-update
   "Updates a data hashmap with the current time and the next time for update,
@@ -46,6 +46,20 @@
   [data]
   (let [now (.getMillis (j/date-time))]
     (merge {:timestamp now :nextupdate now} data)))
+
+;
+; Node update functions
+;
+
+(defn update-link-count!
+  "Updates the incoming and outgoing link count for all nodes in the database"
+  [conn]
+  (do
+    (cy/query conn "MATCH ()-[r]->(n) WITH n, COUNT(r) as incoming SET n.incoming = incoming")
+    (cy/query conn "MATCH (n)-[r]->() WITH n, COUNT(r) as outgoing SET n.outgoing = outgoing")
+    (cy/query conn "MATCH (n) WHERE n.outgoing is null WITH n SET n.outgoing = 0")
+    (cy/query conn "MATCH (n) WHERE n.incoming is null WITH n SET n.incoming = 0")
+    nil))
 
 ;
 ; Node query and creation functions
@@ -70,7 +84,7 @@
   that this is not the same as getting the node directly via its internal id."
   [conn id]
   (let [query-str (str "MATCH  " (id-to-match "v" id) " RETURN v")
-        match (first (cy/tquery conn query-str {:id id}))]
+        match     (first (cy/tquery conn query-str {:id id}))]
     (if (nil? match)
       nil
       (-> (match "v")
@@ -95,7 +109,7 @@
   We could probably write it getting the relationships and walking through
   them, but going with cypher for now to test."
   [conn ^String code rel]
-  (let [query-str (str "MATCH " (id-to-match "o" code "id") "-[" rel "]->(v) RETURN DISTINCT v.id as id,v.url as url, v.title as title")]
+  (let [query-str (str "MATCH " (id-to-match "o" code "id") "-[" rel "]->(v) RETURN DISTINCT v.id as id,v.url as url, v.title as title, v.incoming as incoming")]
     (cy/tquery conn query-str {:id code})))
 
 (defn query-to
@@ -103,7 +117,7 @@
   Yes, the parameter order is the opposite from query-links-from,
   since I think it better indicates the relationship."
   [conn rel ^String code]
-  (let [query-str (str "MATCH " (id-to-match "o" code "id") "<-[" rel "]-(v) RETURN DISTINCT v.id as id,v.url as url, v.title as title")]
+  (let [query-str (str "MATCH " (id-to-match "o" code "id") "<-[" rel "]-(v) RETURN DISTINCT v.id as id,v.url as url, v.title as title, v.incoming as incoming")]
     (cy/tquery conn query-str {:id code})))
 
 
@@ -142,7 +156,7 @@
   Data-items is expected to include the label."
   [conn data-items]
   (let [existing (query-by-id conn (:id data-items))
-        id (get-in existing [:metadata :id])]
+        id       (get-in existing [:metadata :id])]
     (if (empty? existing)
       (create-node! conn (:label data-items) data-items)
       (merge-node! conn id data-items))))
@@ -152,7 +166,7 @@
   already exists, the node is retrieved and returned."
   [conn data-items]
   (let [existing (query-by-id conn (:id data-items))
-        id (get-in existing [:metadata :id])]
+        id       (get-in existing [:metadata :id])]
     (if (empty? existing)
       (create-node! conn (:label data-items) data-items)
       (nn/get conn id))))

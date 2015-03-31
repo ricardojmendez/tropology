@@ -7,37 +7,14 @@
   (:require-macros [secretary.core :refer [defroute]]))
 
 
+(defn row [label & body]
+  [:div.row
+   [:div.col-md-2 [:span label]]
+   [:div.col-md-3 body]])
 
-; Some example functions from http://holmsand.github.io/reagent/
-; Currently using them to test reagent via figwheel
-;
-; For instance:
-;
-; (def e (aget (js/document.getElementsByTagName "main") 0))
-; (reagent/render [c/timer-component] e)
-; (reagent/render [c/counting-component] e)
-
-(def click-count (atom 0))
-(def seconds-elapsed (atom 0))
-
-(defn counting-component []
-  [:div
-   "The atom " [:code "click-count"] " has value: "
-   @click-count ". "
-   [:input {:type     "button" :value "Click me!"
-            :on-click #(swap! click-count inc)}]])
-
-(defn timer-component []
-  (let [seconds-elapsed (atom 0)]
-    (fn []
-      (js/setTimeout #(swap! seconds-elapsed inc) 1000)
-      [:div
-       "Seconds Elapsed: " @seconds-elapsed])))
-()
-
-(defn set-html! [el content]
-  (set! (.-innerHTML el) content))
-
+(defn text-input [id label]
+  (row label [:input.form-control {:field :text
+                                   :id    id}]))
 
 
 ; Original code:
@@ -55,21 +32,19 @@
      [:ul.nav.navbar-nav
       (nav-item :home "Home" "")
       (nav-item :about "About" "about")
-      (nav-item :plot "Plot" "plot")
       ]]]])
 
 (defn about-page []
   [:div
    [:main]
    [:div "this is the story of tropefest... work in progress"]
-   ]
-  )
+   ])
 
-(defn home-page []
-  [:div
-   [:h2 "Welcome to ClojureScript"]])
 
 ; Graph!
+
+
+(def state (atom {:sigma nil}))
 
 (-> js/sigma .-classes .-graph (.addMethod "neighbors",
                                            (fn [node-id]
@@ -83,8 +58,8 @@
 (defn in-seq? [s x]
   (some? (some #{x} s)))
 
-(defn create-graph []
-  (js/sigma.parsers.json "/api/network/Anime/CowboyBebop" ; "/static/test-data/basic-graph.json"
+(defn create-graph [code]
+  (js/sigma.parsers.json (str js/context "/api/network/" code)
                          (clj->js {
                                    :renderer {:container (.getElementById js/document "container")
                                               :type      "canvas"
@@ -93,6 +68,12 @@
                                               :edgeLabelSize    "proportional"
                                               }})
                          (fn [s]
+                           ; Feel a bit dirty about using an atom here, but calling this function
+                           ; is not returning the sigma object
+                           (swap! state assoc :sigma s)
+                           (.startForceAtlas2 s {:worker true :barnesHutOptimize false})
+                           (js/setTimeout #(.stopForceAtlas2 s) 1500)
+                           ; Set the colors
                            (goog.object/forEach (-> s .-graph .nodes)
                                                 #(aset % "originalColor" "#ff0000"))
                            (goog.object/forEach (-> s .-graph .edges)
@@ -100,11 +81,11 @@
 
                            (.bind s "clickNode"
                                   (fn [clicked]
-                                    (let [nodes (-> s .-graph .nodes) ; Re-bind in case it changed
-                                          edges (-> s .-graph .edges)
-                                          node-id (-> clicked .-data .-node .-id)
+                                    (let [nodes         (-> s .-graph .nodes) ; Re-bind in case it changed
+                                          edges         (-> s .-graph .edges)
+                                          node-id       (-> clicked .-data .-node .-id)
                                           nodes-to-keep (-> (.neighbors (.-graph s) node-id) (.concat node-id))
-                                          groups (group-by #(in-seq? nodes-to-keep (.-id %)) nodes)]
+                                          groups        (group-by #(in-seq? nodes-to-keep (.-id %)) nodes)]
                                       (doseq [node (groups true)] (aset node "color" "#ff0000"))
                                       (doseq [node (groups false)] (aset node "color" "#eee"))
                                       (.forEach edges       ; One idiomatic, one not as much
@@ -118,19 +99,26 @@
                                   ))
                          ))
 
+(defn redraw-graph []
+  (let [current (:sigma @state)]                            ; Must be set by importer on creation
+    (if current
+      (do
+        (.kill current)
+        (swap! state assoc :sigma nil)))
+    (create-graph (-> (.getElementById js/document "trope-code") .-value))
+    ))
+
 
 (defn plot []
   [:div
+   (text-input :trope-code "Trope code:")
    [:input {:type     "button" :value "Graph!"
-            :on-click #(create-graph)}]
+            :on-click #(redraw-graph)}]
    [:div {:id "container"}]])
 
 (def pages
-  {:home  home-page
-   :about about-page
-   :plot  plot})
-
-
+  {:home  plot
+   :about about-page})
 
 
 (defn page []
@@ -138,8 +126,6 @@
 
 (defroute "/" [] (session/put! :page :home))
 (defroute "/about" [] (session/put! :page :about))
-(defroute "/plot" [] (session/put! :page :plot))
-(defroute "/plot" [] (session/put! :page :plot))
 
 
 (defn init! []
