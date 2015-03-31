@@ -102,6 +102,9 @@
           (map #(% "v.url")))
      '())))
 
+;
+; Link querying
+;
 
 (defn query-from
   "Retrieves the list of nodes that a node links to (emanating from)
@@ -109,7 +112,7 @@
   We could probably write it getting the relationships and walking through
   them, but going with cypher for now to test."
   [conn ^String code rel]
-  (let [query-str (str "MATCH " (id-to-match "o" code "id") "-[" rel "]->(v) RETURN DISTINCT v.id as id,v.url as url, v.title as title, v.incoming as incoming")]
+  (let [query-str (str "MATCH " (id-to-match "o" code "id") "-[" rel "]->(v) RETURN DISTINCT v.id as id,v.url as url, v.title as title, v.label as label, v.incoming as incoming")]
     (cy/tquery conn query-str {:id code})))
 
 (defn query-to
@@ -117,9 +120,31 @@
   Yes, the parameter order is the opposite from query-links-from,
   since I think it better indicates the relationship."
   [conn rel ^String code]
-  (let [query-str (str "MATCH " (id-to-match "o" code "id") "<-[" rel "]-(v) RETURN DISTINCT v.id as id,v.url as url, v.title as title, v.incoming as incoming")]
+  (let [query-str (str "MATCH " (id-to-match "o" code "id") "<-[" rel "]-(v) RETURN DISTINCT v.id as id,v.url as url, v.title as title, v.label as label, v.incoming as incoming")]
     (cy/tquery conn query-str {:id code})))
 
+(defn query-common-nodes-from
+  "Given a starting node code (common-code) and a node code-from to query from,
+  it returns the information for all nodes that code-from links out to that are
+  also related to the starting node code in any direction."
+  ([conn ^String common-code ^String code-from]
+   (query-common-nodes-from conn common-code code-from :LINKSTO 1000))
+  ([conn ^String common-code ^String code-from rel incoming-link-limit]
+    ; MATCH (n:Anime {id:”Anime/CowboyBebop”})--(m:Main {id:”Main/NoHoldsBarredBeatdown”})-[r:LINKSTO]->(o)--(n) WHERE o.incoming < 1000 RETURN DISTINCT o;
+   (let [query-str (str "MATCH "
+                        (id-to-match "n" common-code "idn")
+                        "--"
+                        (id-to-match "m" code-from "idm")
+                        "-[" rel "]->(o)--(n) WHERE o.incoming < {limit} "
+                        "RETURN DISTINCT o.id as id, o.url as url, o.label as label, o.title as title"
+                        )]
+     (cy/tquery conn query-str {:idn common-code :idm code-from :limit incoming-link-limit})))
+  )
+
+
+;
+; Node creation and tagging
+;
 
 (defn mark-if-redirect!
   "Marks all nodes identified by a URL as being a redirect, if true"
