@@ -73,7 +73,7 @@
                    nodes))
     (.refresh sig)
     (.startForceAtlas2 sig {:worker true :barnesHutOptimize false})
-    (js/setTimeout #(.stopForceAtlas2 sig) 5000)
+    (js/setTimeout #(.stopForceAtlas2 sig) 2000)
     (swap! state assoc :sigma sig)
     )
   )
@@ -84,7 +84,7 @@
                                                 :container (.getElementById js/document "graph-container")}
                                      :settings {:defaultNodeColor "#ec5148"
                                                 :labelSizeRation  2
-                                                :edgeLabelSize    "proportional"
+                                                :edgeLabelSize    "fixed"
                                                 }}))
         db      (js/sigma.plugins.neighborhoods.)
         on-done (fn []
@@ -107,8 +107,18 @@
                                    node-id       (-> clicked .-data .-node .-id)
                                    nodes-to-keep (-> (.neighbors (.-graph sig) node-id) (.concat node-id))
                                    groups        (group-by #(in-seq? nodes-to-keep (.-id %)) nodes)]
-                               (doseq [node (groups true)] (aset node "color" "#ff0000"))
-                               (doseq [node (groups false)] (aset node "color" "#eee"))
+                               (doseq [node (groups true)]
+                                 (do
+                                   (aset node "color" (aget node "originalColor"))
+                                   (aset node "showStatus"
+                                         (if (= node-id code)
+                                           "-"              ; Whatever, use default
+                                           "a"              ; Always
+                                           ))))
+                               (doseq [node (groups false)]
+                                 (do
+                                   (aset node "color" "#eee")
+                                   (aset node "showStatus" "n"))) ; Never
                                (.forEach edges              ; One idiomatic, one not as much
                                          (fn [edge]
                                            (if (and
