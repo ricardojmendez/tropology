@@ -159,9 +159,6 @@
   (let [node (nn/create conn (timestamp-create data-items))]
     (do
       (nl/add conn node label)
-      ; TODO Create indexes only if we don' know the node
-      ; (nri/create conn label "id")
-      ; (nri/create conn label "nextupdate")
       node)))
 
 (defn merge-node!
