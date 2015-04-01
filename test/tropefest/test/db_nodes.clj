@@ -228,6 +228,8 @@
         _        (relate-nodes! conn :LINKSTO n1 n3)
         _        (relate-nodes! conn :LINKSTO n2 n3)
         _        (relate-nodes! conn :LINKSTO n3 n4)
+        _        (relate-nodes! conn :IGNORED n1 n2)        ; Won't be counted
+        _        (relate-nodes! conn :IGNORED n2 n3)        ; Won't be counted
         original (cy/tquery conn "MATCH (n:TestNode) RETURN n.id, n.incoming, n.outgoing ")
         _        (update-link-count! conn)                  ; Does not actually return a value, we just care about executing it
         updated  (cy/tquery conn "MATCH (n:TestNode) RETURN n.id, n.incoming, n.outgoing ")

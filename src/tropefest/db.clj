@@ -55,8 +55,8 @@
   "Updates the incoming and outgoing link count for all nodes in the database"
   [conn]
   (do
-    (cy/query conn "MATCH ()-[r]->(n) WITH n, COUNT(r) as incoming SET n.incoming = incoming")
-    (cy/query conn "MATCH (n)-[r]->() WITH n, COUNT(r) as outgoing SET n.outgoing = outgoing")
+    (cy/query conn "MATCH ()-[r:LINKSTO]->(n) WITH n, COUNT(r) as incoming SET n.incoming = incoming")
+    (cy/query conn "MATCH (n)-[r:LINKSTO]->() WITH n, COUNT(r) as outgoing SET n.outgoing = outgoing")
     (cy/query conn "MATCH (n) WHERE n.outgoing is null WITH n SET n.outgoing = 0")
     (cy/query conn "MATCH (n) WHERE n.incoming is null WITH n SET n.incoming = 0")
     nil))
