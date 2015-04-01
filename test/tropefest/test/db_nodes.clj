@@ -164,6 +164,58 @@
       (is (empty? r)))
     ))
 
+(deftest test-common-from
+  (let [conn (get-test-connection)
+        n1   (create-node! conn "TestNode" {:id "TestNode/N1" :incoming 100})
+        n2   (create-node! conn "TestNode" {:id "TestNode/N2" :incoming 500}) ; To test limits later
+        n3   (create-node! conn "TestNode" {:id "TestNode/N3" :incoming 100})
+        n4   (create-node! conn "TestNode" {:id "TestNode/N4" :incoming 100})
+        n5   (create-node! conn "TestNode" {:id "TestNode/N5" :incoming 100})
+        n6   (create-node! conn "TestNode" {:id "TestNode/N7" :incoming 100})
+        _    (relate-nodes! conn :LINKSTO n1 n2)
+        _    (relate-nodes! conn :LINKSTO n1 n3)
+        _    (relate-nodes! conn :LINKSTO n1 n5)
+        _    (relate-nodes! conn :LINKSTO n1 n6)
+        _    (relate-nodes! conn :LINKSTO n2 n3)
+        _    (relate-nodes! conn :LINKSTO n2 n4)
+        _    (relate-nodes! conn :LINKSTO n3 n4)
+        _    (relate-nodes! conn :LINKSTO n3 n5)
+        _    (relate-nodes! conn :LINKSTO n4 n5)
+        _    (relate-nodes! conn :LINKSTO n4 n6)
+        _    (relate-nodes! conn :DIFFREL n1 n4)            ; To be excluded in most tests below
+        _    (relate-nodes! conn :DIFFREL n1 n3)            ; To be excluded in most tests below
+        _    (relate-nodes! conn :DIFFREL n3 n4)            ; To be excluded in most tests below
+        ]
+    ; Test relationships
+    (let [r (query-common-nodes-from conn "TestNode/N3" "TestNode/N1")]
+      (is (= 2 (count r)))                                  ; N1 links out to N2 and N5, and both are related to N3
+      (is (some #(= (% "id") "TestNode/N2") r))
+      (is (some #(= (% "id") "TestNode/N5") r)))
+    (let [r (query-common-nodes-from conn "TestNode/N3" "TestNode/N2")]
+      (is (= 1 (count r)))
+      (is (some #(= (% "id") "TestNode/N4") r)))            ; N2 links out to N4. N1 is excluded since N2 doesn't link out to it
+    (let [r (query-common-nodes-from conn "TestNode/N3" "TestNode/N4")]
+      (is (= 1 (count r)))
+      (is (some #(= (% "id") "TestNode/N5") r)))            ; N4 links out to N5, which is related to N3. N6 is excluded because it' not related.
+    (let [r (query-common-nodes-from conn "TestNode/N3" "TestNode/N5")]
+      (is (empty? r)))
+    (let [r (query-common-nodes-from conn "TestNode/N1" "TestNode/N2")]
+      (is (= 2 (count r)))
+      (is (some #(= (% "id") "TestNode/N3") r))             ; N2 links out to N3 and N4, which are related to N1.
+      (is (some #(= (% "id") "TestNode/N4") r)))            ; Other N1 relationships like N5 and N6 are ignored because N2 doesn't link out to them.
+    ; Test incoming limits
+    (let [r (query-common-nodes-from conn "TestNode/N3" "TestNode/N1" :LINKSTO 400)]
+      (is (= 1 (count r)))                                  ; N2 is excluded because of too many incoming links
+      (is (some #(= (% "id") "TestNode/N5") r)))
+    ; Test link relationship types
+    (let [r (query-common-nodes-from conn "TestNode/N3" "TestNode/N1" :DIFFREL 1000)]
+      (is (= 1 (count r)))                                  ; Only one node in common with that relationship type
+      (is (some #(= (% "id") "TestNode/N4") r)))
+
+    ))
+
+
+
 
 (deftest test-update-link-count
   (wipe-test-db)
