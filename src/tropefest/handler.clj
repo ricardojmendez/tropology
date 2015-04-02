@@ -69,7 +69,9 @@
       (->
         (p/load-resource-url "http://tvtropes.org/pmwiki/pmwiki.php/Anime/SamuraiFlamenco")
         p/save-page-links!))
-    (update-handler nil nil)
+    ; Uncomment to update the link count. Not necessary unless for some
+    ; reason you have an incomplete database.
+    ; (update-handler nil nil)
     (timbre/info "Done seeding.")))
 
 
