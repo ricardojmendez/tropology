@@ -16,14 +16,14 @@
   (tdb/wipe-test-db)
   (let [conn          (tdb/get-test-connection)
         url           "http://tvtropes.org/pmwiki/pmwiki.php/Anime/CowboyBebop"
-        original-data (-> (node-data-from-url url) (assoc :isredirect true)) ; Create a redirect node
+        original-data (-> (node-data-from-url url) (assoc :isRedirect true)) ; Create a redirect node
         original-node (db/create-node! conn "Anime" original-data)
         t             (Throwable. "Oopsy")
         logged-node   (log-node-exception! conn url t)]
     (println "Yes, we were supposed to get an exception logged up there. ⤴")
     (is (not= logged-node nil))
-    (is (get-in original-node [:data :isredirect]))         ; We did create a redirect node
-    (is (get-in logged-node [:data :isredirect]))           ; Redirect value did not change
+    (is (get-in original-node [:data :isRedirect]))         ; We did create a redirect node
+    (is (get-in logged-node [:data :isRedirect]))           ; Redirect value did not change
     (is (nil? (get-in original-node [:data :error])))
     (is (get-in logged-node [:data :hasError]))
     (is (= (get-in logged-node [:data :error]) "Oopsy"))))
@@ -41,7 +41,7 @@
         _    (mark-url-redirect conn url)
         node (db/query-by-id conn "Main/Redirector")]
     (are [property value] (= value (get-in node [:data property]))
-                          :isredirect true
+                          :isRedirect true
                           :id "Main/Redirector"
                           :url url))
   ; Finally, let's make sure that if the node exists, the :isRedirect property is set
@@ -52,8 +52,8 @@
         orig (db/create-or-merge-node! conn meta)
         _    (mark-url-redirect conn url)
         node (db/query-by-id conn "Main/Redirector")]
-    (is (= false (get-in orig [:data :isredirect])))
-    (is (= true (get-in node [:data :isredirect])))
+    (is (= false (get-in orig [:data :isRedirect])))
+    (is (= true (get-in node [:data :isRedirect])))
     (is (= (get-in node [:meta :id]) (get-in orig [:meta :id])))
     )
   )
@@ -89,7 +89,7 @@
                           :hasError false
                           :label "Main"
                           :id "Main/HomePage"
-                          :isredirect false
+                          :isRedirect false
                           :url "http://tvtropes.org/pmwiki/pmwiki.php/Main/HomePage")
     ))
 
@@ -105,7 +105,7 @@
                           :hasError false
                           :label "Main"
                           :id "Main/TakeMeInstead"
-                          :isredirect false
+                          :isRedirect false
                           :url "http://tvtropes.org/pmwiki/pmwiki.php/Main/TakeMeInstead")
     ))
 
@@ -129,13 +129,13 @@
                           :hasError false
                           :label "Main"
                           :id "Main/TakeMeInstead"
-                          :isredirect false
+                          :isRedirect false
                           :url "http://tvtropes.org/pmwiki/pmwiki.php/Main/TakeMeInstead")
     (are [property value] (= value (get-in redir-node [:data property]))
                           :hasError false
                           :label "Main"
                           :id "Main/TakeMeInsteadRedirector"
-                          :isredirect true
+                          :isRedirect true
                           :url "http://tvtropes.org/pmwiki/pmwiki.php/Main/TakeMeInsteadRedirector")
     (is (empty? links-redir))
     (is (= 5 (count links-main)))

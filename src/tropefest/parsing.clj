@@ -41,7 +41,7 @@
     {:id         id
      :label      (b/label-from-id id)
      :url        og-url
-     :isredirect false                                      ; Nodes have to be explicitly tagged as being redirects
+     :isRedirect false                                      ; Nodes have to be explicitly tagged as being redirects
      :hasError   false
      :host       (ut/host-string-of og-url)
      :title      (content-from-meta res "og:title")
@@ -58,7 +58,7 @@
        :id         id
        :host       (ut/host-string-of url)
        :url        url
-       :isredirect false                                    ; Nodes have to be explicitly tagged as being redirects
+       :isRedirect false                                    ; Nodes have to be explicitly tagged as being redirects
        :hasError   false
        })
     nil))
@@ -84,7 +84,7 @@
   If a node already exists, the isRedirect property will be set to true."
   [conn url]
   (let [from-url (-> (node-data-from-url url)
-                     (assoc :isredirect true))]
+                     (assoc :isRedirect true))]
     (do (db/create-or-merge-node! conn from-url))))
 
 (defn save-page-links!
