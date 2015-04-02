@@ -59,25 +59,26 @@
   (is (= (query-nodes-to-crawl (get-test-connection) 100) '())))
 
 
-(defn create-test-nodes [n isredirect]
+(defn create-test-nodes [n isRedirect]
   (dotimes [i n]
     (create-node! (get-test-connection) "TestNode" {:id         (str "TestNode/" i)
                                                     :nextupdate i
                                                     :url        (str i) ; Keep the i as the url for ease of testing
-                                                    :isredirect isredirect})))
+                                                    :isRedirect isRedirect
+                                                    :hasError   false})))
 
 (deftest test-query-nodes-node-limit
   (wipe-test-db)
   (create-test-nodes 30 false)                              ; Create non-redirect nodes
-  (is (= (count (query-nodes-to-crawl (get-test-connection) 100)) 30))
-  (is (= (count (query-nodes-to-crawl (get-test-connection) 15)) 15))
+  (is (= 30 (count (query-nodes-to-crawl (get-test-connection) 100))))
+  (is (= 15 (count (query-nodes-to-crawl (get-test-connection) 15))))
   (is (= (query-nodes-to-crawl (get-test-connection) 0) '())))
 
 
 (deftest test-query-nodes-node-skip-errors
   (wipe-test-db)
   (create-test-nodes 30 false)
-  (create-or-merge-node! (get-test-connection) {:id "TestNode/10" :label "TestNode" :error "Oopsy"})
+  (create-or-merge-node! (get-test-connection) {:id "TestNode/10" :label "TestNode" :hasError true :error "Oopsy"})
   (is (= (count (query-nodes-to-crawl (get-test-connection) 100)) 29)) ; We skip the error node
   (is (= (count (query-nodes-to-crawl (get-test-connection) 15)) 15)) ; We can still find 15 nodes to crawl
   )
@@ -112,9 +113,9 @@
 (deftest test-relate-nodes
   ; We don't wipe the db to ensure association works even if there were previous nodes
   (let [conn (get-test-connection)
-        n1 (create-node! conn "TestNode" {:id "TestNode/N1"})
-        n2 (create-node! conn "TestNode" {:id "TestNode/N2"})
-        rel (relate-nodes! conn :LINKSTO n1 n2)]
+        n1   (create-node! conn "TestNode" {:id "TestNode/N1"})
+        n2   (create-node! conn "TestNode" {:id "TestNode/N2"})
+        rel  (relate-nodes! conn :LINKSTO n1 n2)]
     (is (not= rel nil))
     (are [query result] (= query result)
                         (:type rel) "LINKSTO"
@@ -125,12 +126,12 @@
 
 (deftest test-query-from
   (let [conn (get-test-connection)
-        n1 (create-node! conn "TestNode" {:id "TestNode/N1"})
-        n2 (create-node! conn "TestNode" {:id "TestNode/N2"})
-        n3 (create-node! conn "TestNode" {:id "TestNode/N3"})
-        _ (relate-nodes! conn :LINKSTO n1 n2)
-        _ (relate-nodes! conn :LINKSTO n1 n3)
-        _ (relate-nodes! conn :LINKSTO n2 n3)
+        n1   (create-node! conn "TestNode" {:id "TestNode/N1"})
+        n2   (create-node! conn "TestNode" {:id "TestNode/N2"})
+        n3   (create-node! conn "TestNode" {:id "TestNode/N3"})
+        _    (relate-nodes! conn :LINKSTO n1 n2)
+        _    (relate-nodes! conn :LINKSTO n1 n3)
+        _    (relate-nodes! conn :LINKSTO n2 n3)
         ]
     (let [r (query-from conn "TestNode/N1" :LINKSTO)]
       (is (= (count r) 2))
@@ -145,12 +146,12 @@
 
 (deftest test-query-to
   (let [conn (get-test-connection)
-        n1 (create-node! conn "TestNode" {:id "TestNode/N1"})
-        n2 (create-node! conn "TestNode" {:id "TestNode/N2"})
-        n3 (create-node! conn "TestNode" {:id "TestNode/N3"})
-        _ (relate-nodes! conn :LINKSTO n1 n2)
-        _ (relate-nodes! conn :LINKSTO n1 n3)
-        _ (relate-nodes! conn :LINKSTO n2 n3)
+        n1   (create-node! conn "TestNode" {:id "TestNode/N1"})
+        n2   (create-node! conn "TestNode" {:id "TestNode/N2"})
+        n3   (create-node! conn "TestNode" {:id "TestNode/N3"})
+        _    (relate-nodes! conn :LINKSTO n1 n2)
+        _    (relate-nodes! conn :LINKSTO n1 n3)
+        _    (relate-nodes! conn :LINKSTO n2 n3)
         ]
     (let [r (query-to conn :LINKSTO "TestNode/N3")]
       (is (= (count r) 2))
@@ -163,14 +164,97 @@
       (is (empty? r)))
     ))
 
+(deftest test-common-from
+  (let [conn (get-test-connection)
+        n1   (create-node! conn "TestNode" {:id "TestNode/N1" :incoming 100})
+        n2   (create-node! conn "TestNode" {:id "TestNode/N2" :incoming 500}) ; To test limits later
+        n3   (create-node! conn "TestNode" {:id "TestNode/N3" :incoming 100})
+        n4   (create-node! conn "TestNode" {:id "TestNode/N4" :incoming 100})
+        n5   (create-node! conn "TestNode" {:id "TestNode/N5" :incoming 100})
+        n6   (create-node! conn "TestNode" {:id "TestNode/N7" :incoming 100})
+        _    (relate-nodes! conn :LINKSTO n1 n2)
+        _    (relate-nodes! conn :LINKSTO n1 n3)
+        _    (relate-nodes! conn :LINKSTO n1 n5)
+        _    (relate-nodes! conn :LINKSTO n1 n6)
+        _    (relate-nodes! conn :LINKSTO n2 n3)
+        _    (relate-nodes! conn :LINKSTO n2 n4)
+        _    (relate-nodes! conn :LINKSTO n3 n4)
+        _    (relate-nodes! conn :LINKSTO n3 n5)
+        _    (relate-nodes! conn :LINKSTO n4 n5)
+        _    (relate-nodes! conn :LINKSTO n4 n6)
+        _    (relate-nodes! conn :DIFFREL n1 n4)            ; To be excluded in most tests below
+        _    (relate-nodes! conn :DIFFREL n1 n3)            ; To be excluded in most tests below
+        _    (relate-nodes! conn :DIFFREL n3 n4)            ; To be excluded in most tests below
+        ]
+    ; Test relationships
+    (let [r (query-common-nodes-from conn "TestNode/N3" "TestNode/N1")]
+      (is (= 2 (count r)))                                  ; N1 links out to N2 and N5, and both are related to N3
+      (is (some #(= (% "id") "TestNode/N2") r))
+      (is (some #(= (% "id") "TestNode/N5") r)))
+    (let [r (query-common-nodes-from conn "TestNode/N3" "TestNode/N2")]
+      (is (= 1 (count r)))
+      (is (some #(= (% "id") "TestNode/N4") r)))            ; N2 links out to N4. N1 is excluded since N2 doesn't link out to it
+    (let [r (query-common-nodes-from conn "TestNode/N3" "TestNode/N4")]
+      (is (= 1 (count r)))
+      (is (some #(= (% "id") "TestNode/N5") r)))            ; N4 links out to N5, which is related to N3. N6 is excluded because it' not related.
+    (let [r (query-common-nodes-from conn "TestNode/N3" "TestNode/N5")]
+      (is (empty? r)))
+    (let [r (query-common-nodes-from conn "TestNode/N1" "TestNode/N2")]
+      (is (= 2 (count r)))
+      (is (some #(= (% "id") "TestNode/N3") r))             ; N2 links out to N3 and N4, which are related to N1.
+      (is (some #(= (% "id") "TestNode/N4") r)))            ; Other N1 relationships like N5 and N6 are ignored because N2 doesn't link out to them.
+    ; Test incoming limits
+    (let [r (query-common-nodes-from conn "TestNode/N3" "TestNode/N1" :LINKSTO 400)]
+      (is (= 1 (count r)))                                  ; N2 is excluded because of too many incoming links
+      (is (some #(= (% "id") "TestNode/N5") r)))
+    ; Test link relationship types
+    (let [r (query-common-nodes-from conn "TestNode/N3" "TestNode/N1" :DIFFREL 1000)]
+      (is (= 1 (count r)))                                  ; Only one node in common with that relationship type
+      (is (some #(= (% "id") "TestNode/N4") r)))
+
+    ))
+
+
+
+
+(deftest test-update-link-count
+  (wipe-test-db)
+  (let [conn     (get-test-connection)
+        n1       (create-node! conn "TestNode" {:id "TestNode/N1"})
+        n2       (create-node! conn "TestNode" {:id "TestNode/N2"})
+        n3       (create-node! conn "TestNode" {:id "TestNode/N3"})
+        n4       (create-node! conn "TestNode" {:id "TestNode/N4"})
+        _        (relate-nodes! conn :LINKSTO n1 n2)
+        _        (relate-nodes! conn :LINKSTO n1 n3)
+        _        (relate-nodes! conn :LINKSTO n2 n3)
+        _        (relate-nodes! conn :LINKSTO n3 n4)
+        _        (relate-nodes! conn :IGNORED n1 n2)        ; Won't be counted
+        _        (relate-nodes! conn :IGNORED n2 n3)        ; Won't be counted
+        original (cy/tquery conn "MATCH (n:TestNode) RETURN n.id, n.incoming, n.outgoing ")
+        _        (update-link-count! conn)                  ; Does not actually return a value, we just care about executing it
+        updated  (cy/tquery conn "MATCH (n:TestNode) RETURN n.id, n.incoming, n.outgoing ")
+        ]
+    (is (every? #(= nil (% "n.incoming") (% "n.outgoing")) original)) ; Original list does not have any incoming or outgoing values
+    (are [id key count] (= ((first (filter #(= (% "n.id") id) updated)) key) count)
+                        "TestNode/N1" "n.incoming" 0
+                        "TestNode/N1" "n.outgoing" 2
+                        "TestNode/N2" "n.incoming" 1
+                        "TestNode/N2" "n.outgoing" 1
+                        "TestNode/N3" "n.incoming" 2
+                        "TestNode/N3" "n.outgoing" 1
+                        "TestNode/N4" "n.incoming" 1
+                        "TestNode/N4" "n.outgoing" 0
+                        )
+    ))
+
 
 
 
 (deftest test-merge-node
   ; No need to wipe the db
-  (let [conn (get-test-connection)
-        node (create-node! conn "TestNode" {:id "TestNode/First" :nextupdate 5 :url "http://localhost/"})
-        id (:id node)
+  (let [conn   (get-test-connection)
+        node   (create-node! conn "TestNode" {:id "TestNode/First" :nextupdate 5 :url "http://localhost/"})
+        id     (:id node)
         merged (merge-node! conn id {:url "http://localhost/redirected/"})
         ]
     (is (= (:id node) (:id merged)))
@@ -185,9 +269,9 @@
 (deftest test-create-or-merge
   (wipe-test-db)
   ; First let's test creating from scratch
-  (let [conn (get-test-connection)
+  (let [conn       (get-test-connection)
         data-items {:id "TestNode/CoM" :label "TestNode" :url "http://changeme"}
-        node (create-or-merge-node! conn data-items)]
+        node       (create-or-merge-node! conn data-items)]
     (is (not= node nil))
     (is (= (get-in node [:data :id]) "TestNode/CoM"))
     (is (= (get-in node [:data :url]) "http://changeme"))
@@ -202,9 +286,9 @@
 (deftest test-create-or-retrieve
   (wipe-test-db)
   ; First let's test creating from scratch
-  (let [conn (get-test-connection)
+  (let [conn       (get-test-connection)
         data-items {:id "TestNode/CoM" :label "TestNode" :url "http://original"}
-        node (create-or-retrieve-node! conn data-items)]
+        node       (create-or-retrieve-node! conn data-items)]
     (is (not= node nil))
     (is (= (get-in node [:data :id]) "TestNode/CoM"))
     (is (= (get-in node [:data :url]) "http://original"))

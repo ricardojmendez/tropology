@@ -20,7 +20,7 @@
 ; Timestamp functions
 ;
 
-(def update-period (j/days (Integer. (:expiration env))))
+(def expiration-period (j/days (Integer. (:expiration env))))
 
 (defn timestamp-next-update
   "Updates a data hashmap with the current time and the next time for update,
@@ -29,7 +29,7 @@
   [data]
   (let [now (j/date-time)]
     (assoc data :timestamp (.getMillis now)
-                :nextupdate (.getMillis (j/plus now update-period)))))
+                :nextupdate (.getMillis (j/plus now expiration-period)))))
 
 (defn timestamp-update
   "Updates a data hashmap with the current time and the next time for update,
@@ -46,6 +46,20 @@
   [data]
   (let [now (.getMillis (j/date-time))]
     (merge {:timestamp now :nextupdate now} data)))
+
+;
+; Node update functions
+;
+
+(defn update-link-count!
+  "Updates the incoming and outgoing link count for all nodes in the database"
+  [conn]
+  (do
+    (cy/query conn "MATCH ()-[r:LINKSTO]->(n) WITH n, COUNT(r) as incoming SET n.incoming = incoming")
+    (cy/query conn "MATCH (n)-[r:LINKSTO]->() WITH n, COUNT(r) as outgoing SET n.outgoing = outgoing")
+    (cy/query conn "MATCH (n) WHERE n.outgoing is null WITH n SET n.outgoing = 0")
+    (cy/query conn "MATCH (n) WHERE n.incoming is null WITH n SET n.incoming = 0")
+    nil))
 
 ;
 ; Node query and creation functions
@@ -70,7 +84,7 @@
   that this is not the same as getting the node directly via its internal id."
   [conn id]
   (let [query-str (str "MATCH  " (id-to-match "v" id) " RETURN v")
-        match (first (cy/tquery conn query-str {:id id}))]
+        match     (first (cy/tquery conn query-str {:id id}))]
     (if (nil? match)
       nil
       (-> (match "v")
@@ -84,10 +98,13 @@
    (query-nodes-to-crawl conn node-limit (.getMillis (j/date-time))))
   ([conn node-limit time-limit]
    (if (> node-limit 0)                                     ; If we pass a limit of 0, applying ORDER BY will raise an exception
-     (->> (cy/tquery conn "MATCH (v) WHERE v.isredirect = FALSE AND v.error is null AND v.nextupdate < {now} RETURN v.url ORDER BY v.nextupdate LIMIT {limit}" {:now time-limit :limit node-limit})
+     (->> (cy/tquery conn "MATCH (v) WHERE not v.isRedirect AND not v.hasError AND v.nextupdate < {now} RETURN v.url ORDER BY v.nextupdate LIMIT {limit}" {:now time-limit :limit node-limit})
           (map #(% "v.url")))
      '())))
 
+;
+; Link querying
+;
 
 (defn query-from
   "Retrieves the list of nodes that a node links to (emanating from)
@@ -95,7 +112,7 @@
   We could probably write it getting the relationships and walking through
   them, but going with cypher for now to test."
   [conn ^String code rel]
-  (let [query-str (str "MATCH " (id-to-match "o" code "id") "-[" rel "]->(v) RETURN DISTINCT v.id as id,v.url as url, v.title as title")]
+  (let [query-str (str "MATCH " (id-to-match "o" code "id") "-[" rel "]->(v) RETURN DISTINCT v.id as id,v.url as url, v.title as title, v.label as label, v.incoming as incoming")]
     (cy/tquery conn query-str {:id code})))
 
 (defn query-to
@@ -103,16 +120,32 @@
   Yes, the parameter order is the opposite from query-links-from,
   since I think it better indicates the relationship."
   [conn rel ^String code]
-  (let [query-str (str "MATCH " (id-to-match "o" code "id") "<-[" rel "]-(v) RETURN DISTINCT v.id as id,v.url as url, v.title as title")]
+  (let [query-str (str "MATCH " (id-to-match "o" code "id") "<-[" rel "]-(v) RETURN DISTINCT v.id as id,v.url as url, v.title as title, v.label as label, v.incoming as incoming")]
     (cy/tquery conn query-str {:id code})))
 
+(defn query-common-nodes-from
+  "Given a starting node code (common-code) and a node code-from to query from,
+  it returns the information for all nodes that code-from links out to that are
+  also related to the starting node code in any direction."
+  ([conn ^String common-code ^String code-from]
+   (query-common-nodes-from conn common-code code-from :LINKSTO 1000))
+  ([conn ^String common-code ^String code-from rel incoming-link-limit]
+    ; MATCH (n:Anime {id:”Anime/CowboyBebop”})--(m:Main {id:”Main/NoHoldsBarredBeatdown”})-[r:LINKSTO]->(o)--(n) WHERE o.incoming < 1000 RETURN DISTINCT o;
+   (let [query-str (str "MATCH "
+                        (id-to-match "n" common-code "idn")
+                        "--"
+                        (id-to-match "m" code-from "idm")
+                        "-[" rel "]->(o)--(n) WHERE o.incoming < {limit} "
+                        "RETURN DISTINCT o.id as id, o.url as url, o.label as label, o.title as title"
+                        )]
+     (cy/tquery conn query-str {:idn common-code :idm code-from :limit incoming-link-limit})))
+  )
 
-(defn mark-if-redirect!
-  "Marks all nodes identified by a URL as being a redirect, if true"
-  [conn url is-redirect]
-  (if is-redirect
-    (cy/tquery conn "MATCH (v) WHERE v.url = {url} SET v.isredirect = true" {:url url})
-    nil))
+
+;
+; Node creation and tagging
+;
+
 
 (defn create-node!
   "Creates a node from a connection with a label"
@@ -120,9 +153,6 @@
   (let [node (nn/create conn (timestamp-create data-items))]
     (do
       (nl/add conn node label)
-      ; TODO Create indexes only if we don' know the node
-      ; (nri/create conn label "id")
-      ; (nri/create conn label "nextupdate")
       node)))
 
 (defn merge-node!
@@ -142,7 +172,7 @@
   Data-items is expected to include the label."
   [conn data-items]
   (let [existing (query-by-id conn (:id data-items))
-        id (get-in existing [:metadata :id])]
+        id       (get-in existing [:metadata :id])]
     (if (empty? existing)
       (create-node! conn (:label data-items) data-items)
       (merge-node! conn id data-items))))
@@ -152,7 +182,7 @@
   already exists, the node is retrieved and returned."
   [conn data-items]
   (let [existing (query-by-id conn (:id data-items))
-        id (get-in existing [:metadata :id])]
+        id       (get-in existing [:metadata :id])]
     (if (empty? existing)
       (create-node! conn (:label data-items) data-items)
       (nn/get conn id))))

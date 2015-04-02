@@ -8,5 +8,6 @@
               "Anime/CowboyBebop"     "Anime"
               "Film/TheMatrix"        "Film"
               "Some-Invalid-Format"   "Some-Invalid-Format"
+              nil                     "Unknown"
               ""                      "Unknown"))
 
