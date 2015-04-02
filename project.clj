@@ -1,4 +1,4 @@
-(defproject tropefest "0.0.4-SNAPSHOT"
+(defproject tropefest "0.0.5-SNAPSHOT"
             :description "Tropefest! ... While we get a better name..."
             :url "http://numergent.com/"
 
