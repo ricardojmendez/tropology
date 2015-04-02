@@ -59,12 +59,12 @@
   (is (= (query-nodes-to-crawl (get-test-connection) 100) '())))
 
 
-(defn create-test-nodes [n isredirect]
+(defn create-test-nodes [n isRedirect]
   (dotimes [i n]
     (create-node! (get-test-connection) "TestNode" {:id         (str "TestNode/" i)
                                                     :nextupdate i
                                                     :url        (str i) ; Keep the i as the url for ease of testing
-                                                    :isredirect isredirect
+                                                    :isRedirect isRedirect
                                                     :hasError   false})))
 
 (deftest test-query-nodes-node-limit
