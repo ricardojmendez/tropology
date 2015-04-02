@@ -79,6 +79,14 @@
      (filter #(.startsWith % b/base-url)))))
 
 
+(defn mark-url-redirect
+  "Create a node marking as url as redirect.
+  If a node already exists, the isRedirect property will be set to true."
+  [conn url]
+  (let [from-url (-> (node-data-from-url url)
+                     (assoc :isredirect true))]
+    (do (db/create-or-merge-node! conn from-url))))
+
 (defn save-page-links!
   "Saves all page links to the database. It expects a hashmap with two
   paramets: :url for the originally requested URL, and :res for the resulting
@@ -88,9 +96,8 @@
   ([conn {url :url res :res}]
    (let [meta        (-> (node-data-from-meta res) db/timestamp-next-update)
          is-redirect (not= url (:url meta))
-         meta-rd     (assoc meta :isredirect is-redirect)
-         node        (db/create-or-merge-node! conn meta-rd)]
-     (db/mark-if-redirect! conn url is-redirect)            ; Feels like a hack, review.
+         node        (db/create-or-merge-node! conn meta)]
+     (if is-redirect (mark-url-redirect conn url))
      (->>
        (get-wiki-links res (:host meta))
        (pmap node-data-from-url)
@@ -112,12 +119,20 @@
 (defn record-page!
   "Attempts to obtain the links from a url and save them.
   If there's an exception, it marks the url as having an error.
-  Created this because at least one page is causing a 'too many redirects' error."
-  [conn url]
-  (try
-    (->> (load-resource-url url)
-         (save-page-links! conn))
-    (catch Throwable t (log-node-exception! conn url t))))
+  Created this because at least one page is causing a 'too many redirects' error.
+
+  An optional second parameter allows us to indicate the page's provenance,
+  for instance its original URL in case we're loading it from a local dataset
+  but originally obtained it by crawling."
+  ([conn url]
+   (record-page! conn url url))
+  ([conn url provenance]
+   (try
+     (->> (->
+            (load-resource-url url)
+            (assoc :url provenance))
+          (save-page-links! conn))
+     (catch Throwable t (log-node-exception! conn provenance t)))))
 
 
 (defn crawl-and-update!
