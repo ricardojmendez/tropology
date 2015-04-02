@@ -52,7 +52,7 @@
 (def update-task
   {:id       "update-task"
    :handler  update-handler
-   :schedule "0 0 /2 * * * *"
+   :schedule "0 0 /6 * * * *"
    :opts     {}})
 
 (def cj (cronj/cronj :entries [crawl-task update-task]))
