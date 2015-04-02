@@ -20,6 +20,8 @@
   has the og:type 'article', but ComicBook is a lot more descriptive.
   "
   [^String id]
-  (-> id (s/split #"/") first (ut/if-empty "Unknown")))
+  (if (nil? id)
+    "Unknown"
+    (-> id (s/split #"/") first (ut/if-empty "Unknown"))))
 
 
