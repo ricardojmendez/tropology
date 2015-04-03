@@ -1,6 +1,7 @@
 (ns tropefest.test.parsing-nodes
   (:require [clojure.test :refer :all]
             [clojurewerkz.neocons.rest.cypher :as cy]
+            [taoensso.timbre.profiling :as prof]
             [tropefest.test.db-nodes :as tdb]
             [tropefest.test.parsing :as tp]
             [tropefest.parsing :refer :all]
@@ -74,7 +75,7 @@
   (tdb/wipe-test-db)
   (let [path  (str tp/test-file-path "CowboyBebop.html")
         conn  (tdb/get-test-connection)
-        saved (record-page! conn path "http://tvtropes.org/pmwiki/pmwiki.php/Anime/CowboyBebop")]
+        saved (prof/profile :info :Database (record-page! conn path "http://tvtropes.org/pmwiki/pmwiki.php/Anime/CowboyBebop"))]
     (is (= (count saved) 732))
     ))
 
@@ -120,7 +121,7 @@
   (let [path  (str tp/test-file-path "TakeMeInstead-pruned.html")
         conn  (tdb/get-test-connection)
         saved (record-page! conn path "http://tvtropes.org/pmwiki/pmwiki.php/Main/TakeMeInstead")
-        again (record-page! conn path "http://tvtropes.org/pmwiki/pmwiki.php/Main/TakeMeInstead")
+        again (prof/profile :info :Database (record-page! conn path "http://tvtropes.org/pmwiki/pmwiki.php/Main/TakeMeInstead"))
         links (cy/tquery conn "MATCH (n:Main {id:'Main/TakeMeInstead'})-[r]->() RETURN r")
         ]
     (is (= (count saved) 5))                                ; There's only five links on the file

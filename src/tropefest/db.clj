@@ -7,6 +7,7 @@
             [clojurewerkz.neocons.rest.relationships :as nrl]
             [clojurewerkz.neocons.rest.index :as nri]
             [tropefest.base :as b]
+            [taoensso.timbre.profiling :as p]
             [environ.core :refer [env]]))
 
 
@@ -83,12 +84,14 @@
   "Queries for a node id on the properties. Does not filter by label. Notice
   that this is not the same as getting the node directly via its internal id."
   [conn id]
-  (let [query-str (str "MATCH  " (id-to-match "v" id) " RETURN v")
-        match     (first (cy/tquery conn query-str {:id id}))]
-    (if (nil? match)
-      nil
-      (-> (match "v")
-          (select-keys [:data :metadata])))))
+  (->>
+    (let [query-str (str "MATCH  " (id-to-match "v" id) " RETURN v")
+          match     (first (cy/tquery conn query-str {:id id}))]
+      (if (nil? match)
+        nil
+        (-> (match "v")
+            (select-keys [:data :metadata]))))
+    (p/p :query-by-id)))
 
 (defn query-nodes-to-crawl
   "Return the nodes that need to be crawled according to their nextupdate timestamp"
@@ -150,9 +153,9 @@
 (defn create-node!
   "Creates a node from a connection with a label"
   [conn label data-items]
-  (let [node (nn/create conn (timestamp-create data-items))]
+  (let [node (p/p :nn-create (nn/create conn (timestamp-create data-items)))]
     (do
-      (nl/add conn node label)
+      (p/p :nl-add (nl/add conn node label))
       node)))
 
 (defn merge-node!
@@ -161,8 +164,8 @@
   [conn ^long id data-items]
   (let [merged (-> (nn/get conn id) (:data) (merge data-items) (timestamp-update))]
     (do
-      (nn/update conn id merged)
-      (nn/get conn id))))                                   ; Notice that we get it again to retrieve the updated values
+      (p/p :nn-update (nn/update conn id merged))
+      (p/p :nn-get (nn/get conn id)))))                     ; Notice that we get it again to retrieve the updated values
 
 (defn create-or-merge-node!
   "Creates a node from a connection with a label. If a node with the id
@@ -196,7 +199,7 @@
 (defn relate-nodes!
   "Links two nodes by a relationship if they aren't yet linked"
   [conn relationship n1 n2]
-  (nrl/maybe-create conn n1 n2 relationship))
+  (p/p :nrl-maybe-create (nrl/maybe-create conn n1 n2 relationship)))
 
 
 

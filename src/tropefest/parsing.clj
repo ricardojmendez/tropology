@@ -4,6 +4,7 @@
             [com.numergent.url-tools :as ut]
             [net.cgrand.enlive-html :as e]
             [taoensso.timbre :as timbre]
+            [taoensso.timbre.profiling :as p]
             [tropefest.base :as b]
             [tropefest.db :as db])
   (:import (java.net URI)))
