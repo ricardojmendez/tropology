@@ -1,5 +1,6 @@
 (ns tropefest.test.parsing-nodes
   (:require [clojure.test :refer :all]
+            [clojurewerkz.neocons.rest.cypher :as cy]
             [tropefest.test.db-nodes :as tdb]
             [tropefest.test.parsing :as tp]
             [tropefest.parsing :refer :all]
@@ -107,6 +108,24 @@
                           :id "Main/TakeMeInstead"
                           :isRedirect false
                           :url "http://tvtropes.org/pmwiki/pmwiki.php/Main/TakeMeInstead")
+    ))
+
+(deftest test-record-page-twice
+  ; See note on test-record-page-local about the provenance URL
+  ;
+  ; On this test I query for the links directly using cypher instead of our
+  ; helper functions since those already do DISTINCT and would not return
+  ; duplicates.
+  (tdb/wipe-test-db)
+  (let [path  (str tp/test-file-path "TakeMeInstead-pruned.html")
+        conn  (tdb/get-test-connection)
+        saved (record-page! conn path "http://tvtropes.org/pmwiki/pmwiki.php/Main/TakeMeInstead")
+        again (record-page! conn path "http://tvtropes.org/pmwiki/pmwiki.php/Main/TakeMeInstead")
+        links (cy/tquery conn "MATCH (n:Main {id:'Main/TakeMeInstead'})-[r]->() RETURN r")
+        ]
+    (is (= (count saved) 5))                                ; There's only five links on the file
+    (is (= (count again) 5))                                ; Same number of links is returned the second time
+    (is (= (count links) 5))                                ; No duplicated links are created
     ))
 
 (deftest test-record-page-with-redirect
