@@ -93,7 +93,7 @@
                           :url "http://tvtropes.org/pmwiki/pmwiki.php/Main/HomePage")
     ))
 
-(deftest test-record-page-local
+(deftest test-record-page-same-provenance
   ; See note on test-record-page-local about the provenance URL
   (tdb/wipe-test-db)
   (let [path  (str tp/test-file-path "TakeMeInstead-pruned.html")
