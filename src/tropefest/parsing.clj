@@ -73,7 +73,7 @@
      (get-wiki-links res og-host)))
   ([res host]
    (->>
-     (e/select res [:a.twikilink])
+     (e/select res [:#wikitext :a.twikilink])
      (map #(get-in % [:attrs :href]))
      (map #(u/resolve host %))
      (distinct)

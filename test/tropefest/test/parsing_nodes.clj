@@ -76,7 +76,7 @@
   (let [path  (str tp/test-file-path "CowboyBebop.html")
         conn  (tdb/get-test-connection)
         saved (prof/profile :info :Database (record-page! conn path "http://tvtropes.org/pmwiki/pmwiki.php/Anime/CowboyBebop"))]
-    (is (= (count saved) 732))
+    (is (= 653 (count saved)))
     ))
 
 (deftest test-record-page-live
@@ -98,11 +98,14 @@
 (deftest test-record-page-same-provenance
   ; See note on test-record-page-local about the provenance URL
   (tdb/wipe-test-db)
-  (let [path  (str tp/test-file-path "TakeMeInstead-pruned.html")
-        conn  (tdb/get-test-connection)
-        saved (record-page! conn path "http://tvtropes.org/pmwiki/pmwiki.php/Main/TakeMeInstead")
-        node  (db/query-by-id conn "Main/TakeMeInstead")]
+  (let [path    (str tp/test-file-path "TakeMeInstead-pruned.html")
+        conn    (tdb/get-test-connection)
+        saved   (record-page! conn path "http://tvtropes.org/pmwiki/pmwiki.php/Main/TakeMeInstead")
+        node    (db/query-by-id conn "Main/TakeMeInstead")
+        ignored (db/query-by-id conn "External/LinkOutsideWikiText")
+        ]
     (is (= (count saved) 5))
+    (is (nil? ignored))
     (are [property value] (= value (get-in node [:data property]))
                           :hasError false
                           :label "Main"

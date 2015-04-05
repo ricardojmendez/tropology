@@ -47,6 +47,16 @@
         loaded    (load-resource-url name)
         node-data (-> loaded :res node-data-from-meta)
         links     (get-wiki-links (:res loaded) (:host node-data))]
-    (is (= (count links) 732))
-    (is (= (count (filter #(.startsWith % b/base-url) links)) 732)))) ; All links start with the known base url
+    (is (= 653 (count links)))
+    (is (= 653 (count (filter #(.startsWith % b/base-url) links)))))) ; All links start with the known base url
 
+
+
+(deftest test-get-wiki-links
+  (let [name      (str test-file-path "TakeMeInstead-pruned.html")
+        loaded    (load-resource-url name)
+        node-data (-> loaded :res node-data-from-meta)
+        links     (get-wiki-links (:res loaded) (:host node-data))]
+    (is (= 5 (count links)))
+    (is (empty? (filter #(.startsWith % "External/LinkOutside") links))) ; Properly disregards link outside wikitext
+    (is (= 5 (count (filter #(.startsWith % b/base-url) links)))))) ; All links start with the known base url
