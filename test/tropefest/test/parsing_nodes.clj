@@ -25,7 +25,6 @@
     (println "Yes, we were supposed to get an exception logged up there. ⤴")
     (is (not= logged-node nil))
     (is (get-in original-node [:data :isRedirect]))         ; We did create a redirect node
-    (is (get-in logged-node [:data :isRedirect]))           ; Redirect value did not change
     (is (nil? (get-in original-node [:data :error])))
     (is (get-in logged-node [:data :hasError]))
     (is (= (get-in logged-node [:data :error]) "Oopsy"))))
@@ -39,8 +38,6 @@
 
 
 (deftest test-record-page-local
-  ; Slow test, saving 732 nodes ain't cheap
-  ;
   ; Note that we load the page locally, so that we can pass a file that we
   ; know how may URLs it's supposed to include, while adding a provenance
   ; URL so that parsing and tagging takes place as expected.
@@ -49,8 +46,66 @@
     (let [path  (str tp/test-file-path "CowboyBebop.html")
           conn  (tdb/get-test-connection)
           _     (record-page! conn path "http://tvtropes.org/pmwiki/pmwiki.php/Anime/CowboyBebop")
-          saved (tdb/get-all-articles)]
+          saved (tdb/get-all-articles)
+          rels  (tdb/get-all-article-rels)]
       (is (= 653 (count saved)))
+      (is (= 653 (count rels)))
+      )
+    (prof/profile :trace :Database)
+    ))
+
+(deftest test-import-page-set-manga
+  ; Test with the Manga page, mostly for profiling reasons, since it'll require
+  ; creating 1880 articles, assign 1880 labels and create 1879 relationships.
+  (tdb/wipe-test-db)
+  (->>
+    (let [to-import {:url        (str tp/test-file-path "Manga.html")
+                     :provenance "http://tvtropes.org/pmwiki/pmwiki.php/Main/Manga"}
+          conn      (tdb/get-test-connection)
+          _         (record-page! conn (:url to-import) (:provenance to-import))
+          all-nodes (tdb/get-all-articles)
+          all-rels  (tdb/get-all-article-rels)
+          ]
+      (is (= 1880 (count all-nodes)))
+      (is (= 1879 (count all-rels)))
+      )
+    (prof/profile :trace :Database)
+    )
+  )
+
+(deftest test-import-lot
+  ; Slow test, mostly here for profiling reasons and to see if we get any clashes
+  (tdb/wipe-test-db)
+  (->>
+    (let [to-import [{:url        (str tp/test-file-path "Manga.html")
+                      :provenance "http://tvtropes.org/pmwiki/pmwiki.php/Main/Manga"}
+                     {:url        (str tp/test-file-path "Anime.html")
+                      :provenance "http://tvtropes.org/pmwiki/pmwiki.php/Main/Anime?from=Main.AnimeAndManga"}
+                     {:url        (str tp/test-file-path "FunnyFilm.html")
+                      :provenance "http://tvtropes.org/pmwiki/pmwiki.php/Funny/Film"}
+                     {:url        (str tp/test-file-path "Actors.html")
+                      :provenance "http://tvtropes.org/pmwiki/pmwiki.php/Main/Actors"}
+                     {:url        (str tp/test-file-path "FilmsOfThe1990s.html")
+                      :provenance "http://tvtropes.org/pmwiki/pmwiki.php/Main/FilmsOfThe1990s"}
+                     {:url        (str tp/test-file-path "ComedyTropes.html")
+                      :provenance "http://tvtropes.org/pmwiki/pmwiki.php/Main/ComedyTropes?from=Main.ComedyTrope"}
+                     {:url        (str tp/test-file-path "SignatureSong.html")
+                      :provenance "http://tvtropes.org/pmwiki/pmwiki.php/Main/SignatureSong"}
+                     {:url        (str tp/test-file-path "NamesToKnowInAnime.html")
+                      :provenance "http://tvtropes.org/pmwiki/pmwiki.php/Main/NamesToKnowInAnime?from=Main.JapaneseVoiceActors"}
+                     {:url        (str tp/test-file-path "WesternAnimation.html")
+                      :provenance "http://tvtropes.org/pmwiki/pmwiki.php/Main/WesternAnimation"}
+                     {:url        (str tp/test-file-path "AmericanSeries.html")
+                      :provenance "http://tvtropes.org/pmwiki/pmwiki.php/Main/AmericanSeries"}
+                     ]
+          conn      (tdb/get-test-connection)
+          ; We can't pmap these yet, as transactions abort while waiting on a lock
+          _         (doall (map #(record-page! conn (:url %) (:provenance %)) to-import))
+          all-nodes (tdb/get-all-articles)
+          all-rels  (tdb/get-all-article-rels)
+          ]
+      (is (= 15003 (count all-nodes)))
+      (is (= 16204 (count all-rels)))
       )
     (prof/profile :trace :Database)))
 
@@ -82,7 +137,7 @@
           node    (db/query-by-code conn "Main/TakeMeInstead")
           ignored (db/query-by-code conn "External/LinkOutsideWikiText")
           ]
-      (is (= (count saved) 6))
+      (is (= (count saved) 5))
       (is (nil? ignored))
       (are [property value] (= value (get-in node [:data property]))
                             :hasError false
@@ -109,9 +164,9 @@
         again (tdb/get-all-articles)
         links (cy/tquery conn "MATCH (n:Article {code:'Main/TakeMeInstead'})-[r]->() RETURN r")
         ]
-    (is (= (count saved) 6))                                ; Five links, plus one satellite
-    (is (= (count again) 6))                                ; Same number of nodes is returned the second time
-    (is (= (count links) 5))                                ; No duplicated links are created
+    (is (= (count saved) 5))                                ; There's only five links on the file
+    (is (= (count again) 5))                                ; Same number of links is returned the second time
+    (is (= (count links) 4))                                ; No duplicated links are created
     ))
 
 (deftest test-record-page-with-redirect
@@ -145,6 +200,6 @@
                           :url nil
                           )
     (is (empty? links-redir))
-    (is (= 5 (count links-main)))
+    (is (= 4 (count links-main)))
     ))
 

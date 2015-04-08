@@ -11,6 +11,36 @@
   (:import (java.net URI)))
 
 
+(def ignored-categories (set ["Administrivia" "Tropers"]))
+(def ignored-pages (set ["Main/Administrivia"
+                         "Main/Cliche"
+                         "Main/GoodStyle"
+                         "Main/HomePage"
+                         "Main/ListOfShowsThatNeedSummary"
+                         "Main/LostAndFound"
+                         "Main/PageTemplates"
+                         "Main/RuleOfCautiousEditingJudgement"
+                         "Main/TextFormattingRules"
+                         "Main/ThereIsNoSuchThingAsNotability"
+                         "Main/Trope"
+                         "Main/Tropes"
+                         "Main/WecomeToTVTropes"
+                         "Main/WikiMagic"
+                         "Main/Wikipedia"
+                         "Main/WikiSandbox"]))
+
+(defn is-valid-url?
+  "Evaluates if a URL is valid for us to crawl or not"
+  [url]
+  (let [code (b/code-from-url url)
+        cat  (b/category-from-code code)]
+    (and
+      (.startsWith url b/base-url)
+      (empty? (some #{cat} ignored-categories))
+      (empty? (some #{code} ignored-pages))))
+  )
+
+
 (defn load-resource-url [url]
   "Loads a html-resource from a URL. Returns a map with the original :url and
   :res for the resource"
@@ -54,7 +84,7 @@
   "Returns a map with the metadata we can infer about a new from its URL.
   Assumes the url string conforms to the defined base-url, or will return nil."
   [^String url]
-  (if (.startsWith url b/base-url)
+  (if (is-valid-url? url)
     (let [code (b/code-from-url url)]
       {:category   (b/category-from-code code)
        :code       code
@@ -78,16 +108,8 @@
      (map #(get-in % [:attrs :href]))
      (map #(u/resolve host %))
      (distinct)
-     (filter #(.startsWith % b/base-url)))))
-
-
-(defn mark-url-redirect
-  "Create a node marking as url as redirect.
-  If a node already exists, the isRedirect property will be set to true."
-  [conn url]
-  (let [from-url (-> (node-data-from-url url)
-                     (assoc :isRedirect true))]
-    (do (db/create-or-merge-node! conn from-url))))
+     (filter is-valid-url?)
+     )))
 
 
 (defn save-page-links!
@@ -143,5 +165,6 @@
 (defn crawl-and-update!
   [conn limit]
   (->> (db/query-nodes-to-crawl conn limit)
-       (pmap #(record-page! conn %))
+       ; We may get transactions aborting if we parallelize too many
+       (map #(record-page! conn %))
        doall))

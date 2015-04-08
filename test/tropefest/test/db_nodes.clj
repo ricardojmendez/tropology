@@ -20,6 +20,10 @@
 (defn get-all-articles []
   (cy/tquery (get-test-connection) "MATCH (n:Article) RETURN n"))
 
+(defn get-all-article-rels []
+  (cy/tquery (get-test-connection) "MATCH (n:Article)-[r]->(m:Article) RETURN n.code as from, type(r) as type, m.code as to"))
+
+
 
 (deftest test-id-to-match
   (is (= (code-to-match "p") "(p:Article {code:{id}})"))
@@ -66,13 +70,17 @@
   (is (= (query-nodes-to-crawl (get-test-connection) 100) '())))
 
 
-(defn create-test-nodes [n isRedirect]
-  (dotimes [i n]
-    (create-node! (get-test-connection) b/base-label {:code       (str "TestNode/" i)
-                                                      :nextUpdate i
-                                                      :url        (str i) ; Keep the i as the url for ease of testing
-                                                      :isRedirect isRedirect
-                                                      :hasError   false})))
+(defn create-test-nodes
+  ([n isRedirect]
+   (create-test-nodes n isRedirect 0))
+  ([n isRedirect base-n]
+   (dotimes [s n]
+     (let [i (+ s base-n)]
+       (create-node! (get-test-connection) b/base-label {:code       (str "TestNode/" i)
+                                                         :nextUpdate i
+                                                         :url        (str i) ; Keep the i as the url for ease of testing
+                                                         :isRedirect isRedirect
+                                                         :hasError   false})))))
 
 (deftest test-query-nodes-node-limit
   (wipe-test-db)
@@ -94,7 +102,7 @@
 (deftest test-query-nodes-time-limit
   (wipe-test-db)
   (create-test-nodes 15 false)
-  (create-test-nodes 3 true)
+  (create-test-nodes 3 true 20)
   (dotimes [i 16]
     (is (= (count (query-nodes-to-crawl (get-test-connection) 100 i)) i))) ; The number of nodes where the nextupdate time is under i is the i itself
   (is (= (count (query-nodes-to-crawl (get-test-connection) 100 20)) 15)) ; All nodes are older than 100, we should get all
