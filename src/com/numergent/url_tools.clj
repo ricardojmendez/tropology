@@ -18,5 +18,3 @@
   [a b]
   (if (or (nil? a) (empty? a)) b a))
 
-; TODO: Should probably get to doing tests for these.
-

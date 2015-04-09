@@ -6,7 +6,9 @@
             [clojurewerkz.neocons.rest.cypher :as cy]
             [clojurewerkz.neocons.rest.relationships :as nrl]
             [clojurewerkz.neocons.rest.index :as nri]
+            [clojurewerkz.neocons.rest.transaction :as tx]
             [tropefest.base :as b]
+            [com.numergent.url-tools :as ut]
             [taoensso.timbre.profiling :as p]
             [environ.core :refer [env]]))
 
@@ -15,6 +17,9 @@
   "Trivial. Returns a local connection."
   []
   (nr/connect (:db-url env)))
+
+
+
 
 
 ;
@@ -29,15 +34,15 @@
   See http://joda-time.sourceforge.net/apidocs/org/joda/time/Instant.html"
   [data]
   (let [now (j/date-time)]
-    (assoc data :timestamp (.getMillis now)
-                :nextupdate (.getMillis (j/plus now expiration-period)))))
+    (assoc data :timeStamp (.getMillis now)
+                :nextUpdate (.getMillis (j/plus now expiration-period)))))
 
 (defn timestamp-update
   "Updates a data hashmap with the current time and the next time for update,
   in milliseconds.
   See http://joda-time.sourceforge.net/apidocs/org/joda/time/Instant.html"
   [data]
-  (assoc data :timestamp (.getMillis (j/date-time))))
+  (assoc data :timeStamp (.getMillis (j/date-time))))
 
 (defn timestamp-create
   "Adds to a data hashmap the current time and the next time for update,
@@ -46,7 +51,36 @@
   See http://joda-time.sourceforge.net/apidocs/org/joda/time/Instant.html"
   [data]
   (let [now (.getMillis (j/date-time))]
-    (merge {:timestamp now :nextupdate now} data)))
+    (merge {:timeStamp now :nextUpdate now} data)))
+
+
+;
+; Page import
+;
+
+(defn create-page-and-links
+  [conn node rel links {:keys [isRedirect redirector]}]
+  (let [main-st (str "MERGE (p:Article {code:{maincode}}) SET "
+                     " p.url = {url}, p.category = {category}, p.host = {host}, "
+                     " p.title = {title}, p.image = {image}, p.type = {type}, "
+                     " p.nextUpdate = {nextUpdate}, p.timeStamp = {timeStamp}, "
+                     " p.hasError = {hasError}, p.isRedirect = {isRedirect} "
+                     "FOREACH (link in {links} |"
+                     " MERGE (p2:Article {code:link}) "
+                     " ON CREATE SET p2.nextUpdate = {nextUpdate}, p2.hasError = false, p2.isRedirect = false, p2.timeStamp = {timeStamp} "
+                     " CREATE UNIQUE (p)-[" rel "]->(p2) "
+                     ")")
+        p       (-> (timestamp-next-update node)
+                    (assoc :maincode (:code node) :links links))]
+    (tx/in-transaction
+      conn
+      (tx/statement main-st p)
+      (if isRedirect
+        (tx/statement "MERGE (p:Article {code:{code}}) SET p.isRedirect = true, p.nextUpdate = 0, p.timeStamp = {timeStamp}, p.hasError = false"
+                      {:code redirector, :timeStamp (:timeStamp node)}))
+      )
+    ))
+
 
 ;
 ; Node update functions
@@ -66,32 +100,34 @@
 ; Node query and creation functions
 ;
 
-(defn id-to-match
+(defn code-to-match
   "Returns match pattern string for an id, including the node label, with
   the prefix name for the pattern.
 
   I'm not a fan of not being able to pass the label as a parameter, but them's
   the breaks. neo4j's parsing seems strong enough that code injection is
   unlikely."
-  ([prefix id]
-   (id-to-match prefix id "id")
+  ([prefix]
+   (code-to-match prefix "id" b/base-label)
     )
-  ([prefix id id-param]
-   (let [label (b/label-from-id id)]
-     (str "(" prefix ":" label " {id:{" id-param "}})"))))
+  ([prefix id-param]
+   (code-to-match prefix id-param b/base-label)
+    )
+  ([prefix id-param label]
+   (str "(" prefix ":" label " {code:{" id-param "}})")))
 
-(defn query-by-id
+(defn query-by-code
   "Queries for a node id on the properties. Does not filter by label. Notice
   that this is not the same as getting the node directly via its internal id."
   [conn id]
   (->>
-    (let [query-str (str "MATCH  " (id-to-match "v" id) " RETURN v")
+    (let [query-str (str "MATCH  " (code-to-match "v") " RETURN v")
           match     (first (cy/tquery conn query-str {:id id}))]
       (if (nil? match)
         nil
         (-> (match "v")
             (select-keys [:data :metadata]))))
-    (p/p :query-by-id)))
+    (p/p :query-by-code)))
 
 (defn query-nodes-to-crawl
   "Return the nodes that need to be crawled according to their nextupdate timestamp"
@@ -101,8 +137,8 @@
    (query-nodes-to-crawl conn node-limit (.getMillis (j/date-time))))
   ([conn node-limit time-limit]
    (if (> node-limit 0)                                     ; If we pass a limit of 0, applying ORDER BY will raise an exception
-     (->> (cy/tquery conn "MATCH (v) WHERE not v.isRedirect AND not v.hasError AND v.nextupdate < {now} RETURN v.url ORDER BY v.nextupdate LIMIT {limit}" {:now time-limit :limit node-limit})
-          (map #(% "v.url")))
+     (->> (cy/tquery conn "MATCH (v:Article) WHERE not v.isRedirect AND not v.hasError AND v.nextUpdate < {now} RETURN v.code as code, v.url as url ORDER BY v.nextUpdate LIMIT {limit}" {:now time-limit :limit node-limit})
+          (map #(ut/if-empty (% "url") (str b/base-path (% "code")))))
      '())))
 
 ;
@@ -115,7 +151,7 @@
   We could probably write it getting the relationships and walking through
   them, but going with cypher for now to test."
   [conn ^String code rel]
-  (let [query-str (str "MATCH " (id-to-match "o" code "id") "-[" rel "]->(v) RETURN DISTINCT v.id as id,v.url as url, v.title as title, v.label as label, v.incoming as incoming")]
+  (let [query-str (str "MATCH " (code-to-match "o" "id") "-[" rel "]->(v:Article) RETURN DISTINCT v.code as code,v.url as url, v.title as title, v.label as label, v.incoming as incoming")]
     (cy/tquery conn query-str {:id code})))
 
 (defn query-to
@@ -123,7 +159,7 @@
   Yes, the parameter order is the opposite from query-links-from,
   since I think it better indicates the relationship."
   [conn rel ^String code]
-  (let [query-str (str "MATCH " (id-to-match "o" code "id") "<-[" rel "]-(v) RETURN DISTINCT v.id as id,v.url as url, v.title as title, v.label as label, v.incoming as incoming")]
+  (let [query-str (str "MATCH " (code-to-match "o" "id") "<-[" rel "]-(v) RETURN DISTINCT v.code as code,v.url as url, v.title as title, v.label as label, v.incoming as incoming")]
     (cy/tquery conn query-str {:id code})))
 
 (defn query-common-nodes-from
@@ -135,11 +171,11 @@
   ([conn ^String common-code ^String code-from rel incoming-link-limit]
     ; MATCH (n:Anime {id:”Anime/CowboyBebop”})--(m:Main {id:”Main/NoHoldsBarredBeatdown”})-[r:LINKSTO]->(o)--(n) WHERE o.incoming < 1000 RETURN DISTINCT o;
    (let [query-str (str "MATCH "
-                        (id-to-match "n" common-code "idn")
+                        (code-to-match "n" "idn")
                         "--"
-                        (id-to-match "m" code-from "idm")
+                        (code-to-match "m" "idm")
                         "-[" rel "]->(o)--(n) WHERE o.incoming < {limit} "
-                        "RETURN DISTINCT o.id as id, o.url as url, o.label as label, o.title as title"
+                        "RETURN DISTINCT o.code as code, o.url as url, o.label as label, o.title as title"
                         )]
      (cy/tquery conn query-str {:idn common-code :idm code-from :limit incoming-link-limit})))
   )
@@ -174,20 +210,20 @@
 
   Data-items is expected to include the label."
   [conn data-items]
-  (let [existing (query-by-id conn (:id data-items))
+  (let [existing (query-by-code conn (:code data-items))
         id       (get-in existing [:metadata :id])]
     (if (empty? existing)
-      (create-node! conn (:label data-items) data-items)
+      (create-node! conn (:category data-items) data-items)
       (merge-node! conn id data-items))))
 
 (defn create-or-retrieve-node!
   "Creates a node from a connection with a label. If a node with the id
   already exists, the node is retrieved and returned."
   [conn data-items]
-  (let [existing (query-by-id conn (:id data-items))
+  (let [existing (query-by-code conn (:code data-items))
         id       (get-in existing [:metadata :id])]
     (if (empty? existing)
-      (create-node! conn (:label data-items) data-items)
+      (create-node! conn (:category data-items) data-items)
       (nn/get conn id))))
 
 

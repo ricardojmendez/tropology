@@ -65,7 +65,7 @@
 (defn seed-database []
   (do
     (timbre/info "Seeding...")
-    (if-not (db/query-by-id (db/get-connection) "Anime/SamuraiFlamenco")
+    (if-not (db/query-by-code (db/get-connection) "Anime/SamuraiFlamenco")
       (->
         (p/load-resource-url "http://tvtropes.org/pmwiki/pmwiki.php/Anime/SamuraiFlamenco")
         p/save-page-links!))

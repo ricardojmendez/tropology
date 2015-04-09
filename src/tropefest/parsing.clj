@@ -6,7 +6,8 @@
             [taoensso.timbre :as timbre]
             [taoensso.timbre.profiling :as p]
             [tropefest.base :as b]
-            [tropefest.db :as db])
+            [tropefest.db :as db]
+            [taoensso.timbre.profiling :as prof])
   (:import (java.net URI)))
 
 
@@ -38,9 +39,9 @@
   we care about like the node label."
   [res]
   (let [og-url (content-from-meta res "og:url")
-        id     (-> (u/path-of og-url) (s/replace b/base-path ""))]
-    {:id         id
-     :label      (b/label-from-id id)
+        code   (b/code-from-url og-url)]
+    {:code       code
+     :category   (b/category-from-code code)
      :url        og-url
      :isRedirect false                                      ; Nodes have to be explicitly tagged as being redirects
      :hasError   false
@@ -54,9 +55,9 @@
   Assumes the url string conforms to the defined base-url, or will return nil."
   [^String url]
   (if (.startsWith url b/base-url)
-    (let [id (-> (u/path-of url) (s/replace b/base-path ""))]
-      {:label      (b/label-from-id id)
-       :id         id
+    (let [code (b/code-from-url url)]
+      {:category   (b/category-from-code code)
+       :code       code
        :host       (ut/host-string-of url)
        :url        url
        :isRedirect false                                    ; Nodes have to be explicitly tagged as being redirects
@@ -88,6 +89,7 @@
                      (assoc :isRedirect true))]
     (do (db/create-or-merge-node! conn from-url))))
 
+
 (defn save-page-links!
   "Saves all page links to the database. It expects a hashmap with two
   paramets: :url for the originally requested URL, and :res for the resulting
@@ -95,27 +97,29 @@
   ([pack]
    (save-page-links! (db/get-connection) pack))
   ([conn {url :url res :res}]
-   (let [meta        (-> (node-data-from-meta res) db/timestamp-next-update)
-         is-redirect (not= url (:url meta))
-         node        (db/create-or-merge-node! conn meta)]
-     (if is-redirect (mark-url-redirect conn url))
+   (let [node  (-> (node-data-from-meta res) db/timestamp-next-update)
+         redir {:isRedirect (not= url (:url node))
+                :redirector (b/code-from-url url)}
+         links (get-wiki-links res (:host node))
+         ]
      (->>
-       (get-wiki-links res (:host meta))
-       (pmap node-data-from-url)
-       (map #(db/create-or-retrieve-node! conn %))          ; Nodes are only retrieved when linking to, not updated
-       (map #(db/relate-nodes! conn :LINKSTO node %))       ; Add link
-       doall))                                              ; I could probably change this for a doseq to use less RAM
+       (db/create-page-and-links conn node :LINKSTO (map b/code-from-url links) redir)
+       (prof/p :save-page-links)))
     ))
 
 
 (defn log-node-exception!
-  "Logs an exception for a url record"
+  "Logs an exception for a url record
+
+  DEPRECATED, MUST DO IN A BETTER PERFORMANT MANNER.
+  "
   [conn ^String url ^Throwable t]
   (let [update-data (-> (node-data-from-url url)
-                        (select-keys [:id :label])
+                        (select-keys [:code :category])
                         (assoc :hasError true :error (.getMessage t)))]
     (timbre/error (str "Exception on " url " : " (.getMessage t)))
-    (doall (db/create-or-merge-node! conn update-data))))
+    (doall (db/create-or-merge-node! conn update-data))
+    ))
 
 (defn record-page!
   "Attempts to obtain the links from a url and save them.

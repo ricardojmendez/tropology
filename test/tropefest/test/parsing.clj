@@ -5,10 +5,10 @@
 
 (deftest test-node-data-from-url
   (are [url result] (is (= (node-data-from-url url) result))
-                    "http://tvtropes.org/pmwiki/pmwiki.php/Anime/CowboyBebop" {:label "Anime" :id "Anime/CowboyBebop" :host "http://tvtropes.org/" :url "http://tvtropes.org/pmwiki/pmwiki.php/Anime/CowboyBebop" :isRedirect false :hasError false}
-                    "http://tvtropes.org/pmwiki/pmwiki.php/Main/HomePage" {:label "Main" :id "Main/HomePage" :host "http://tvtropes.org/" :url "http://tvtropes.org/pmwiki/pmwiki.php/Main/HomePage" :isRedirect false :hasError false}
-                    "http://tvtropes.org/pmwiki/pmwiki.php/Film/TheMatrix" {:label "Film" :id "Film/TheMatrix" :host "http://tvtropes.org/" :url "http://tvtropes.org/pmwiki/pmwiki.php/Film/TheMatrix" :isRedirect false :hasError false}
-                    "http://tvtropes.org/pmwiki/pmwiki.php/Film/TheMatrix?q=1" {:label "Film" :id "Film/TheMatrix" :host "http://tvtropes.org/" :url "http://tvtropes.org/pmwiki/pmwiki.php/Film/TheMatrix?q=1" :isRedirect false :hasError false}
+                    "http://tvtropes.org/pmwiki/pmwiki.php/Anime/CowboyBebop" {:category "Anime" :code "Anime/CowboyBebop" :host "http://tvtropes.org/" :url "http://tvtropes.org/pmwiki/pmwiki.php/Anime/CowboyBebop" :isRedirect false :hasError false}
+                    "http://tvtropes.org/pmwiki/pmwiki.php/Main/HomePage" {:category "Main" :code "Main/HomePage" :host "http://tvtropes.org/" :url "http://tvtropes.org/pmwiki/pmwiki.php/Main/HomePage" :isRedirect false :hasError false}
+                    "http://tvtropes.org/pmwiki/pmwiki.php/Film/TheMatrix" {:category "Film" :code "Film/TheMatrix" :host "http://tvtropes.org/" :url "http://tvtropes.org/pmwiki/pmwiki.php/Film/TheMatrix" :isRedirect false :hasError false}
+                    "http://tvtropes.org/pmwiki/pmwiki.php/Film/TheMatrix?q=1" {:category "Film" :code "Film/TheMatrix" :host "http://tvtropes.org/" :url "http://tvtropes.org/pmwiki/pmwiki.php/Film/TheMatrix?q=1" :isRedirect false :hasError false}
                     "tvtropes.org/pmwiki/pmwiki.php/Film/TheMatrix" nil
                     "http://tvtropes.org/pmwiki/title_search_form.php" nil))
 
@@ -37,8 +37,8 @@
                       :title "Cowboy Bebop"
                       :image "http://static.tvtropes.org/pmwiki/pub/images/cowboy_bebop_lineup_7846.jpg"
                       :type "video.tv_show"
-                      :id "Anime/CowboyBebop"
-                      :label "Anime"
+                      :code "Anime/CowboyBebop"
+                      :category "Anime"
                       :hasError false
                       :isRedirect false)))
 
@@ -52,7 +52,7 @@
 
 
 
-(deftest test-get-wiki-links
+(deftest test-get-wiki-links-pruned
   (let [name      (str test-file-path "TakeMeInstead-pruned.html")
         loaded    (load-resource-url name)
         node-data (-> loaded :res node-data-from-meta)

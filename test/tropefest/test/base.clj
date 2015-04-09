@@ -4,7 +4,7 @@
 
 
 (deftest test-label-from-id
-         (are [id label] (is (= (label-from-id id) label))
+         (are [id label] (is (= (category-from-code id) label))
               "Anime/CowboyBebop"     "Anime"
               "Film/TheMatrix"        "Film"
               "Some-Invalid-Format"   "Some-Invalid-Format"

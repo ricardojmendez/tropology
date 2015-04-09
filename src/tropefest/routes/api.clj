@@ -14,10 +14,10 @@
 (defresource node
              :allowed-methods [:get]
              :handle-ok (fn [request]
-                          (let [{{{label :label, name :name} :params} :request} request
+                          (let [{{{label :category, name :name} :params} :request} request
                                 id (str label "/" name)]
                             (->
-                              (db/query-by-id (db/get-connection) id)
+                              (db/query-by-code (db/get-connection) id)
                               :data
                               (ut/if-empty {}))))
              :available-media-types ["application/json"])
@@ -26,7 +26,7 @@
 (defresource network
              :allowed-methods [:get]
              :handle-ok (fn [request]
-                          (let [{{{label :label, name :name} :params} :request} request
+                          (let [{{{label :category, name :name} :params} :request} request
                                 code (str label "/" name)]
                             (api/network-from-node code)))
              :available-media-types ["application/json"])

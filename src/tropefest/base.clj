@@ -1,12 +1,14 @@
 (ns tropefest.base
   (:require [clojure.string :as s]
-            [com.numergent.url-tools :as ut]))
+            [com.numergent.url-tools :as ut]
+            [clojurewerkz.urly.core :as u]))
 
 (def base-path "/pmwiki/pmwiki.php/")
 (def base-url (str "http://tvtropes.org" base-path))
 
+(def base-label "Article")
 
-(defn label-from-id
+(defn category-from-code
   "Returns the node label from a node id, which is expected to be of the form Category/SubCategory.
 
   Previously I used the og-type as the node label, but a lot of them are too generic.
@@ -23,5 +25,8 @@
   (if (nil? id)
     "Unknown"
     (-> id (s/split #"/") first (ut/if-empty "Unknown"))))
+
+(defn code-from-url [^String url]
+  (-> (u/path-of url) (s/replace base-path "")))
 
 

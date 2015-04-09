@@ -19,7 +19,7 @@
   (let [conn          (tdb/get-test-connection)
         url           "http://tvtropes.org/pmwiki/pmwiki.php/Anime/CowboyBebop"
         original-data (-> (node-data-from-url url) (assoc :isRedirect true)) ; Create a redirect node
-        original-node (db/create-node! conn "Anime" original-data)
+        original-node (db/create-node! conn "Article" original-data)
         t             (Throwable. "Oopsy")
         logged-node   (log-node-exception! conn url t)]
     (println "Yes, we were supposed to get an exception logged up there. ⤴")
@@ -31,34 +31,6 @@
     (is (= (get-in logged-node [:data :error]) "Oopsy"))))
 
 
-;
-; Handling a possible redirect case
-;
-
-(deftest test-mark-url-redirect
-  ; First, we test the cases were we do tell it it's a redirect
-  (tdb/wipe-test-db)
-  (let [conn (tdb/get-test-connection)
-        url  "http://tvtropes.org/pmwiki/pmwiki.php/Main/Redirector"
-        _    (mark-url-redirect conn url)
-        node (db/query-by-id conn "Main/Redirector")]
-    (are [property value] (= value (get-in node [:data property]))
-                          :isRedirect true
-                          :id "Main/Redirector"
-                          :url url))
-  ; Finally, let's make sure that if the node exists, the :isRedirect property is set
-  (tdb/wipe-test-db)
-  (let [conn (tdb/get-test-connection)
-        url  "http://tvtropes.org/pmwiki/pmwiki.php/Main/Redirector"
-        meta (p/node-data-from-url url)
-        orig (db/create-or-merge-node! conn meta)
-        _    (mark-url-redirect conn url)
-        node (db/query-by-id conn "Main/Redirector")]
-    (is (= false (get-in orig [:data :isRedirect])))
-    (is (= true (get-in node [:data :isRedirect])))
-    (is (= (get-in node [:meta :id]) (get-in orig [:meta :id])))
-    )
-  )
 
 
 ;
@@ -73,24 +45,28 @@
   ; know how may URLs it's supposed to include, while adding a provenance
   ; URL so that parsing and tagging takes place as expected.
   (tdb/wipe-test-db)
-  (let [path  (str tp/test-file-path "CowboyBebop.html")
-        conn  (tdb/get-test-connection)
-        saved (prof/profile :info :Database (record-page! conn path "http://tvtropes.org/pmwiki/pmwiki.php/Anime/CowboyBebop"))]
-    (is (= 653 (count saved)))
-    ))
+  (->>
+    (let [path  (str tp/test-file-path "CowboyBebop.html")
+          conn  (tdb/get-test-connection)
+          _     (record-page! conn path "http://tvtropes.org/pmwiki/pmwiki.php/Anime/CowboyBebop")
+          saved (tdb/get-all-articles)]
+      (is (= 653 (count saved)))
+      )
+    (prof/profile :trace :Database)))
 
 (deftest test-record-page-live
   ; Load a live page. I don't check for how many nodes we're saving since that can
   ; and will change along with the page.
   (tdb/wipe-test-db)
   (let [conn  (tdb/get-test-connection)
-        saved (record-page! conn "http://tvtropes.org/pmwiki/pmwiki.php/Main/HomePage")
-        node  (db/query-by-id conn "Main/HomePage")]
+        _     (record-page! conn "http://tvtropes.org/pmwiki/pmwiki.php/Main/HomePage")
+        saved (tdb/get-all-articles)
+        node  (db/query-by-code conn "Main/HomePage")]
     (is (< 0 (count saved)))
     (are [property value] (= value (get-in node [:data property]))
                           :hasError false
-                          :label "Main"
-                          :id "Main/HomePage"
+                          :category "Main"
+                          :code "Main/HomePage"
                           :isRedirect false
                           :url "http://tvtropes.org/pmwiki/pmwiki.php/Main/HomePage")
     ))
@@ -98,20 +74,24 @@
 (deftest test-record-page-same-provenance
   ; See note on test-record-page-local about the provenance URL
   (tdb/wipe-test-db)
-  (let [path    (str tp/test-file-path "TakeMeInstead-pruned.html")
-        conn    (tdb/get-test-connection)
-        saved   (record-page! conn path "http://tvtropes.org/pmwiki/pmwiki.php/Main/TakeMeInstead")
-        node    (db/query-by-id conn "Main/TakeMeInstead")
-        ignored (db/query-by-id conn "External/LinkOutsideWikiText")
-        ]
-    (is (= (count saved) 5))
-    (is (nil? ignored))
-    (are [property value] (= value (get-in node [:data property]))
-                          :hasError false
-                          :label "Main"
-                          :id "Main/TakeMeInstead"
-                          :isRedirect false
-                          :url "http://tvtropes.org/pmwiki/pmwiki.php/Main/TakeMeInstead")
+  (->>
+    (let [path    (str tp/test-file-path "TakeMeInstead-pruned.html")
+          conn    (tdb/get-test-connection)
+          _       (record-page! conn path "http://tvtropes.org/pmwiki/pmwiki.php/Main/TakeMeInstead")
+          saved   (tdb/get-all-articles)
+          node    (db/query-by-code conn "Main/TakeMeInstead")
+          ignored (db/query-by-code conn "External/LinkOutsideWikiText")
+          ]
+      (is (= (count saved) 6))
+      (is (nil? ignored))
+      (are [property value] (= value (get-in node [:data property]))
+                            :hasError false
+                            :category "Main"
+                            :code "Main/TakeMeInstead"
+                            :isRedirect false
+                            :url "http://tvtropes.org/pmwiki/pmwiki.php/Main/TakeMeInstead")
+      )
+    (prof/profile :trace :Database)
     ))
 
 (deftest test-record-page-twice
@@ -123,12 +103,14 @@
   (tdb/wipe-test-db)
   (let [path  (str tp/test-file-path "TakeMeInstead-pruned.html")
         conn  (tdb/get-test-connection)
-        saved (record-page! conn path "http://tvtropes.org/pmwiki/pmwiki.php/Main/TakeMeInstead")
-        again (prof/profile :info :Database (record-page! conn path "http://tvtropes.org/pmwiki/pmwiki.php/Main/TakeMeInstead"))
-        links (cy/tquery conn "MATCH (n:Main {id:'Main/TakeMeInstead'})-[r]->() RETURN r")
+        _     (record-page! conn path "http://tvtropes.org/pmwiki/pmwiki.php/Main/TakeMeInstead")
+        saved (tdb/get-all-articles)
+        _     (record-page! conn path "http://tvtropes.org/pmwiki/pmwiki.php/Main/TakeMeInstead")
+        again (tdb/get-all-articles)
+        links (cy/tquery conn "MATCH (n:Article {code:'Main/TakeMeInstead'})-[r]->() RETURN r")
         ]
-    (is (= (count saved) 5))                                ; There's only five links on the file
-    (is (= (count again) 5))                                ; Same number of links is returned the second time
+    (is (= (count saved) 6))                                ; Five links, plus one satellite
+    (is (= (count again) 6))                                ; Same number of nodes is returned the second time
     (is (= (count links) 5))                                ; No duplicated links are created
     ))
 
@@ -142,24 +124,26 @@
   (tdb/wipe-test-db)
   (let [path        (str tp/test-file-path "TakeMeInstead-pruned.html")
         conn        (tdb/get-test-connection)
-        saved       (record-page! conn path "http://tvtropes.org/pmwiki/pmwiki.php/Main/TakeMeInsteadRedirector")
-        main-node   (db/query-by-id conn "Main/TakeMeInstead")
-        redir-node  (db/query-by-id conn "Main/TakeMeInsteadRedirector")
+        _           (record-page! conn path "http://tvtropes.org/pmwiki/pmwiki.php/Main/TakeMeInsteadRedirector")
+        main-node   (db/query-by-code conn "Main/TakeMeInstead")
+        redir-node  (db/query-by-code conn "Main/TakeMeInsteadRedirector")
         links-main  (db/query-from conn "Main/TakeMeInstead" :LINKSTO)
         links-redir (db/query-from conn "Main/TakeMeInsteadRedirector" :LINKSTO)]
-    (is (= (count saved) 5))
     (are [property value] (= value (get-in main-node [:data property]))
                           :hasError false
-                          :label "Main"
-                          :id "Main/TakeMeInstead"
+                          :category "Main"
+                          :code "Main/TakeMeInstead"
                           :isRedirect false
                           :url "http://tvtropes.org/pmwiki/pmwiki.php/Main/TakeMeInstead")
     (are [property value] (= value (get-in redir-node [:data property]))
                           :hasError false
-                          :label "Main"
-                          :id "Main/TakeMeInsteadRedirector"
+                          ; :category "Main"
+                          :code "Main/TakeMeInsteadRedirector"
                           :isRedirect true
-                          :url "http://tvtropes.org/pmwiki/pmwiki.php/Main/TakeMeInsteadRedirector")
+                          ; Nodes that are initially created as redirects don't get a url or category
+                          :category nil
+                          :url nil
+                          )
     (is (empty? links-redir))
     (is (= 5 (count links-main)))
     ))
