@@ -5,11 +5,10 @@
             [clojurewerkz.neocons.rest.labels :as nl]
             [clojurewerkz.neocons.rest.cypher :as cy]
             [clojurewerkz.neocons.rest.relationships :as nrl]
-            [clojurewerkz.neocons.rest.index :as nri]
             [clojurewerkz.neocons.rest.transaction :as tx]
             [tropefest.base :as b]
             [com.numergent.url-tools :as ut]
-            [taoensso.timbre.profiling :as p]
+            [taoensso.timbre.profiling :as prof]
             [environ.core :refer [env]]))
 
 
@@ -17,9 +16,6 @@
   "Trivial. Returns a local connection."
   []
   (nr/connect (:db-url env)))
-
-
-
 
 
 ;
@@ -89,12 +85,15 @@
 (defn update-link-count!
   "Updates the incoming and outgoing link count for all nodes in the database"
   [conn]
-  (do
-    (cy/query conn "MATCH ()-[r:LINKSTO]->(n) WITH n, COUNT(r) as incoming SET n.incoming = incoming")
-    (cy/query conn "MATCH (n)-[r:LINKSTO]->() WITH n, COUNT(r) as outgoing SET n.outgoing = outgoing")
-    (cy/query conn "MATCH (n) WHERE n.outgoing is null WITH n SET n.outgoing = 0")
-    (cy/query conn "MATCH (n) WHERE n.incoming is null WITH n SET n.incoming = 0")
-    nil))
+  (->>
+    (tx/in-transaction
+      conn
+      (tx/statement "MATCH ()-[r:LINKSTO]->(n:Article) WITH n, COUNT(r) as incoming SET n.incoming = incoming")
+      (tx/statement "MATCH (n:Article)-[r:LINKSTO]->() WITH n, COUNT(r) as outgoing SET n.outgoing = outgoing")
+      (tx/statement "MATCH (n:Article) WHERE n.outgoing is null WITH n SET n.outgoing = 0")
+      (tx/statement "MATCH (n:Article) WHERE n.incoming is null WITH n SET n.incoming = 0"))
+    (prof/p :update-link-count))
+  )
 
 ;
 ; Node query and creation functions
@@ -127,7 +126,7 @@
         nil
         (-> (match "v")
             (select-keys [:data :metadata]))))
-    (p/p :query-by-code)))
+    (prof/p :query-by-code)))
 
 (defn query-nodes-to-crawl
   "Return the nodes that need to be crawled according to their nextupdate timestamp"
@@ -189,9 +188,9 @@
 (defn create-node!
   "Creates a node from a connection with a label"
   [conn label data-items]
-  (let [node (p/p :nn-create (nn/create conn (timestamp-create data-items)))]
+  (let [node (prof/p :nn-create (nn/create conn (timestamp-create data-items)))]
     (do
-      (p/p :nl-add (nl/add conn node label))
+      (prof/p :nl-add (nl/add conn node label))
       node)))
 
 (defn merge-node!
@@ -200,8 +199,8 @@
   [conn ^long id data-items]
   (let [merged (-> (nn/get conn id) (:data) (merge data-items) (timestamp-update))]
     (do
-      (p/p :nn-update (nn/update conn id merged))
-      (p/p :nn-get (nn/get conn id)))))                     ; Notice that we get it again to retrieve the updated values
+      (prof/p :nn-update (nn/update conn id merged))
+      (prof/p :nn-get (nn/get conn id)))))                     ; Notice that we get it again to retrieve the updated values
 
 (defn create-or-merge-node!
   "Creates a node from a connection with a label. If a node with the id
@@ -235,4 +234,4 @@
 (defn relate-nodes!
   "Links two nodes by a relationship if they aren't yet linked"
   [conn relationship n1 n2]
-  (p/p :nrl-maybe-create (nrl/maybe-create conn n1 n2 relationship)))
+  (prof/p :nrl-maybe-create (nrl/maybe-create conn n1 n2 relationship)))
