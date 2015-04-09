@@ -67,7 +67,7 @@
                      " p.hasError = {hasError}, p.isRedirect = {isRedirect} "
                      "FOREACH (link in {links} |"
                      " MERGE (p2:Article {code:link}) "
-                     " ON CREATE SET p2.nextUpdate = {nextUpdate}, p2.hasError = false, p2.isRedirect = false, p2.timeStamp = {timeStamp} "
+                     " ON CREATE SET p2.nextUpdate = {timeStamp}, p2.hasError = false, p2.isRedirect = false, p2.timeStamp = {timeStamp} "
                      " CREATE UNIQUE (p)-[" rel "]->(p2) "
                      ")")
         p       (-> (timestamp-next-update node)
@@ -138,7 +138,7 @@
   ([conn node-limit time-limit]
    (if (> node-limit 0)                                     ; If we pass a limit of 0, applying ORDER BY will raise an exception
      (->> (cy/tquery conn "MATCH (v:Article) WHERE not v.isRedirect AND not v.hasError AND v.nextUpdate < {now} RETURN v.code as code, v.url as url ORDER BY v.nextUpdate LIMIT {limit}" {:now time-limit :limit node-limit})
-          (map #(ut/if-empty (% "url") (str b/base-path (% "code")))))
+          (map #(ut/if-empty (% "url") (str b/base-url (% "code")))))
      '())))
 
 ;

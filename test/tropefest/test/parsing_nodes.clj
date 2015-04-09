@@ -6,7 +6,8 @@
             [tropefest.test.parsing :as tp]
             [tropefest.parsing :refer :all]
             [tropefest.db :as db]
-            [tropefest.parsing :as p]))
+            [tropefest.parsing :as p]
+            [tropefest.base :as b]))
 
 
 ;
@@ -70,8 +71,7 @@
       (is (= 1879 (count all-rels)))
       )
     (prof/profile :trace :Database)
-    )
-  )
+    ))
 
 (deftest test-import-page-error
   ; Guess which import will fail with an endless redirect?
@@ -169,6 +169,33 @@
       )
     (prof/profile :trace :Database)
     ))
+
+
+(deftest test-query-available-after-import
+  ; See note on test-record-page-local about the provenance URL
+  (tdb/wipe-test-db)
+  (->>
+    (let [path     (str tp/test-file-path "TakeMeInstead-pruned.html")
+          conn     (tdb/get-test-connection)
+          _        (record-page! conn path "http://tvtropes.org/pmwiki/pmwiki.php/Main/TakeMeInstead")
+          saved    (tdb/get-all-articles)
+          to-query (db/query-nodes-to-crawl conn)
+          ]
+      (is (= 5 (count saved)))
+      (is (= 4 (count to-query)))
+      (doseq [i to-query]
+        (is (p/is-valid-url? i)))
+      (are [code] (first (filter #(= code (b/code-from-url %)) to-query))
+                  "Main/Zeerust"
+                  "Main/ToBeContinued"
+                  "Main/BishieSparkle"
+                  "Main/DenserAndWackier"
+                  ))
+    (prof/profile :trace :Database)
+    ))
+
+
+
 
 (deftest test-record-page-twice
   ; See note on test-record-page-local about the provenance URL
