@@ -213,7 +213,7 @@
   (let [existing (query-by-code conn (:code data-items))
         id       (get-in existing [:metadata :id])]
     (if (empty? existing)
-      (create-node! conn (:category data-items) data-items)
+      (create-node! conn b/base-label data-items)
       (merge-node! conn id data-items))))
 
 (defn create-or-retrieve-node!
@@ -236,11 +236,3 @@
   "Links two nodes by a relationship if they aren't yet linked"
   [conn relationship n1 n2]
   (p/p :nrl-maybe-create (nrl/maybe-create conn n1 n2 relationship)))
-
-
-
-; TODO: Add transaction support
-
-; SNIPPETS
-; Update code:
-; MATCH (v:Main) SET v.nextupdate = 1426172758403;

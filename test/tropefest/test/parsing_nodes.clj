@@ -73,6 +73,27 @@
     )
   )
 
+(deftest test-import-page-error
+  ; Guess which import will fail with an endless redirect?
+  (tdb/wipe-test-db)
+  (->>
+    (let [
+          conn      (tdb/get-test-connection)
+          _         (record-page! conn "http://tvtropes.org/pmwiki/pmwiki.php/Main/CircularRedirect")
+          all-nodes (tdb/get-all-articles)
+          all-rels  (tdb/get-all-article-rels)
+          node      (first all-nodes)
+          ]
+      (println "Yes, we were supposed to get an exception logged up there. ⤴")
+      (is (= 1 (count all-nodes)))
+      (is (= 0 (count all-rels)))
+      (is (= "Main/CircularRedirect" (get-in node [:data :code])))
+      (is (get-in node [:data :hasError]))
+      )
+    (prof/profile :trace :Database)
+    )
+  )
+
 (deftest test-import-lot
   ; Slow test, mostly here for profiling reasons and to see if we get any clashes
   (tdb/wipe-test-db)

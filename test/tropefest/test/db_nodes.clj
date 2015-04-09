@@ -18,7 +18,8 @@
 
 
 (defn get-all-articles []
-  (cy/tquery (get-test-connection) "MATCH (n:Article) RETURN n"))
+  (->> (cy/tquery (get-test-connection) "MATCH (n:Article) RETURN n")
+       (map #(get % "n"))))
 
 (defn get-all-article-rels []
   (cy/tquery (get-test-connection) "MATCH (n:Article)-[r]->(m:Article) RETURN n.code as from, type(r) as type, m.code as to"))
