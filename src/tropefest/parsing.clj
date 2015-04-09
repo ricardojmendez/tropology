@@ -159,12 +159,21 @@
             (load-resource-url url)
             (assoc :url provenance))
           (save-page-links! conn))
-     (catch Throwable t (log-node-exception! conn provenance t)))))
+     (catch Throwable t
+       (if (-> t .getMessage (.contains "TransientError"))
+         (timbre/trace (str "Transient error on " url ", not marking to retry. "))
+         (log-node-exception! conn provenance t))))))
 
 
 (defn crawl-and-update!
   [conn limit]
   (->> (db/query-nodes-to-crawl conn limit)
-       ; We may get transactions aborting if we parallelize too many
+       ; We may get transactions aborting if we parallelize too many requests.
+       ;
+       ; While we could just take advantage of how we handle transient errors
+       ; and let them be retried later, that would require pinging TVTropes
+       ; again for the file. I'm leaving as is for now to avoid flooding them
+       ; with requests.
        (map #(record-page! conn %))
-       doall))
+       doall
+       (prof/profile :trace :Crawl)))

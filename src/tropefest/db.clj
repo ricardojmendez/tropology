@@ -54,7 +54,23 @@
 ; Page import
 ;
 
+
+
 (defn create-page-and-links
+  "Creates a page and all its related to links in a single call.
+
+  Any pages it needs to create in order to link to _will not_ have the URL
+  or category set, since I haven't found a way to pass a map yet.
+
+  I considered doing a try-times here so that we can parallelize and retry
+  in transient exceptions. It doesn't make any sense to retry and walk into
+  the same deadlock right away, and pmap doesn't create a thread for each
+  item... so putting a thread to sleep when one fails actually makes the
+  whole process slower on my tests.
+
+  http://stackoverflow.com/questions/1879885/clojure-how-to-to-recur-upon-exception
+  http://stackoverflow.com/questions/5021788/how-many-threads-does-clojures-pmap-function-spawn-for-url-fetching-operations
+  "
   [conn node rel links {:keys [isRedirect redirector]}]
   (let [main-st (str "MERGE (p:Article {code:{maincode}}) SET "
                      " p.url = {url}, p.category = {category}, p.host = {host}, "
@@ -73,8 +89,7 @@
       (tx/statement main-st p)
       (if isRedirect
         (tx/statement "MERGE (p:Article {code:{code}}) SET p.isRedirect = true, p.nextUpdate = 0, p.timeStamp = {timeStamp}, p.hasError = false"
-                      {:code redirector, :timeStamp (:timeStamp node)}))
-      )
+                      {:code redirector, :timeStamp (:timeStamp node)})))
     ))
 
 
@@ -200,7 +215,7 @@
   (let [merged (-> (nn/get conn id) (:data) (merge data-items) (timestamp-update))]
     (do
       (prof/p :nn-update (nn/update conn id merged))
-      (prof/p :nn-get (nn/get conn id)))))                     ; Notice that we get it again to retrieve the updated values
+      (prof/p :nn-get (nn/get conn id)))))                  ; Notice that we get it again to retrieve the updated values
 
 (defn create-or-merge-node!
   "Creates a node from a connection with a label. If a node with the id
