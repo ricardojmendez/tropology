@@ -42,6 +42,7 @@
       (swap! state assoc :isRunning false))
     (timbre/info "Not crawling because of on-going import process.")))
 
+
 (defn update-handler [t opts]
   (timbre/info "Updating link totals")
   (try
@@ -131,6 +132,7 @@
   []
   (timbre/info "tropefest is shutting down...")
   (cronj/shutdown! session/cleanup-job)
+  (cronj/shutdown! cj)
   (timbre/info "shutdown complete!"))
 
 (def app

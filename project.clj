@@ -114,8 +114,8 @@
                           :cljsbuild    {:builds {:app {:source-paths ["env/dev/cljs"]}}}
                           :env          {:dev             true
                                          :db-url          "http://neo4j:testneo4j@localhost:7474/db/data/"
-                                         :update-cron     "0 /5 * * * * *"
-                                         :update-size     2
-                                         :update-disabled true
+                                         :update-cron     "0 /2 * * * * *"
+                                         :update-size     5
+                                         ; :update-disabled true
                                          :expiration      14
                                          }}})
