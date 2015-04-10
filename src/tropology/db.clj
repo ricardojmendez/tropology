@@ -51,6 +51,25 @@
 
 
 ;
+; Query helpers
+;
+
+(defn code-to-match
+  "Returns match pattern string for an id, including the node label, with
+  the prefix name for the pattern.
+
+  I'm not a fan of not being able to pass the label as a parameter, but them's
+  the breaks. neo4j's parsing seems strong enough that code injection is
+  unlikely."
+  ([prefix]
+   (code-to-match prefix "id" b/base-label))
+  ([prefix id-param]
+   (code-to-match prefix id-param b/base-label))
+  ([prefix id-param label]
+   (str "(" prefix ":" label " {code:{" id-param "}})")))
+
+
+;
 ; Page import
 ;
 
@@ -72,21 +91,27 @@
   http://stackoverflow.com/questions/5021788/how-many-threads-does-clojures-pmap-function-spawn-for-url-fetching-operations
   "
   [conn node rel links {:keys [isRedirect redirector]}]
-  (let [main-st (str "MERGE (p:Article {code:{maincode}}) SET "
+  (let [code    (:code node)
+        all     (conj links code)
+        main-st (str "MERGE (p:Article {code:{maincode}}) SET "
                      " p.url = {url}, p.category = {category}, p.host = {host}, "
                      " p.title = {title}, p.image = {image}, p.type = {type}, "
                      " p.nextUpdate = {nextUpdate}, p.timeStamp = {timeStamp}, "
                      " p.hasError = {hasError}, p.isRedirect = {isRedirect} "
                      "FOREACH (link in {links} |"
                      " MERGE (p2:Article {code:link}) "
-                     " ON CREATE SET p2.nextUpdate = {timeStamp}, p2.hasError = false, p2.isRedirect = false, p2.timeStamp = {timeStamp} "
+                     " ON CREATE SET p2.nextUpdate = {timeStamp}, p2.hasError = false, p2.isRedirect = false, p2.timeStamp = {timeStamp}"
                      " CREATE UNIQUE (p)-[" rel "]->(p2) "
                      ")")
         p       (-> (timestamp-next-update node)
-                    (assoc :maincode (:code node) :links links))]
+                    (assoc :maincode code :links links))]
     (tx/in-transaction
       conn
       (tx/statement main-st p)
+      (tx/statement "MATCH ()-[r:LINKSTO]->(n:Article) WHERE n.code in {links} WITH n, COUNT(r) as incoming SET n.incoming = incoming" {:links all})
+      (tx/statement (str "MATCH " (code-to-match "n") "-[r:LINKSTO]->() WITH n, COUNT(r) as outgoing SET n.outgoing = outgoing") {:id code})
+      (tx/statement "MATCH (n:Article) WHERE n.outgoing is null AND n.code in {links} WITH n SET n.outgoing = 0" {:links all})
+      (tx/statement "MATCH (n:Article) WHERE n.incoming is null AND n.code in {links} WITH n SET n.incoming = 0" {:links all})
       (if isRedirect
         (tx/statement "MERGE (p:Article {code:{code}}) SET p.isRedirect = true, p.nextUpdate = 0, p.timeStamp = {timeStamp}, p.hasError = false"
                       {:code redirector, :timeStamp (:timeStamp node)})))
@@ -114,29 +139,27 @@
 ; Node query and creation functions
 ;
 
-(defn code-to-match
-  "Returns match pattern string for an id, including the node label, with
-  the prefix name for the pattern.
 
-  I'm not a fan of not being able to pass the label as a parameter, but them's
-  the breaks. neo4j's parsing seems strong enough that code injection is
-  unlikely."
-  ([prefix]
-   (code-to-match prefix "id" b/base-label)
-    )
-  ([prefix id-param]
-   (code-to-match prefix id-param b/base-label)
-    )
-  ([prefix id-param label]
-   (str "(" prefix ":" label " {code:{" id-param "}})")))
+(defn query-for-codes
+  "Queries for articles with a code from a list"
+  [conn codes]
+  (->>
+    (tx/in-transaction
+      conn
+      (tx/statement "MATCH (n:Article) WHERE n.code in {list} RETURN n" {:list codes}))
+    first
+    :data
+    (map #(first (:row %)))
+    (prof/p :query-for-codes)
+  ))
 
 (defn query-by-code
   "Queries for a node id on the properties. Does not filter by label. Notice
   that this is not the same as getting the node directly via its internal id."
-  [conn id]
+  [conn code]
   (->>
     (let [query-str (str "MATCH  " (code-to-match "v") " RETURN v")
-          match     (first (cy/tquery conn query-str {:id id}))]
+          match     (first (cy/tquery conn query-str {:id code}))]
       (if (nil? match)
         nil
         (-> (match "v")

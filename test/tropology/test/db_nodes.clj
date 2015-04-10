@@ -33,7 +33,6 @@
 
 
 
-
 (deftest test-create-node
   (wipe-test-db)
   (let [node (create-node! (get-test-connection) "TestNode" {:code "TestNode/First" :nextUpdate 5 :url "http://localhost/"})]
@@ -43,6 +42,7 @@
                        [:data :nextUpdate] 5
                        [:data :url] "http://localhost/")))
 
+
 (deftest test-create-node-assigns-timestamps
   (wipe-test-db)
   (let [node (create-node! (get-test-connection) "TestNode" {:code "TestNode/First"})]
@@ -50,6 +50,7 @@
     (are [path] (> (get-in node path) 0)
                 [:data :timeStamp]
                 [:data :nextUpdate])))
+
 
 (deftest test-query-by-code
   (let [conn (get-test-connection)]
@@ -111,6 +112,7 @@
         #(< (Integer. %) 5)                                 ; We were keeping in the URL, which will be the returned value, the same limit...
         (query-nodes-to-crawl (get-test-connection) 20 5))) ; ... so we can check every node returned is indeed under
   )
+
 
 (deftest test-query-nodes-sort-order
   (wipe-test-db)
@@ -315,4 +317,3 @@
       (is (= (get-in merged [:data :code]) "TestNode/CoM"))
       )
     ))
-

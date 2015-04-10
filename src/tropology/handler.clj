@@ -64,7 +64,7 @@
    :schedule "0 0 /6 * * * *"
    :opts     {}})
 
-(def cj (cronj/cronj :entries [crawl-task update-task]))
+(def cj (cronj/cronj :entries [crawl-task]))
 
 
 ;

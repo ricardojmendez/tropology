@@ -51,7 +51,13 @@
           rels  (tdb/get-all-article-rels)]
       (is (= 653 (count saved)))
       (is (= 653 (count rels)))
-      )
+      (doseq [i saved]
+        (let [node (:data i)
+              values (select-keys node [:outgoing :incoming])]
+          (if (= "Anime/CowboyBebop" (:code node))
+            (is (= {:outgoing 653 :incoming 1} values)) ; The page links to itself. Consider removing that.
+            (is (= {:outgoing 0 :incoming 1} values))
+          ))))
     (prof/profile :trace :Database)
     ))
 
@@ -124,9 +130,19 @@
           _         (doall (map #(record-page! conn (:url %) (:provenance %)) to-import))
           all-nodes (tdb/get-all-articles)
           all-rels  (tdb/get-all-article-rels)
+          to-review (db/query-for-codes conn ["Main/Manga" "Funny/Film" "Main/HumorDissonance" "Creator/TomokazuSugita"])
           ]
       (is (= 15003 (count all-nodes)))
       (is (= 16204 (count all-rels)))
+      (are [code incoming outgoing] (first (filter #(and
+                                                     (= incoming (:incoming %))
+                                                     (= outgoing (:outgoing %))
+                                                     (= code (:code %))) to-review))
+                                    "Main/Manga" 1 1879
+                                    "Funny/Film" 0 1543
+                                    "Main/HumorDissonance" 1 0
+                                    "Creator/TomokazuSugita" 1 0
+                                    )
       )
     (prof/profile :trace :Database)))
 
@@ -194,7 +210,23 @@
     (prof/profile :trace :Database)
     ))
 
-
+(deftest test-query-for-codes
+  ; Test if we can retrieve a group of codes after importing a page
+  ;
+  ; While maybe this would be suited to a simpler test on db-nodes,
+  ; we want to be able to test against something closer to real data
+  (tdb/wipe-test-db)
+  (->>
+    (let [path     (str tp/test-file-path "TakeMeInstead-pruned.html")
+          conn     (tdb/get-test-connection)
+          _        (record-page! conn path "http://tvtropes.org/pmwiki/pmwiki.php/Main/TakeMeInstead")
+          to-query ["Main/TakeMeInstead" "Main/ToBeContinued" "Main/DenserAndWackier"]
+          queried  (db/query-for-codes conn to-query)
+          ]
+      (doseq [code to-query]
+        (is (some? (filter #(= code (:code %)) queried)))))
+    (prof/profile :trace :Database)
+    ))
 
 
 (deftest test-record-page-twice
