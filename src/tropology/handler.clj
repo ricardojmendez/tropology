@@ -1,12 +1,12 @@
-(ns tropefest.handler
+(ns tropology.handler
   (:require [compojure.core :refer [defroutes routes]]
-            [tropefest.routes.api :refer [api-routes]]
-            [tropefest.routes.home :refer [home-routes]]
-            [tropefest.middleware
+            [tropology.routes.api :refer [api-routes]]
+            [tropology.routes.home :refer [home-routes]]
+            [tropology.middleware
              :refer [development-middleware production-middleware]]
-            [tropefest.db :as db]
-            [tropefest.parsing :as p]
-            [tropefest.session :as session]
+            [tropology.db :as db]
+            [tropology.parsing :as p]
+            [tropology.session :as session]
             [ring.middleware.defaults :refer [site-defaults]]
             [compojure.route :as route]
             [taoensso.timbre :as timbre]
@@ -14,7 +14,7 @@
             [selmer.parser :as parser]
             [environ.core :refer [env]]
             [cronj.core :as cronj]
-            [tropefest.db :as db]))
+            [tropology.db :as db]))
 
 (defroutes base-routes
            (route/resources "/")
@@ -103,7 +103,7 @@
 
   (timbre/set-config!
     [:shared-appender-config :rotor]
-    {:path "tropefest.log" :max-size (* 512 1024) :backlog 10})
+    {:path "tropology.log" :max-size (* 512 1024) :backlog 10})
 
 
   (timbre/info (str "Updating " (:update-size env) " using " (:update-cron env)))
@@ -121,7 +121,7 @@
 
   ;;start the expired session cleanup job
   (cronj/start! session/cleanup-job)
-  (timbre/info "\n-=[ tropefest started successfully"
+  (timbre/info "\n-=[ tropology started successfully"
                (when (env :dev) "using the development profile") "]=-"))
 
 
@@ -130,7 +130,7 @@
   "destroy will be called when your application
    shuts down, put any clean up code here"
   []
-  (timbre/info "tropefest is shutting down...")
+  (timbre/info "tropology is shutting down...")
   (cronj/shutdown! session/cleanup-job)
   (cronj/shutdown! cj)
   (timbre/info "shutdown complete!"))

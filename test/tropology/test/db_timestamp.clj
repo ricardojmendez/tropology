@@ -1,7 +1,7 @@
-(ns tropefest.test.db-timestamp
+(ns tropology.test.db-timestamp
   (:require [clojure.test :refer :all]
             [joda-time :as jt]
-            [tropefest.db :refer :all]))
+            [tropology.db :refer :all]))
 
 
 

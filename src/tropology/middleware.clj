@@ -1,5 +1,5 @@
-(ns tropefest.middleware
-  (:require [tropefest.session :as session]
+(ns tropology.middleware
+  (:require [tropology.session :as session]
             [taoensso.timbre :as timbre]
             [environ.core :refer [env]]
             [selmer.middleware :refer [wrap-error-page]]

@@ -1,4 +1,4 @@
-(ns tropefest.base
+(ns tropology.base
   (:require [clojure.string :as s]
             [com.numergent.url-tools :as ut]
             [clojurewerkz.urly.core :as u]))

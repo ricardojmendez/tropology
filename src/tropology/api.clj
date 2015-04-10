@@ -1,5 +1,5 @@
-(ns tropefest.api
-  (:require [tropefest.db :as db]
+(ns tropology.api
+  (:require [tropology.db :as db]
             [com.numergent.url-tools :as ut]))
 
 

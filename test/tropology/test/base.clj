@@ -1,6 +1,6 @@
-(ns tropefest.test.base
+(ns tropology.test.base
   (:require [clojure.test :refer :all]
-            [tropefest.base :refer :all]))
+            [tropology.base :refer :all]))
 
 
 (deftest test-label-from-id

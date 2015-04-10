@@ -1,5 +1,5 @@
-(ns ^:figwheel-no-load tropefest.app
-  (:require [tropefest.core :as core]
+(ns ^:figwheel-no-load tropology.app
+  (:require [tropology.core :as core]
             [figwheel.client :as figwheel :include-macros true]
             [weasel.repl :as weasel]
             [reagent.core :as r]))

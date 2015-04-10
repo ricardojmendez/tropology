@@ -1,4 +1,4 @@
-(ns tropefest.session
+(ns tropology.session
   (:require [cronj.core :refer [cronj]]))
 
 (defonce mem (atom {}))

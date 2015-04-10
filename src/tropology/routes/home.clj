@@ -1,5 +1,5 @@
-(ns tropefest.routes.home
-  (:require [tropefest.layout :as layout]
+(ns tropology.routes.home
+  (:require [tropology.layout :as layout]
             [compojure.core :refer [defroutes GET]]
             [compojure.route :as route]
             [clojure.java.io :as io]))

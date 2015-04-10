@@ -1,7 +1,7 @@
-(ns tropefest.test.handler
+(ns tropology.test.handler
   (:use clojure.test
         ring.mock.request
-        tropefest.handler))
+        tropology.handler))
 
 (deftest test-app
   (testing "main route"

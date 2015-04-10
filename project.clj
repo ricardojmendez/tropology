@@ -1,5 +1,5 @@
-(defproject tropefest "0.0.5-SNAPSHOT"
-            :description "Tropefest! ... While we get a better name..."
+(defproject tropology "0.0.5-SNAPSHOT"
+            :description "tropology! ... While we get a better name..."
             :url "http://numergent.com/"
 
             :dependencies [[org.clojure/clojure "1.6.0"]
@@ -47,11 +47,11 @@
             :clean-targets ^{:protect false} ["resources/public/js"]
 
             :min-lein-version "2.0.0"
-            :uberjar-name "tropefest.jar"
-            :repl-options {:init-ns tropefest.handler}
+            :uberjar-name "tropology.jar"
+            :repl-options {:init-ns tropology.handler}
             :jvm-opts ["-server"]
 
-            :main tropefest.core
+            :main tropology.core
 
             :plugins [[lein-ring "0.9.1"]
                       [lein-cljsbuild "1.0.4"]
@@ -59,10 +59,10 @@
                       [lein-ancient "0.6.0"]]
 
 
-            :ring {:handler      tropefest.handler/app
-                   :init         tropefest.handler/init
-                   :destroy      tropefest.handler/destroy
-                   :uberwar-name "tropefest.war"}
+            :ring {:handler      tropology.handler/app
+                   :init         tropology.handler/init
+                   :destroy      tropology.handler/destroy
+                   :uberwar-name "tropology.war"}
 
 
 
@@ -106,8 +106,8 @@
                                         {:http-server-root "public"
                                          :server-port      3449
                                          :css-dirs         ["resources/public/css"]
-                                         :ring-handler     tropefest.handler/app}
-                          :repl-options {:init-ns tropefest.repl}
+                                         :ring-handler     tropology.handler/app}
+                          :repl-options {:init-ns tropology.repl}
                           :injections   [(require 'pjstadig.humane-test-output)
                                          (pjstadig.humane-test-output/activate!)]
                           :source-paths ["env/dev/clj"]

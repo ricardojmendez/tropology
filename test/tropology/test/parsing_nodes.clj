@@ -1,13 +1,13 @@
-(ns tropefest.test.parsing-nodes
+(ns tropology.test.parsing-nodes
   (:require [clojure.test :refer :all]
             [clojurewerkz.neocons.rest.cypher :as cy]
             [taoensso.timbre.profiling :as prof]
-            [tropefest.test.db-nodes :as tdb]
-            [tropefest.test.parsing :as tp]
-            [tropefest.parsing :refer :all]
-            [tropefest.db :as db]
-            [tropefest.parsing :as p]
-            [tropefest.base :as b]))
+            [tropology.test.db-nodes :as tdb]
+            [tropology.test.parsing :as tp]
+            [tropology.parsing :refer :all]
+            [tropology.db :as db]
+            [tropology.parsing :as p]
+            [tropology.base :as b]))
 
 
 ;

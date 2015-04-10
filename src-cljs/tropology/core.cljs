@@ -1,4 +1,4 @@
-(ns tropefest.core
+(ns tropology.core
   (:require [reagent.core :as reagent :refer [atom]]
             [secretary.core :as secretary]
             [reagent.session :as session]
@@ -27,7 +27,7 @@
   [:div.navbar.navbar-inverse.navbar-fixed-top
    [:div.container
     [:div.navbar-header
-     [:a.navbar-brand {:href "#/"} "tropefest"]]
+     [:a.navbar-brand {:href "#/"} "tropology"]]
     [:div.navbar-collapse.collapse
      [:ul.nav.navbar-nav
       (nav-item :home "Home" "")
@@ -37,7 +37,7 @@
 (defn about-page []
   [:div
    [:main]
-   [:div "this is the story of tropefest... work in progress"]
+   [:div "this is the story of tropology... work in progress"]
    ])
 
 

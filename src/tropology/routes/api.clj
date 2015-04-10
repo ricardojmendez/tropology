@@ -1,10 +1,10 @@
-(ns tropefest.routes.api
+(ns tropology.routes.api
   (:require [liberator.core
              :refer [defresource resource request-method-in]]
             [compojure.core :refer [defroutes GET ANY]]
             [com.numergent.url-tools :as ut]
-            [tropefest.api :as api]
-            [tropefest.db :as db]))
+            [tropology.api :as api]
+            [tropology.db :as db]))
 
 (defresource home
              :handle-ok "Hello World!"

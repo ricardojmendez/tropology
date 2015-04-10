@@ -1,4 +1,4 @@
-(ns tropefest.db
+(ns tropology.db
   (:require [joda-time :as j]
             [clojurewerkz.neocons.rest :as nr]
             [clojurewerkz.neocons.rest.nodes :as nn]
@@ -6,7 +6,7 @@
             [clojurewerkz.neocons.rest.cypher :as cy]
             [clojurewerkz.neocons.rest.relationships :as nrl]
             [clojurewerkz.neocons.rest.transaction :as tx]
-            [tropefest.base :as b]
+            [tropology.base :as b]
             [com.numergent.url-tools :as ut]
             [taoensso.timbre.profiling :as prof]
             [environ.core :refer [env]]))

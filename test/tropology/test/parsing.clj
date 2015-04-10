@@ -1,7 +1,7 @@
-(ns tropefest.test.parsing
+(ns tropology.test.parsing
   (:require [clojure.test :refer :all]
-            [tropefest.base :as b]
-            [tropefest.parsing :refer :all]))
+            [tropology.base :as b]
+            [tropology.parsing :refer :all]))
 
 
 (deftest test-is-valid-url

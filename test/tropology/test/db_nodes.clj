@@ -1,10 +1,10 @@
-(ns tropefest.test.db-nodes
+(ns tropology.test.db-nodes
   (:require [clojure.test :refer :all]
             [clojurewerkz.neocons.rest :as nr]
             [clojurewerkz.neocons.rest.cypher :as cy]
             [joda-time :as jt]
-            [tropefest.db :refer :all]
-            [tropefest.base :as b]))
+            [tropology.db :refer :all]
+            [tropology.base :as b]))
 
 (defn get-test-connection []
   (nr/connect "http://neo4j:testneo4j@192.168.59.103:7373/db/data/"))

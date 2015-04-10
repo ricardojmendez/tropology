@@ -1,12 +1,12 @@
-(ns tropefest.parsing
+(ns tropology.parsing
   (:require [clojure.string :as s]
             [clojurewerkz.urly.core :as u]
             [com.numergent.url-tools :as ut]
             [net.cgrand.enlive-html :as e]
             [taoensso.timbre :as timbre]
             [taoensso.timbre.profiling :as p]
-            [tropefest.base :as b]
-            [tropefest.db :as db]
+            [tropology.base :as b]
+            [tropology.db :as db]
             [taoensso.timbre.profiling :as prof])
   (:import (java.net URI)))
 

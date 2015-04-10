@@ -1,5 +1,5 @@
-(ns tropefest.repl
-  (:use tropefest.handler
+(ns tropology.repl
+  (:use tropology.handler
     ring.server.standalone
     [ring.middleware file-info file]))
 

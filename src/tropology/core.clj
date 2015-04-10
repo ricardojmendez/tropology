@@ -1,5 +1,5 @@
-(ns tropefest.core
-  (:require [tropefest.handler :refer [app init]]
+(ns tropology.core
+  (:require [tropology.handler :refer [app init]]
             [org.httpkit.server :refer [run-server]])
   (:gen-class))
 
