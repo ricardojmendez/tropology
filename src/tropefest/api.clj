@@ -16,10 +16,14 @@
 (defn transform-node
   "Transforms a node into the expected map values adds the coordinates"
   [node x y]
-  (let [stringed (clojure.walk/stringify-keys node)]        ; Stringify them for consistency, since we'll get some notes that are from a query
+  (let [stringed (->> (clojure.walk/stringify-keys node)    ; Stringify them for consistency, since we'll get some notes that are from a query
+                      (merge { "incoming" 0 "outgoing" 0})  ; Ensure we have outgoing and incoming values
+                      )
+        ]
     (-> stringed
-        (select-keys ["id" "url" "title"])
-        (assoc "x" x "y" y "size" (node-size (stringed "incoming")) "label" (stringed "id")))))
+        (select-keys ["code" "url" "title"])
+        (assoc "id" (stringed "code"))                      ; We could just send a hash as the id, which would be more succinct, but this allows for quicker debugging.
+        (assoc "x" x "y" y "size" (node-size (stringed "incoming")) "label" (stringed "code")))))
 
 (defn edge
   "Returns an edge map. Does not return an index, since those are disposable
@@ -36,8 +40,8 @@
     links-to   :links-to
     color-from :color-from
     color-to   :color-to}]
-  (let [edges-from (map #(edge (node "id") (%1 "id") (ut/if-nil color-from "#ff3300")) links-from)
-        edges-to   (map #(edge (%1 "id") (node "id") (ut/if-nil color-to "#0066ff")) links-to)]
+  (let [edges-from (map #(edge (node "code") (%1 "code") (ut/if-nil color-from "#ff3300")) links-from)
+        edges-to   (map #(edge (%1 "code") (node "code") (ut/if-nil color-to "#0066ff")) links-to)]
     (concat edges-from edges-to)))
 
 (defn query-related-from

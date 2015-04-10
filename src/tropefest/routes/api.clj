@@ -14,8 +14,8 @@
 (defresource node
              :allowed-methods [:get]
              :handle-ok (fn [request]
-                          (let [{{{label :category, name :name} :params} :request} request
-                                id (str label "/" name)]
+                          (let [{{{category :category, name :name} :params} :request} request
+                                id (str category "/" name)]
                             (->
                               (db/query-by-code (db/get-connection) id)
                               :data
@@ -34,6 +34,6 @@
 
 
 (defroutes api-routes
-           (ANY "/api/node/:label/:name" [label name] node)
-           (ANY "/api/network/:label/:name" [label name] network)
+           (ANY "/api/node/:category/:name" [category name] node)
+           (ANY "/api/network/:category/:name" [category name] network)
            (ANY "/api/home" request home))

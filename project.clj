@@ -116,6 +116,6 @@
                                          :db-url          "http://neo4j:testneo4j@localhost:7474/db/data/"
                                          :update-cron     "0 /2 * * * * *"
                                          :update-size     5
-                                         ; :update-disabled true
+                                         :update-disabled true
                                          :expiration      14
                                          }}})

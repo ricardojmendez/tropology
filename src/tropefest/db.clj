@@ -188,7 +188,7 @@
                         (code-to-match "n" "idn")
                         "--"
                         (code-to-match "m" "idm")
-                        "-[" rel "]->(o)--(n) WHERE o.incoming < {limit} "
+                        "-[" rel "]->(o)--(n) WHERE (o.incoming is null or o.incoming < {limit})"
                         "RETURN DISTINCT o.code as code, o.url as url, o.label as label, o.title as title"
                         )]
      (cy/tquery conn query-str {:idn common-code :idm code-from :limit incoming-link-limit})))
