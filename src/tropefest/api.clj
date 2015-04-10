@@ -51,7 +51,7 @@
 (defn network-from-node
   [code]
   (let [conn       (db/get-connection)
-        node       (-> (:data (db/query-by-id conn code)) (transform-node 0 0))
+        node       (-> (:data (db/query-by-code conn code)) (transform-node 0 0))
         links-from (db/query-from conn code :LINKSTO)
         links-to   (db/query-to conn :LINKSTO code)
         links-set  (set (concat links-from links-to))
