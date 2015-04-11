@@ -47,7 +47,7 @@
 (defn query-related-from
   [conn code-from node]
   {:node       node
-   :links-from (db/query-common-nodes-from conn code-from (node "id"))})
+   :links-from (db/query-common-nodes-from conn code-from (node "code"))})
 
 (defn rand-range [n]
   (- (rand n) (/ n 2)))
