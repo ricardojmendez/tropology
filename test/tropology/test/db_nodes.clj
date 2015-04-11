@@ -3,6 +3,7 @@
             [clojurewerkz.neocons.rest :as nr]
             [clojurewerkz.neocons.rest.cypher :as cy]
             [joda-time :as jt]
+            [taoensso.timbre.profiling :as prof]
             [tropology.db :refer :all]
             [tropology.base :as b]))
 
@@ -183,6 +184,7 @@
     ))
 
 (deftest test-common-from
+  (wipe-test-db)
   (let [conn (get-test-connection)
         n1   (create-node! conn b/base-label {:code "TestNode/N1" :incoming 100})
         n2   (create-node! conn b/base-label {:code "TestNode/N2" :incoming 500}) ; To test limits later
@@ -205,30 +207,31 @@
         _    (relate-nodes! conn :DIFFREL n3 n4)            ; To be excluded in most tests below
         ]
     ; Test relationships
-    (let [r (query-common-nodes-from conn "TestNode/N3" "TestNode/N1")]
+    (let [r (query-common-nodes-from conn "TestNode/N3" ["TestNode/N1"])]
       (is (= 2 (count r)))                                  ; N1 links out to N2 and N5, and both are related to N3
-      (is (some #(= (% "code") "TestNode/N2") r))
-      (is (some #(= (% "code") "TestNode/N5") r)))
-    (let [r (query-common-nodes-from conn "TestNode/N3" "TestNode/N2")]
+      (is (some #(= (:to %) "TestNode/N2") r))
+      (is (some #(= (:to %) "TestNode/N5") r)))
+    (let [r (query-common-nodes-from conn "TestNode/N3" ["TestNode/N2"])]
       (is (= 1 (count r)))
-      (is (some #(= (% "code") "TestNode/N4") r)))          ; N2 links out to N4. N1 is excluded since N2 doesn't link out to it
-    (let [r (query-common-nodes-from conn "TestNode/N3" "TestNode/N4")]
+      (is (some #(= (:to %) "TestNode/N4") r)))            ; N2 links out to N4. N1 is excluded since N2 doesn't link out to it
+    (let [r (query-common-nodes-from conn "TestNode/N3" ["TestNode/N4"])]
       (is (= 1 (count r)))
-      (is (some #(= (% "code") "TestNode/N5") r)))          ; N4 links out to N5, which is related to N3. N6 is excluded because it' not related.
-    (let [r (query-common-nodes-from conn "TestNode/N3" "TestNode/N5")]
+      (is (some #(= (:to %) "TestNode/N5") r)))            ; N4 links out to N5, which is related to N3. N6 is excluded because it' not related.
+    (let [r (query-common-nodes-from conn "TestNode/N3" ["TestNode/N5"])]
       (is (empty? r)))
-    (let [r (query-common-nodes-from conn "TestNode/N1" "TestNode/N2")]
+    (let [r (query-common-nodes-from conn "TestNode/N1" ["TestNode/N2"])]
       (is (= 2 (count r)))
-      (is (some #(= (% "code") "TestNode/N3") r))           ; N2 links out to N3 and N4, which are related to N1.
-      (is (some #(= (% "code") "TestNode/N4") r)))          ; Other N1 relationships like N5 and N6 are ignored because N2 doesn't link out to them.
+      (is (some #(= (:to %) "TestNode/N3") r))             ; N2 links out to N3 and N4, which are related to N1.
+      (is (some #(= (:to %) "TestNode/N4") r))             ; Other N1 relationships like N5 and N6 are ignored because N2 doesn't link out to them.
+      )
     ; Test incoming limits
-    (let [r (query-common-nodes-from conn "TestNode/N3" "TestNode/N1" :LINKSTO 400)]
+    (let [r (query-common-nodes-from conn "TestNode/N3" ["TestNode/N1"] :LINKSTO 400)]
       (is (= 1 (count r)))                                  ; N2 is excluded because of too many incoming links
-      (is (some #(= (% "code") "TestNode/N5") r)))
+      (is (some #(= (:to %) "TestNode/N5") r)))
     ; Test link relationship types
-    (let [r (query-common-nodes-from conn "TestNode/N3" "TestNode/N1" :DIFFREL 1000)]
+    (let [r (query-common-nodes-from conn "TestNode/N3" ["TestNode/N1"] :DIFFREL 1000)]
       (is (= 1 (count r)))                                  ; Only one node in common with that relationship type
-      (is (some #(= (% "code") "TestNode/N4") r)))
+      (is (some #(= (:to %) "TestNode/N4") r)))
 
     ))
 

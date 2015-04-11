@@ -151,7 +151,7 @@
     :data
     (map #(first (:row %)))
     (prof/p :query-for-codes)
-  ))
+    ))
 
 (defn query-by-code
   "Queries for a node id on the properties. Does not filter by label. Notice
@@ -200,22 +200,30 @@
     (cy/tquery conn query-str {:id code})))
 
 (defn query-common-nodes-from
-  "Given a starting node code (common-code) and a node code-from to query from,
-  it returns the information for all nodes that code-from links out to that are
-  also related to the starting node code in any direction."
-  ([conn ^String common-code ^String code-from]
-   (query-common-nodes-from conn common-code code-from :LINKSTO 1000))
-  ([conn ^String common-code ^String code-from rel incoming-link-limit]
-    ; MATCH (n:Anime {id:”Anime/CowboyBebop”})--(m:Main {id:”Main/NoHoldsBarredBeatdown”})-[r:LINKSTO]->(o)--(n) WHERE o.incoming < 1000 RETURN DISTINCT o;
-   (let [query-str (str "MATCH "
-                        (code-to-match "n" "idn")
-                        "--"
-                        (code-to-match "m" "idm")
-                        "-[" rel "]->(o)--(n) WHERE (o.incoming is null or o.incoming < {limit})"
-                        "RETURN DISTINCT o.code as code, o.url as url, o.label as label, o.title as title"
-                        )]
-     (cy/tquery conn query-str {:idn common-code :idm code-from :limit incoming-link-limit})))
-  )
+  "Given a starting node code (common-code) and a list of node codes-from
+  to query from, it returns the information for all nodes that code-from
+  links out to that are also related to the starting node code in any
+  direction."
+  ([conn ^String common-code codes-from]
+   (query-common-nodes-from conn common-code codes-from :LINKSTO 1000))
+  ([conn ^String common-code codes-from rel incoming-link-limit]
+    ; PROFILE MATCH (n:Article {code:"Anime/CowboyBebop"})--(m:Article {code:"Main/NoHoldsBarredBeatdown"})-[r:LINKSTO]->(o:Article)--(n) WHERE o.incoming < 1000 RETURN DISTINCT o;
+   (->>
+     (tx/in-transaction
+       conn
+       (tx/statement (str "MATCH "
+                          (code-to-match "n" "idn")
+                          "--(m:Article)-[" rel "]->(o:Article)--(n) "
+                          "WHERE m.code in {codes} and (o.incoming is null or o.incoming < {limit}) "
+                          "RETURN DISTINCT m.code as from, o.code as to")
+                     {:idn common-code :codes codes-from :limit incoming-link-limit}))
+
+     first
+     :data
+     (map #(hash-map :from (first (:row %)) :to (second (:row %))))
+     (prof/p :query-common-nodes-from)
+     )
+    ))
 
 
 ;

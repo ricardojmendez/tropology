@@ -30,3 +30,17 @@
   (-> (u/path-of url) (s/replace base-path "")))
 
 
+(defn group-pairs
+  "Receives a list of maps with from/to keys, and returns a map that where the keys
+  are the from elements and the values are a collection of all the to referenced
+  by that node"
+  ([links]
+    (group-pairs links :from :to))
+  ([links from to]
+  (->>
+    (group-by #(get % from) links)
+    (map (fn [kv] [(key kv) (map #(get % to) (val kv))]))
+    (into {})
+    )))
+
+
