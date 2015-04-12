@@ -1,6 +1,6 @@
-(defproject tropology "0.0.5-SNAPSHOT"
-            :description "tropology! ... While we get a better name..."
-            :url "http://numergent.com/"
+(defproject tropology "0.1.0-SNAPSHOT"
+            :description "Tropology - Crawling and Visualizing TVTropes"
+            :url "http://numergent.com/tags/tropology/"
 
             :dependencies [[org.clojure/clojure "1.6.0"]
                            [org.clojure/clojurescript "0.0-3123" :scope "provided"]
