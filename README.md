@@ -6,6 +6,8 @@ This is currently a personal experiment.  Consider it raw, pre-alpha code and li
 
 Current version is 0.1.0
 
+[You can read more on our site](http://numergent.com/tags/tropology/).
+
 
 ## Prerequisites
 
@@ -45,6 +47,10 @@ Then go to http://localhost:3000/ and enter "Anime/SamuraiFlamenco" on the text 
 This will display a (currently somewhat messy) graph of all nodes and related connections.  Clicking any particular node will highlight only that node and its correlated concepts (concepts that both link to the central one and each other).   Double-clicking a node will make a graph out of that node neighborhood.
 
 You can also see the raw data by going to: http://localhost:3000/api/network/Anime/SamuraiFlamenco
+
+## Next steps
+
+Next up I'll start caching the crawled pages on a local database, that way we can convert and manipulate them without having to re-crawl the site.
 
 
 ## License
