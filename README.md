@@ -26,12 +26,10 @@ See <pre>create-test-environment.sh</pre> for how I'm creating a Docker containe
 
 If you create a database from scratch using a Docker container, you may want to create the following indices up front:
 
-<code> 
-CREATE CONSTRAINT on (p:Article) ASSERT p.code IS UNIQUE; 
-CREATE INDEX ON :Article(incoming);
-CREATE INDEX ON :Article(outgoing);
-CREATE INDEX ON :Article(nextUpdate);
-</code>
+    CREATE CONSTRAINT on (p:Article) ASSERT p.code IS UNIQUE; 
+    CREATE INDEX ON :Article(incoming);
+    CREATE INDEX ON :Article(outgoing);
+    CREATE INDEX ON :Article(nextUpdate);
 
 You can also bootstrap it with [a pre-loaded Neo4j database from this location](https://mega.co.nz/#!w8J3QDjT!eJ4sgDUEyvHd0CL6wbQoQNuZFjq5u33EVPhx50nZVeg).
 
