@@ -22,7 +22,7 @@ You will need [Leiningen][1] 2.0 or above installed.
 
 My current development environment is Neo4j 2.2.  The tests are run against a Neo4j node responding on localhost on port 7373 (instead of 7474, to keep it running in parallel with a dev environment).
 
-See <pre>create-test-environment.sh</pre> for how I'm creating a Docker container on OS X for tests.
+See <pre>scripts/create-test-environment.sh</pre> for how I'm creating a Docker container on OS X for tests.
 
 If you create a database from scratch using a Docker container, you may want to create the following indices up front:
 
