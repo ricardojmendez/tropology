@@ -4,11 +4,9 @@
             [com.numergent.url-tools :as ut]
             [net.cgrand.enlive-html :as e]
             [taoensso.timbre :as timbre]
-            [taoensso.timbre.profiling :as p]
             [tropology.base :as b]
             [tropology.db :as db]
-            [taoensso.timbre.profiling :as prof])
-  (:import (java.net URI)))
+            [taoensso.timbre.profiling :as prof]))
 
 
 (def ignored-categories (set ["administrivia" "tropers"]))
@@ -46,8 +44,9 @@
 (defn load-resource-url [url]
   "Loads a html-resource from a URL. Returns a map with the original :url and
   :res for the resource"
-  (let [res (-> url URI. e/html-resource)]
-    {:url url :res res}))
+  (let [html (-> url slurp)
+        res  (-> html java.io.StringReader. e/html-resource)]
+    {:url url :res res :html html}))
 
 ; (def sample-res (load-resource-url "http://tvtropes.org/pmwiki/pmwiki.php/Anime/CowboyBebop"))
 

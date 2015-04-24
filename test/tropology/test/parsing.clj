@@ -36,11 +36,13 @@
 (deftest test-load-resource-url-local
   (let [name     (str test-file-path "CowboyBebop.html")
         result   (load-resource-url name)
+        html     (:html result)
         resource (:res result)
         url      (:url result)]
     (is (= (str test-file-path "CowboyBebop.html") url))    ; The originally requested URL is returned
     (is (= (nil? resource) false))
     (is (= (count resource) 2))
+    (is (= 317565 (.length html)))
     (is (= (first resource) {:type :dtd, :data ["html" nil nil]}))))
 
 (deftest test-node-data-from-meta
