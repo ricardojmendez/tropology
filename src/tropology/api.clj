@@ -48,10 +48,6 @@
       (concat edges-from edges-to))
     (prof/p :edge-collection)))
 
-(defn query-related-from
-  [conn code-from node]
-  {:node       node
-   :links-from (db/query-common-nodes-from conn code-from (node "code"))})
 
 (defn rand-range [n]
   (- (rand n) (/ n 2)))
@@ -59,19 +55,18 @@
 (defn network-from-node
   [code]
   (->>
-    (let [conn       (db/get-connection)
-          node       (-> (:data (db/query-by-code conn code)) (transform-node 0 0))
-          nodes-from (db/query-from conn code :LINKSTO)
-          nodes-to   (db/query-to conn :LINKSTO code)
+    (let [node       (-> (db/query-by-code code) (transform-node 0 0))
+          nodes-from (db/query-from code :LINKSTO)
+          nodes-to   (db/query-to :LINKSTO code)
           node-set   (set (concat nodes-from nodes-to))
-          code-set   (map #(% "code") node-set)
-          related    (->> (db/query-common-nodes-from conn code code-set)
+          code-set   (map :code node-set)
+          related    (->> (db/query-common-nodes-from code code-set)
                           (b/group-pairs)
                           (map #(hash-map :code (key %) :links-from (val %) :color-from "#00ffc7"))
                           )
           with-base  (conj related {:code code :links-from (map #(% "code") nodes-from) :links-to (map #(% "code") nodes-to)})
           ]
-      (println related)
+      ; (clojure.pprint/pprint related)
       {:nodes (conj
                 (map #(transform-node %1 (rand-range 50) (rand-range 50)) node-set)
                 node)

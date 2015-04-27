@@ -6,7 +6,8 @@
             [taoensso.timbre :as timbre]
             [tropology.base :as b]
             [tropology.db :as db]
-            [taoensso.timbre.profiling :as prof]))
+            [taoensso.timbre.profiling :as prof]
+            ))
 
 
 (def ignored-categories (set ["administrivia" "tropers"]))
@@ -72,16 +73,15 @@
   (let [og-url  (content-from-meta res "og:url")
         display (b/display-from-url og-url)
         code    (b/code-from-url og-url)]
-    {:code       code
-     :category   (b/category-from-code code)
-     :url        og-url
-     :isRedirect false                                      ; Nodes have to be explicitly tagged as being redirects
-     :hasError   false
-     :display    display
-     :host       (ut/host-string-of og-url)
-     :title      (content-from-meta res "og:title")
-     :image      (content-from-meta res "og:image")
-     :type       (-> (content-from-meta res "og:type") (ut/if-nil ""))}))
+    {:code        code
+     :category    (b/category-from-code code)
+     :url         og-url
+     :is-redirect false                                     ; Nodes have to be explicitly tagged as being redirects
+     :has-error   false
+     :display     display
+     :title       (content-from-meta res "og:title")
+     :image       (content-from-meta res "og:image")
+     :type        (-> (content-from-meta res "og:type") (ut/if-nil ""))}))
 
 (defn node-data-from-url
   "Returns a map with the metadata we can infer about a new from its URL.
@@ -90,13 +90,12 @@
   (if (is-valid-url? url)
     (let [display (b/display-from-url url)
           code    (b/code-from-url url)]
-      {:category   (b/category-from-code code)
-       :code       code
-       :display    display
-       :host       (ut/host-string-of url)
-       :url        url
-       :isRedirect false                                    ; Nodes have to be explicitly tagged as being redirects
-       :hasError   false
+      {:category    (b/category-from-code code)
+       :code        code
+       :display     display
+       :url         url
+       :is-redirect false                                   ; Nodes have to be explicitly tagged as being redirects
+       :has-error   false
        })
     nil))
 
@@ -110,8 +109,9 @@
   ([res host]
    (->>
      (e/select res [:#wikitext :a.twikilink])
-     (map #(get-in % [:attrs :href]))
-     (map #(u/resolve host %))
+     (pmap #(get-in % [:attrs :href]))
+     (pmap #(u/resolve host %))
+     (pmap lower-case)
      (distinct)
      (filter is-valid-url?)
      )))
@@ -121,32 +121,26 @@
   "Saves all page links to the database. It expects a hashmap with two
   paramets: :url for the originally requested URL, and :res for the resulting
   html-resource."
-  ([pack]
-   (save-page-links! (db/get-connection) pack))
-  ([conn {url :url res :res}]
-   (let [node  (-> (node-data-from-meta res) db/timestamp-next-update)
-         redir {:isRedirect (not= (lower-case url) (lower-case (:url node)))
-                :redirector (b/code-from-url url)}
-         links (get-wiki-links res (:host node))
-         ]
-     (->>
-       (db/create-page-and-links! conn node :LINKSTO (map b/code-from-url links) redir)
-       (prof/p :save-page-links)))
-    ))
+  [{:keys [url res html]}]
+  (->>
+    (let [node  (-> (node-data-from-meta res) db/timestamp-next-update (merge {:html html}))
+          redir {:is-redirect (not= (lower-case url) (lower-case (:url node)))
+                 :redirector  (node-data-from-url url)}
+          links (get-wiki-links res b/base-host)
+          ]
+      (db/create-page-and-links! node :LINKSTO (pmap node-data-from-url links) redir))
+    (prof/p :save-page-links))
+  )
 
 
 (defn log-node-exception!
-  "Logs an exception for a url record
-
-  DEPRECATED, MUST DO IN A BETTER PERFORMANT MANNER.
-  "
-  [conn ^String url ^Throwable t]
+  "Logs an exception for a url record"
+  [^String url ^Throwable t]
   (let [update-data (-> (node-data-from-url url)
                         (select-keys [:code :category :url])
-                        (assoc :hasError true :error (.getMessage t)))]
+                        (assoc :has-error true :error (.getMessage t)))]
     (timbre/error (str "Exception on " url " : " (.getMessage t)))
-    (doall (db/log-error! conn update-data))
-    ))
+    (doall (db/log-error! update-data))))
 
 (defn record-page!
   "Attempts to obtain the links from a url and save them.
@@ -156,29 +150,30 @@
   An optional second parameter allows us to indicate the page's provenance,
   for instance its original URL in case we're loading it from a local dataset
   but originally obtained it by crawling."
-  ([conn url]
-   (record-page! conn url url))
-  ([conn url provenance]
+  ([url]
+   (record-page! url url))
+  ([url provenance]
    (try
      (->> (->
             (load-resource-url url)
             (assoc :url provenance))
-          (save-page-links! conn))
+          (save-page-links!))
      (catch Throwable t
-       (if (-> t .getMessage (.contains "TransientError"))
+       ; (.printStackTrace t)
+       (if (-> t .getMessage (ut/if-empty "") (.contains "TransientError"))
          (timbre/trace (str "Transient error on " url ", not marking to retry. "))
-         (log-node-exception! conn provenance t))))))
+         (log-node-exception! provenance t))))))
 
 
 (defn crawl-and-update!
-  [conn limit]
-  (->> (db/query-nodes-to-crawl conn limit)
+  [limit]
+  (->> (db/query-nodes-to-crawl limit)
        ; We may get transactions aborting if we parallelize too many requests.
        ;
        ; While we could just take advantage of how we handle transient errors
        ; and let them be retried later, that would require pinging TVTropes
        ; again for the file. I'm leaving as is for now to avoid flooding them
        ; with requests.
-       (map #(record-page! conn %))
+       (map #(record-page! %))
        doall
        (prof/profile :trace :Crawl)))

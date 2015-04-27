@@ -29,6 +29,8 @@
                            [secretary "1.2.2"]
                            [liberator "0.12.2"]
                            [cheshire "5.4.0"]
+                           [korma "0.4.0"]
+                           [org.postgresql/postgresql "9.4-1201-jdbc41"]
                            ]
 
 
@@ -56,7 +58,8 @@
             :plugins [[lein-ring "0.9.1"]
                       [lein-cljsbuild "1.0.4"]
                       [lein-environ "1.0.0"]
-                      [lein-ancient "0.6.0"]]
+                      [lein-ancient "0.6.0"]
+                      [clj-sql-up "0.3.7"]]
 
 
             :ring {:handler      tropology.handler/app
@@ -64,13 +67,19 @@
                    :destroy      tropology.handler/destroy
                    :uberwar-name "tropology.war"}
 
+            :clj-sql-up {:database-test "jdbc:postgresql://192.168.59.103:5432/tropology_test?user=postgres&password=testdb"
+                         :database      "jdbc:postgresql://192.168.59.103:5432/tropology?user=postgres&password=testdb"
+                         :deps          [[org.postgresql/postgresql "9.4-1201-jdbc41"]]
+                         }
+
 
 
             :profiles
             {
              :uberjar    {:omit-source true
                           :env         {:production  true
-                                        :db-url      "http://neo4j:testneo4j@localhost:7474/db/data/"
+                                        :db-name     "tropology"
+                                        :db-host     "localhost"
                                         :update-cron "0 /3 * * * * *"
                                         :update-size 3
                                         :expiration  14
@@ -113,9 +122,29 @@
                           :source-paths ["env/dev/clj"]
                           :cljsbuild    {:builds {:app {:source-paths ["env/dev/cljs"]}}}
                           :env          {:dev             true
-                                         :db-url          "http://neo4j:testneo4j@localhost:7474/db/data/"
+                                         :db-name         "tropology"
+                                         :db-host         "192.168.59.103"
+                                         :db-user         "postgres"
+                                         :db-password     "testdb"
                                          :update-cron     "0 /2 * * * * *"
                                          :update-size     5
                                          :update-disabled true
                                          :expiration      14
+                                         }}
+             :test       {:dependencies [[pjstadig/humane-test-output "0.7.0"]
+                                         [leiningen "2.5.1"]]
+                          :repl-options {:init-ns tropology.repl}
+                          :injections   [(require 'pjstadig.humane-test-output)
+                                         (pjstadig.humane-test-output/activate!)]
+                          :source-paths ["env/dev/clj"]
+                          :cljsbuild    {:builds {:app {:source-paths ["env/dev/cljs"]}}}
+                          :env          {:dev             true
+                                         :db-name         "tropology_test"
+                                         :db-host         "192.168.59.103"
+                                         :db-user         "postgres"
+                                         :db-password     "testdb"
+                                         :update-cron     "0 /2 * * * * *"
+                                         :update-size     5
+                                         :update-disabled true
+                                         :expiration      10
                                          }}})

@@ -17,7 +17,7 @@
                           (let [{{{category :category, name :name} :params} :request} request
                                 id (str category "/" name)]
                             (->
-                              (db/query-by-code (db/get-connection) id)
+                              (db/query-by-code id)
                               :data
                               (ut/if-empty {}))))
              :available-media-types ["application/json"])
