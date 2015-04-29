@@ -4,6 +4,7 @@
             [clojurewerkz.urly.core :as u]))
 
 (def base-path "/pmwiki/pmwiki.php/")
+(def base-host "http://tvtropes.org/")
 (def base-url (str "http://tvtropes.org" base-path))
 
 (def base-label "Article")

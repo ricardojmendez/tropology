@@ -44,6 +44,50 @@
                        [:data :url] "http://localhost/")))
 
 
+(deftest test-create-page
+  (wipe-test-db)
+  ; Test single page creation
+  (let [_ (create-page-and-links! (get-test-connection) {:code "TestNode/First" :title "First node" :url "http://localhost/" :type "Test"})
+        all (->> (get-all-articles) (map :data))
+        item (first all)]
+    (is (= 1 (count all)))
+    (are [k v] (= v (k item))
+               :code "TestNode/First"
+               :title "First node"
+               :url "http://localhost/"
+               :type "Test"
+               ; Review defaults
+               :category "TestNode"
+               :host b/base-host
+               :image nil
+               :hasError false
+               :isRedirect false))
+  ; Test creating linked nodes
+  (let [linked ["L/N1" "L/N2" "L/N3" "L/N4"]
+        _ (create-page-and-links! (get-test-connection)
+                                  {:code "TestNode/Links" :title "Linked" :url "http://localhost/" :type "Test"}
+                                  :LINKSTO
+                                  linked
+                                  {:isRedirect false})
+        all (->> (get-all-articles) (map :data))
+        item (first (filter #(= "TestNode/Links" (:code %)) all))]
+    (is (= 6 (count all)))                                  ; Five we created, and the existing one
+    (doseq [k linked]
+      (is (some? (filter #(= k (:code %)) all))))
+    (are [k v] (= v (k item))
+               :code "TestNode/Links"
+               :title "Linked"
+               :url "http://localhost/"
+               :type "Test"
+               ; Review defaults
+               :category "TestNode"
+               :host b/base-host
+               :image nil
+               :hasError false
+               :isRedirect false))
+  )
+
+
 (deftest test-create-node-assigns-timestamps
   (wipe-test-db)
   (let [node (create-node! (get-test-connection) "TestNode" {:code "TestNode/First"})]

@@ -90,32 +90,37 @@
   http://stackoverflow.com/questions/1879885/clojure-how-to-to-recur-upon-exception
   http://stackoverflow.com/questions/5021788/how-many-threads-does-clojures-pmap-function-spawn-for-url-fetching-operations
   "
-  [conn node rel links {:keys [isRedirect redirector]}]
-  (let [code    (:code node)
-        all     (conj links code)
-        main-st (str "MERGE (p:Article {code:{maincode}}) SET "
-                     " p.url = {url}, p.category = {category}, p.host = {host}, "
-                     " p.title = {title}, p.image = {image}, p.type = {type}, "
-                     " p.nextUpdate = {nextUpdate}, p.timeStamp = {timeStamp}, "
-                     " p.hasError = {hasError}, p.isRedirect = {isRedirect} "
-                     "FOREACH (link in {links} |"
-                     " MERGE (p2:Article {code:link}) "
-                     " ON CREATE SET p2.nextUpdate = {timeStamp}, p2.hasError = false, p2.isRedirect = false, p2.timeStamp = {timeStamp}"
-                     " CREATE UNIQUE (p)-[" rel "]->(p2) "
-                     ")")
-        p       (-> (timestamp-next-update node)
-                    (assoc :maincode code :links links))]
-    (tx/in-transaction
-      conn
-      (tx/statement main-st p)
-      (tx/statement "MATCH ()-[r:LINKSTO]->(n:Article) WHERE n.code in {links} WITH n, COUNT(r) as incoming SET n.incoming = incoming" {:links all})
-      (tx/statement (str "MATCH " (code-to-match "n") "-[r:LINKSTO]->() WITH n, COUNT(r) as outgoing SET n.outgoing = outgoing") {:id code})
-      (tx/statement "MATCH (n:Article) WHERE n.outgoing is null AND n.code in {links} WITH n SET n.outgoing = 0" {:links all})
-      (tx/statement "MATCH (n:Article) WHERE n.incoming is null AND n.code in {links} WITH n SET n.incoming = 0" {:links all})
-      (if isRedirect
-        (tx/statement "MERGE (p:Article {code:{code}}) SET p.isRedirect = true, p.nextUpdate = 0, p.timeStamp = {timeStamp}, p.hasError = false"
-                      {:code redirector, :timeStamp (:timeStamp node)})))
-    ))
+  ([conn node]
+   (create-page-and-links! conn node nil nil {:isRedirect false}))
+  ([conn node rel links {:keys [isRedirect redirector]}]
+   (let [code    (:code node)
+         all     (conj links code)
+         main-st (str "MERGE (p:Article {code:{maincode}}) SET "
+                      " p.url = {url}, p.category = {category}, p.host = {host}, "
+                      " p.title = {title}, p.image = {image}, p.type = {type}, "
+                      " p.nextUpdate = {nextUpdate}, p.timeStamp = {timeStamp}, "
+                      " p.hasError = {hasError}, p.isRedirect = {isRedirect} "
+                      (if (some? links)
+                        (str "FOREACH (link in {links} |"
+                             " MERGE (p2:Article {code:link}) "
+                             " ON CREATE SET p2.nextUpdate = {timeStamp}, p2.hasError = false, p2.isRedirect = false, p2.timeStamp = {timeStamp}"
+                             " CREATE UNIQUE (p)-[" rel "]->(p2))"))
+                      )
+         p       (-> (merge {:host b/base-host :category (b/category-from-code code) :image nil :hasError false :isRedirect false} node) ; Add defaults
+                     timestamp-next-update
+                     (assoc :maincode code :links links))]
+     (tx/in-transaction
+       conn
+       (tx/statement main-st p)
+       (tx/statement "MATCH ()-[r:LINKSTO]->(n:Article) WHERE n.code in {links} WITH n, COUNT(r) as incoming SET n.incoming = incoming" {:links all})
+       (tx/statement (str "MATCH " (code-to-match "n") "-[r:LINKSTO]->() WITH n, COUNT(r) as outgoing SET n.outgoing = outgoing") {:id code})
+       (tx/statement "MATCH (n:Article) WHERE n.outgoing is null AND n.code in {links} WITH n SET n.outgoing = 0" {:links all})
+       (tx/statement "MATCH (n:Article) WHERE n.incoming is null AND n.code in {links} WITH n SET n.incoming = 0" {:links all})
+       (if isRedirect
+         (tx/statement "MERGE (p:Article {code:{code}}) SET p.isRedirect = true, p.nextUpdate = 0, p.timeStamp = {timeStamp}, p.hasError = false"
+                       {:code redirector, :timeStamp (:timeStamp node)})))
+     ))
+  )
 
 
 ;
