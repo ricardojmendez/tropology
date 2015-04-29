@@ -75,7 +75,7 @@
 
 
 
-(defn create-page-and-links
+(defn create-page-and-links!
   "Creates a page and all its related to links in a single call.
 
   Any pages it needs to create in order to link to _will not_ have the URL

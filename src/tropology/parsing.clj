@@ -125,7 +125,7 @@
          links (get-wiki-links res (:host node))
          ]
      (->>
-       (db/create-page-and-links conn node :LINKSTO (map b/code-from-url links) redir)
+       (db/create-page-and-links! conn node :LINKSTO (map b/code-from-url links) redir)
        (prof/p :save-page-links)))
     ))
 
