@@ -7,7 +7,8 @@
             [tropology.parsing :refer :all]
             [tropology.db :as db]
             [tropology.parsing :as p]
-            [tropology.base :as b]))
+            [tropology.base :as b]
+            [clojure.string :as s]))
 
 
 ;
@@ -20,15 +21,15 @@
   (let [conn          (tdb/get-test-connection)
         url           "http://tvtropes.org/pmwiki/pmwiki.php/Anime/CowboyBebop"
         original-data (-> (node-data-from-url url) (assoc :isRedirect true)) ; Create a redirect node
-        original-node (db/create-node! conn "Article" original-data)
+        original-node (tdb/create-node! conn b/base-label original-data)
         t             (Throwable. "Oopsy")
         logged-node   (log-node-exception! conn url t)]
     (println "Yes, we were supposed to get an exception logged up there. ⤴")
     (is (not= logged-node nil))
     (is (get-in original-node [:data :isRedirect]))         ; We did create a redirect node
     (is (nil? (get-in original-node [:data :error])))
-    (is (get-in logged-node [:data :hasError]))
-    (is (= (get-in logged-node [:data :error]) "Oopsy"))))
+    (is (:hasError logged-node))
+    (is (= "Oopsy" (:error logged-node)))))
 
 
 
@@ -49,13 +50,13 @@
           _     (record-page! conn path "http://tvtropes.org/pmwiki/pmwiki.php/Anime/CowboyBebop")
           saved (tdb/get-all-articles)
           rels  (tdb/get-all-article-rels)]
-      (is (= 653 (count saved)))
-      (is (= 653 (count rels)))
+      (is (= 650 (count saved)))
+      (is (= 650 (count rels)))
       (doseq [i saved]
         (let [node (:data i)
               values (select-keys node [:outgoing :incoming])]
-          (if (= "Anime/CowboyBebop" (:code node))
-            (is (= {:outgoing 653 :incoming 1} values)) ; The page links to itself. Consider removing that.
+          (if (= "anime/cowboybebop" (:code node))
+            (is (= {:outgoing 650 :incoming 1} values)) ; The page links to itself. Consider removing that.
             (is (= {:outgoing 0 :incoming 1} values))
           ))))
     (prof/profile :trace :Database)
@@ -93,7 +94,7 @@
       (println "Yes, we were supposed to get an exception logged up there. ⤴")
       (is (= 1 (count all-nodes)))
       (is (= 0 (count all-rels)))
-      (is (= "Main/CircularRedirect" (get-in node [:data :code])))
+      (is (= "main/circularredirect" (get-in node [:data :code])))
       (is (get-in node [:data :hasError]))
       )
     (prof/profile :trace :Database)
@@ -132,16 +133,16 @@
           all-rels  (tdb/get-all-article-rels)
           to-review (db/query-for-codes conn ["Main/Manga" "Funny/Film" "Main/HumorDissonance" "Creator/TomokazuSugita"])
           ]
-      (is (= 15003 (count all-nodes)))
-      (is (= 16204 (count all-rels)))
+      (is (= 14983 (count all-nodes)))
+      (is (= 16192 (count all-rels)))
       (are [code incoming outgoing] (first (filter #(and
                                                      (= incoming (:incoming %))
                                                      (= outgoing (:outgoing %))
                                                      (= code (:code %))) to-review))
-                                    "Main/Manga" 1 1879
-                                    "Funny/Film" 0 1543
-                                    "Main/HumorDissonance" 1 0
-                                    "Creator/TomokazuSugita" 1 0
+                                    "main/manga" 1 1879
+                                    "funny/film" 0 1543
+                                    "main/humordissonance" 1 0
+                                    "creator/tomokazusugita" 1 0
                                     )
       )
     (prof/profile :trace :Database)))
@@ -157,8 +158,9 @@
     (is (< 0 (count saved)))
     (are [property value] (= value (get-in node [:data property]))
                           :hasError false
-                          :category "Main"
-                          :code "Main/HomePage"
+                          :category "main"
+                          :code "main/homepage"
+                          :display "Main/HomePage"
                           :isRedirect false
                           :url "http://tvtropes.org/pmwiki/pmwiki.php/Main/HomePage")
     ))
@@ -178,8 +180,9 @@
       (is (nil? ignored))
       (are [property value] (= value (get-in node [:data property]))
                             :hasError false
-                            :category "Main"
-                            :code "Main/TakeMeInstead"
+                            :category "main"
+                            :code "main/takemeinstead"
+                            :display "Main/TakeMeInstead"
                             :isRedirect false
                             :url "http://tvtropes.org/pmwiki/pmwiki.php/Main/TakeMeInstead")
       )
@@ -202,10 +205,10 @@
       (doseq [i to-query]
         (is (p/is-valid-url? i)))
       (are [code] (first (filter #(= code (b/code-from-url %)) to-query))
-                  "Main/Zeerust"
-                  "Main/ToBeContinued"
-                  "Main/BishieSparkle"
-                  "Main/DenserAndWackier"
+                  "main/zeerust"
+                  "main/tobecontinued"
+                  "main/bishiesparkle"
+                  "main/denserandwackier"
                   ))
     (prof/profile :trace :Database)
     ))
@@ -223,8 +226,9 @@
           to-query ["Main/TakeMeInstead" "Main/ToBeContinued" "Main/DenserAndWackier"]
           queried  (db/query-for-codes conn to-query)
           ]
+      (is (= 3 (count queried)))
       (doseq [code to-query]
-        (is (some? (filter #(= code (:code %)) queried)))))
+        (is (not-empty (filter #(= (s/lower-case code) (:code %)) queried)))))
     (prof/profile :trace :Database)
     ))
 
@@ -242,7 +246,7 @@
         saved (tdb/get-all-articles)
         _     (record-page! conn path "http://tvtropes.org/pmwiki/pmwiki.php/Main/TakeMeInstead")
         again (tdb/get-all-articles)
-        links (cy/tquery conn "MATCH (n:Article {code:'Main/TakeMeInstead'})-[r]->() RETURN r")
+        links (cy/tquery conn "MATCH (n:Article {code:'main/takemeinstead'})-[r]->() RETURN r")
         ]
     (is (= (count saved) 5))                                ; There's only five links on the file
     (is (= (count again) 5))                                ; Same number of links is returned the second time
@@ -266,16 +270,18 @@
         links-redir (db/query-from conn "Main/TakeMeInsteadRedirector" :LINKSTO)]
     (are [property value] (= value (get-in main-node [:data property]))
                           :hasError false
-                          :category "Main"
-                          :code "Main/TakeMeInstead"
+                          :category "main"
+                          :code "main/takemeinstead"
+                          :display "Main/TakeMeInstead"
                           :isRedirect false
                           :url "http://tvtropes.org/pmwiki/pmwiki.php/Main/TakeMeInstead")
     (are [property value] (= value (get-in redir-node [:data property]))
                           :hasError false
                           ; :category "Main"
-                          :code "Main/TakeMeInsteadRedirector"
+                          :code "main/takemeinsteadredirector"
                           :isRedirect true
-                          ; Nodes that are initially created as redirects don't get a url or category
+                          ; Nodes that are initially created as redirects don't get a url, category or display
+                          :display nil
                           :category nil
                           :url nil
                           )

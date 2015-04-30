@@ -1,5 +1,5 @@
 (ns tropology.parsing
-  (:require [clojure.string :as s]
+  (:require [clojure.string :refer [lower-case]]
             [clojurewerkz.urly.core :as u]
             [com.numergent.url-tools :as ut]
             [net.cgrand.enlive-html :as e]
@@ -11,8 +11,8 @@
   (:import (java.net URI)))
 
 
-(def ignored-categories (set ["Administrivia" "Tropers"]))
-(def ignored-pages (set ["Main/Administrivia"
+(def ignored-categories (set ["administrivia" "tropers"]))
+(def ignored-pages (->> ["Main/Administrivia"
                          "Main/Cliche"
                          "Main/GoodStyle"
                          "Main/HomePage"
@@ -27,7 +27,9 @@
                          "Main/WecomeToTVTropes"
                          "Main/WikiMagic"
                          "Main/Wikipedia"
-                         "Main/WikiSandbox"]))
+                         "Main/WikiSandbox"]
+                        (map lower-case)
+                        set))
 
 (defn is-valid-url?
   "Evaluates if a URL is valid for us to crawl or not"
@@ -68,13 +70,15 @@
   "Returns the relevant metadata of a html-resource as a map, including things
   we care about like the node label."
   [res]
-  (let [og-url (content-from-meta res "og:url")
-        code   (b/code-from-url og-url)]
+  (let [og-url  (content-from-meta res "og:url")
+        display (b/display-from-url og-url)
+        code    (b/code-from-url og-url)]
     {:code       code
      :category   (b/category-from-code code)
      :url        og-url
      :isRedirect false                                      ; Nodes have to be explicitly tagged as being redirects
      :hasError   false
+     :display    display
      :host       (ut/host-string-of og-url)
      :title      (content-from-meta res "og:title")
      :image      (content-from-meta res "og:image")
@@ -85,9 +89,11 @@
   Assumes the url string conforms to the defined base-url, or will return nil."
   [^String url]
   (if (is-valid-url? url)
-    (let [code (b/code-from-url url)]
+    (let [display (b/display-from-url url)
+          code    (b/code-from-url url)]
       {:category   (b/category-from-code code)
        :code       code
+       :display    display
        :host       (ut/host-string-of url)
        :url        url
        :isRedirect false                                    ; Nodes have to be explicitly tagged as being redirects
@@ -137,10 +143,10 @@
   "
   [conn ^String url ^Throwable t]
   (let [update-data (-> (node-data-from-url url)
-                        (select-keys [:code :category])
+                        (select-keys [:code :category :url])
                         (assoc :hasError true :error (.getMessage t)))]
     (timbre/error (str "Exception on " url " : " (.getMessage t)))
-    (doall (db/create-or-merge-node! conn update-data))
+    (doall (db/log-error! conn update-data))
     ))
 
 (defn record-page!
