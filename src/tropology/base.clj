@@ -1,9 +1,11 @@
 (ns tropology.base
   (:require [clojure.string :as s]
+            [clojure.string :refer [lower-case]]
             [com.numergent.url-tools :as ut]
             [clojurewerkz.urly.core :as u]))
 
 (def base-path "/pmwiki/pmwiki.php/")
+(def base-host "http://tvtropes.org/")
 (def base-url (str "http://tvtropes.org" base-path))
 
 (def base-label "Article")
@@ -26,8 +28,11 @@
     "Unknown"
     (-> id (s/split #"/") first (ut/if-empty "Unknown"))))
 
-(defn code-from-url [^String url]
+(defn display-from-url [^String url]
   (-> (u/path-of url) (s/replace base-path "")))
+
+(defn code-from-url [^String url]
+  (-> url display-from-url lower-case))
 
 
 (defn group-pairs

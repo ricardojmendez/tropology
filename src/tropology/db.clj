@@ -1,5 +1,6 @@
 (ns tropology.db
   (:require [joda-time :as j]
+            [clojure.string :refer [lower-case]]
             [clojurewerkz.neocons.rest :as nr]
             [clojurewerkz.neocons.rest.nodes :as nn]
             [clojurewerkz.neocons.rest.labels :as nl]
@@ -75,7 +76,7 @@
 
 
 
-(defn create-page-and-links
+(defn create-page-and-links!
   "Creates a page and all its related to links in a single call.
 
   Any pages it needs to create in order to link to _will not_ have the URL
@@ -90,32 +91,56 @@
   http://stackoverflow.com/questions/1879885/clojure-how-to-to-recur-upon-exception
   http://stackoverflow.com/questions/5021788/how-many-threads-does-clojures-pmap-function-spawn-for-url-fetching-operations
   "
-  [conn node rel links {:keys [isRedirect redirector]}]
-  (let [code    (:code node)
-        all     (conj links code)
-        main-st (str "MERGE (p:Article {code:{maincode}}) SET "
-                     " p.url = {url}, p.category = {category}, p.host = {host}, "
-                     " p.title = {title}, p.image = {image}, p.type = {type}, "
-                     " p.nextUpdate = {nextUpdate}, p.timeStamp = {timeStamp}, "
-                     " p.hasError = {hasError}, p.isRedirect = {isRedirect} "
-                     "FOREACH (link in {links} |"
-                     " MERGE (p2:Article {code:link}) "
-                     " ON CREATE SET p2.nextUpdate = {timeStamp}, p2.hasError = false, p2.isRedirect = false, p2.timeStamp = {timeStamp}"
-                     " CREATE UNIQUE (p)-[" rel "]->(p2) "
-                     ")")
-        p       (-> (timestamp-next-update node)
-                    (assoc :maincode code :links links))]
-    (tx/in-transaction
-      conn
-      (tx/statement main-st p)
-      (tx/statement "MATCH ()-[r:LINKSTO]->(n:Article) WHERE n.code in {links} WITH n, COUNT(r) as incoming SET n.incoming = incoming" {:links all})
-      (tx/statement (str "MATCH " (code-to-match "n") "-[r:LINKSTO]->() WITH n, COUNT(r) as outgoing SET n.outgoing = outgoing") {:id code})
-      (tx/statement "MATCH (n:Article) WHERE n.outgoing is null AND n.code in {links} WITH n SET n.outgoing = 0" {:links all})
-      (tx/statement "MATCH (n:Article) WHERE n.incoming is null AND n.code in {links} WITH n SET n.incoming = 0" {:links all})
-      (if isRedirect
-        (tx/statement "MERGE (p:Article {code:{code}}) SET p.isRedirect = true, p.nextUpdate = 0, p.timeStamp = {timeStamp}, p.hasError = false"
-                      {:code redirector, :timeStamp (:timeStamp node)})))
-    ))
+  ([conn node]
+   (create-page-and-links! conn node nil nil {:isRedirect false}))
+  ([conn node rel links {:keys [isRedirect redirector]}]
+   (let [code    (lower-case (:code node))
+         all     (conj links code)
+         main-st (str "MERGE (p:Article {code:{maincode}}) SET "
+                      " p.url = {url}, p.category = {category}, p.host = {host}, "
+                      " p.title = {title}, p.image = {image}, p.type = {type}, "
+                      " p.nextUpdate = {nextUpdate}, p.timeStamp = {timeStamp}, "
+                      " p.display = {display}, "
+                      " p.hasError = {hasError}, p.isRedirect = {isRedirect} "
+                      (if (some? links)
+                        (str "FOREACH (link in {links} |"
+                             " MERGE (p2:Article {code:link}) "
+                             " ON CREATE SET p2.nextUpdate = {timeStamp}, p2.hasError = false, p2.isRedirect = false, p2.timeStamp = {timeStamp} "
+                             " CREATE UNIQUE (p)-[" rel "]->(p2))"))
+                      )
+         p       (-> (merge {:host b/base-host :category (b/category-from-code code) :image nil :hasError false :isRedirect false} node) ; Add defaults
+                     timestamp-next-update
+                     (assoc :maincode code :links links))]
+     (tx/in-transaction
+       conn
+       (tx/statement main-st p)
+       (tx/statement "MATCH ()-[r:LINKSTO]->(n:Article) WHERE n.code in {links} WITH n, COUNT(r) as incoming SET n.incoming = incoming" {:links all})
+       (tx/statement (str "MATCH " (code-to-match "n") "-[r:LINKSTO]->() WITH n, COUNT(r) as outgoing SET n.outgoing = outgoing") {:id code})
+       (tx/statement "MATCH (n:Article) WHERE n.outgoing is null AND n.code in {links} WITH n SET n.outgoing = 0" {:links all})
+       (tx/statement "MATCH (n:Article) WHERE n.incoming is null AND n.code in {links} WITH n SET n.incoming = 0" {:links all})
+       (if isRedirect
+         (tx/statement "MERGE (p:Article {code:{code}}) SET p.isRedirect = true, p.nextUpdate = 0, p.timeStamp = {timeStamp}, p.hasError = false"
+                       {:code redirector, :timeStamp (:timeStamp node)})))
+     ))
+  )
+
+(defn log-error!
+  "Logs an error for a node"
+  [conn node]
+   (let [code    (lower-case (:code node))
+         main-st (str "MERGE (p:Article {code:{code}}) "
+                      " SET "
+                      " p.url = {url}, p.hasError = {hasError}, p.error = {error}, p.category = {category} "
+                      "RETURN p")
+         p       (-> (merge {:host b/base-host :category (b/category-from-code code) :image nil :hasError false :isRedirect false} node) ; Add defaults
+                     timestamp-next-update)]
+     (->> (tx/in-transaction conn (tx/statement main-st p))
+          first
+          :data
+          first
+          :row
+          first
+          )))
 
 
 ;
@@ -146,7 +171,7 @@
   (->>
     (tx/in-transaction
       conn
-      (tx/statement "MATCH (n:Article) WHERE n.code in {list} RETURN n" {:list codes}))
+      (tx/statement "MATCH (n:Article) WHERE n.code in {list} RETURN n" {:list (map lower-case codes)}))
     first
     :data
     (map #(first (:row %)))
@@ -159,7 +184,7 @@
   [conn code]
   (->>
     (let [query-str (str "MATCH  " (code-to-match "v") " RETURN v")
-          match     (first (cy/tquery conn query-str {:id code}))]
+          match     (first (cy/tquery conn query-str {:id (lower-case code)}))]
       (if (nil? match)
         nil
         (-> (match "v")
@@ -188,16 +213,16 @@
   We could probably write it getting the relationships and walking through
   them, but going with cypher for now to test."
   [conn ^String code rel]
-  (let [query-str (str "MATCH " (code-to-match "o" "id") "-[" rel "]->(v:Article) RETURN DISTINCT v.code as code,v.url as url, v.title as title, v.label as label, v.incoming as incoming")]
-    (cy/tquery conn query-str {:id code})))
+  (let [query-str (str "MATCH " (code-to-match "o" "id") "-[" rel "]->(v:Article) RETURN DISTINCT v.code as code,v.display as display,v.url as url, v.title as title, v.label as label, v.incoming as incoming")]
+    (cy/tquery conn query-str {:id (lower-case code)})))
 
 (defn query-to
   "Retrieves the list of nodes that links to a node.
   Yes, the parameter order is the opposite from query-links-from,
   since I think it better indicates the relationship."
   [conn rel ^String code]
-  (let [query-str (str "MATCH " (code-to-match "o" "id") "<-[" rel "]-(v) RETURN DISTINCT v.code as code,v.url as url, v.title as title, v.label as label, v.incoming as incoming")]
-    (cy/tquery conn query-str {:id code})))
+  (let [query-str (str "MATCH " (code-to-match "o" "id") "<-[" rel "]-(v) RETURN DISTINCT v.code as code,v.display as display,v.url as url, v.title as title, v.label as label, v.incoming as incoming")]
+    (cy/tquery conn query-str {:id (lower-case code)})))
 
 (defn query-common-nodes-from
   "Given a starting node code (common-code) and a list of node codes-from
@@ -216,7 +241,7 @@
                           "--(m:Article)-[" rel "]->(o:Article)--(n) "
                           "WHERE m.code in {codes} and (o.incoming is null or o.incoming < {limit}) "
                           "RETURN DISTINCT m.code as from, o.code as to")
-                     {:idn common-code :codes codes-from :limit incoming-link-limit}))
+                     {:idn (lower-case common-code) :codes (map lower-case codes-from) :limit incoming-link-limit}))
 
      first
      :data
@@ -224,60 +249,3 @@
      (prof/p :query-common-nodes-from)
      )
     ))
-
-
-;
-; Node creation and tagging
-;
-
-
-(defn create-node!
-  "Creates a node from a connection with a label"
-  [conn label data-items]
-  (let [node (prof/p :nn-create (nn/create conn (timestamp-create data-items)))]
-    (do
-      (prof/p :nl-add (nl/add conn node label))
-      node)))
-
-(defn merge-node!
-  "Updates an existing node, replacing all data items with the ones received,
-  and retrieves the existing node."
-  [conn ^long id data-items]
-  (let [merged (-> (nn/get conn id) (:data) (merge data-items) (timestamp-update))]
-    (do
-      (prof/p :nn-update (nn/update conn id merged))
-      (prof/p :nn-get (nn/get conn id)))))                  ; Notice that we get it again to retrieve the updated values
-
-(defn create-or-merge-node!
-  "Creates a node from a connection with a label. If a node with the id
-  already exists, label is ignored and the data-items are merged with
-  the existing ones.
-
-  Data-items is expected to include the label."
-  [conn data-items]
-  (let [existing (query-by-code conn (:code data-items))
-        id       (get-in existing [:metadata :id])]
-    (if (empty? existing)
-      (create-node! conn b/base-label data-items)
-      (merge-node! conn id data-items))))
-
-(defn create-or-retrieve-node!
-  "Creates a node from a connection with a label. If a node with the id
-  already exists, the node is retrieved and returned."
-  [conn data-items]
-  (let [existing (query-by-code conn (:code data-items))
-        id       (get-in existing [:metadata :id])]
-    (if (empty? existing)
-      (create-node! conn (:category data-items) data-items)
-      (nn/get conn id))))
-
-
-
-;
-; Relationship functions
-;
-
-(defn relate-nodes!
-  "Links two nodes by a relationship if they aren't yet linked"
-  [conn relationship n1 n2]
-  (prof/p :nrl-maybe-create (nrl/maybe-create conn n1 n2 relationship)))
