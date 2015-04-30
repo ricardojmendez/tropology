@@ -267,7 +267,8 @@
         main-node   (db/query-by-code conn "Main/TakeMeInstead")
         redir-node  (db/query-by-code conn "Main/TakeMeInsteadRedirector")
         links-main  (db/query-from conn "Main/TakeMeInstead" :LINKSTO)
-        links-redir (db/query-from conn "Main/TakeMeInsteadRedirector" :LINKSTO)]
+        links-redir (db/query-from conn "Main/TakeMeInsteadRedirector" :LINKSTO)
+        ]
     (are [property value] (= value (get-in main-node [:data property]))
                           :hasError false
                           :category "main"
@@ -288,4 +289,27 @@
     (is (empty? links-redir))
     (is (= 4 (count links-main)))
     ))
+
+
+(deftest test-record-page-case-sensitivity
+  ; On this test we pass a provenance URL which will differ from the page's og:url,
+  ; but just in that the URL's case is not the same. It should not be marked as a
+  ; redirect.
+  (tdb/wipe-test-db)
+  (let [path        (str tp/test-file-path "TakeMeInstead-pruned.html")
+        conn        (tdb/get-test-connection)
+        _           (record-page! conn path "http://tvtropes.org/pmwiki/pmwiki.php/main/takeMEinstEAD")
+        main-node   (db/query-by-code conn "Main/TakeMeInstead")
+        links-main  (db/query-from conn "Main/TakeMeInstead" :LINKSTO)
+        ]
+    (are [property value] (= value (get-in main-node [:data property]))
+                          :hasError false
+                          :category "main"
+                          :code "main/takemeinstead"
+                          :display "Main/TakeMeInstead"
+                          :isRedirect false
+                          :url "http://tvtropes.org/pmwiki/pmwiki.php/Main/TakeMeInstead")
+    (is (= 4 (count links-main)))
+    ))
+
 

@@ -126,7 +126,7 @@
    (save-page-links! (db/get-connection) pack))
   ([conn {url :url res :res}]
    (let [node  (-> (node-data-from-meta res) db/timestamp-next-update)
-         redir {:isRedirect (not= url (:url node))
+         redir {:isRedirect (not= (lower-case url) (lower-case (:url node)))
                 :redirector (b/code-from-url url)}
          links (get-wiki-links res (:host node))
          ]
