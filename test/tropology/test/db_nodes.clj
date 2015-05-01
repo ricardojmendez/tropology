@@ -40,41 +40,6 @@
       (prof/p :nl-add (nl/add conn node label))
       node)))
 
-(defn merge-node!
-  "Updates an existing node, replacing all data items with the ones received,
-  and retrieves the existing node."
-  [conn ^long id data-items]
-  (let [merged (-> (nn/get conn id) (:data) (merge data-items) (timestamp-update))]
-    (do
-      (prof/p :nn-update (nn/update conn id merged))
-      (prof/p :nn-get (nn/get conn id)))))                  ; Notice that we get it again to retrieve the updated values
-
-(defn create-or-merge-node!
-  "Creates a node from a connection with a label. If a node with the id
-  already exists, label is ignored and the data-items are merged with
-  the existing ones.
-
-  Data-items is expected to include the label."
-  [conn original-data]
-  (let [data-items (sanitize-test-data original-data)
-        existing   (query-by-code conn (:code data-items))
-        id         (get-in existing [:metadata :id])]
-    (if (empty? existing)
-      (create-node! conn b/base-label data-items)
-      (merge-node! conn id data-items))))
-
-(defn create-or-retrieve-node!
-  "Creates a node from a connection with a label. If a node with the id
-  already exists, the node is retrieved and returned."
-  [conn original-data]
-  (let [data-items (sanitize-test-data original-data)
-        existing   (query-by-code conn (:code data-items))
-        id         (get-in existing [:metadata :id])]
-    (if (empty? existing)
-      (create-node! conn (:category data-items) data-items)
-      (nn/get conn id))))
-
-
 
 (defn relate-nodes!
   "Links two nodes by a relationship if they aren't yet linked"
@@ -222,7 +187,7 @@
 (deftest test-query-nodes-node-skip-errors
   (wipe-test-db)
   (create-nodes! 30 false)
-  (create-or-merge-node! (get-test-connection) {:code "TestNode/10" :category "TestNode" :hasError true :error "Oopsy"})
+  (log-error! (get-test-connection) {:code "TestNode/10" :url "10" :hasError true :error "Oopsy"})
   (is (= (count (query-nodes-to-crawl (get-test-connection) 100)) 29)) ; We skip the error node
   (is (= (count (query-nodes-to-crawl (get-test-connection) 15)) 15)) ; We can still find 15 nodes to crawl
   )
@@ -394,57 +359,4 @@
                         "testnode/n4" "n.incoming" 1
                         "testnode/n4" "n.outgoing" 0
                         )
-    ))
-
-
-
-
-(deftest test-merge-node
-  (wipe-test-db)                                            ; Wipe the db in case we have unique constraints on the test environment
-  (let [conn   (get-test-connection)
-        node   (create-node! conn b/base-label {:code "TestNode/First" :nextUpdate 5 :url "http://localhost/"})
-        id     (:id node)
-        merged (merge-node! conn id {:url "http://localhost/redirected/"})
-        ]
-    (is (= (:code node) (:code merged)))
-    (is (= (get-in merged [:data :url]) "http://localhost/redirected/"))
-    (are [f path] (f (get-in merged path) (get-in node path))
-                  > [:data :timeStamp]                      ; merge-node should update the timestamp
-                  = [:data :nextUpdate]                     ; merge-node should not touch the nextupdate
-                  not= [:data :url]                         ; we changed the url
-                  )
-    ))
-
-(deftest test-create-or-merge
-  (wipe-test-db)
-  ; First let's test creating from scratch
-  (let [conn       (get-test-connection)
-        data-items {:code "TestNode/CoM" :category "TestNode" :url "http://changeme"}
-        node       (create-or-merge-node! conn data-items)]
-    (is (not= node nil))
-    (is (= (get-in node [:data :code]) "testnode/com"))
-    (is (= (get-in node [:data :url]) "http://changeme"))
-    ; Test that we can call create-or-merge if one exists
-    (let [merged (create-or-merge-node! conn (assoc data-items :url "http://newurl"))]
-      (is (= (:code merged) (:code node)))
-      (is (= (get-in merged [:data :url]) "http://newurl"))
-      (is (= (get-in merged [:data :code]) "testnode/com"))
-      )
-    ))
-
-(deftest test-create-or-retrieve
-  (wipe-test-db)
-  ; First let's test creating from scratch
-  (let [conn       (get-test-connection)
-        data-items {:code "TestNode/CoM" :category "TestNode" :url "http://original"}
-        node       (create-or-retrieve-node! conn data-items)]
-    (is (not= node nil))
-    (is (= (get-in node [:data :code]) "testnode/com"))
-    (is (= (get-in node [:data :url]) "http://original"))
-    ; Test that we can if one exists, the new URL is ignored
-    (let [merged (create-or-retrieve-node! conn (assoc data-items :url "http://newurl"))]
-      (is (= (:code merged) (:code node)))
-      (is (= (get-in merged [:data :url]) "http://newurl"))
-      (is (= (get-in merged [:data :code]) "testnode/com"))
-      )
     ))

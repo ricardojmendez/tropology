@@ -127,20 +127,21 @@
 (defn log-error!
   "Logs an error for a node"
   [conn node]
-   (let [code    (lower-case (:code node))
-         main-st (str "MERGE (p:Article {code:{code}}) "
-                      " SET "
-                      " p.url = {url}, p.hasError = {hasError}, p.error = {error}, p.category = {category} "
-                      "RETURN p")
-         p       (-> (merge {:host b/base-host :category (b/category-from-code code) :image nil :hasError false :isRedirect false} node) ; Add defaults
-                     timestamp-next-update)]
-     (->> (tx/in-transaction conn (tx/statement main-st p))
-          first
-          :data
-          first
-          :row
-          first
-          )))
+  (let [code    (lower-case (:code node))
+        main-st (str "MERGE (p:Article {code:{code}}) "
+                     " SET "
+                     " p.url = {url}, p.hasError = {hasError}, p.error = {error}, p.category = {category} "
+                     "RETURN p")
+        p       (-> (merge {:host b/base-host :category (b/category-from-code code) :image nil :hasError false :isRedirect false} node) ; Add defaults
+                    (merge {:code code})
+                    timestamp-next-update)]
+    (->> (tx/in-transaction conn (tx/statement main-st p))
+         first
+         :data
+         first
+         :row
+         first
+         )))
 
 
 ;
