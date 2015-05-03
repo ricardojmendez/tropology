@@ -4,7 +4,7 @@ Tropology crawls TVTropes.org, converts the relationships between pages into a N
 
 This is currently a personal experiment.  Consider it raw, pre-alpha code and likely to change.
 
-Current version is 0.1.0
+Current version is 0.2.0
 
 [You can read more on our site](http://numergent.com/tags/tropology/).
 
@@ -26,14 +26,12 @@ See <pre>create-test-environment.sh</pre> for how I'm creating a Docker containe
 
 If you create a database from scratch using a Docker container, you may want to create the following indices up front:
 
-<code> 
-CREATE CONSTRAINT on (p:Article) ASSERT p.code IS UNIQUE; 
-CREATE INDEX ON :Article(incoming);
-CREATE INDEX ON :Article(outgoing);
-CREATE INDEX ON :Article(nextUpdate);
-</code>
+    CREATE CONSTRAINT on (p:Article) ASSERT p.code IS UNIQUE; 
+    CREATE INDEX ON :Article(incoming);
+    CREATE INDEX ON :Article(outgoing);
+    CREATE INDEX ON :Article(nextUpdate);
 
-You can also bootstrap it with [a pre-loaded Neo4j database from this location](https://mega.co.nz/#!w8J3QDjT!eJ4sgDUEyvHd0CL6wbQoQNuZFjq5u33EVPhx50nZVeg).
+You can also bootstrap it with [a pre-loaded Neo4j database from this location](https://mega.co.nz/#!0gIylZ7J!JAzhr2M2qkjUqE9xgfQXCRLDea5h8OExKPRI9mmxqys).
 
 ## Running
 
