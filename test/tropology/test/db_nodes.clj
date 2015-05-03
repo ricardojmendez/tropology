@@ -1,13 +1,9 @@
 (ns tropology.test.db-nodes
   (:require [clojure.test :refer :all]
-            [joda-time :as jt]
             [korma.core :refer :all]
             [taoensso.timbre.profiling :as prof]
             [tropology.db :refer :all]
             [tropology.base :as b]
-            [clojurewerkz.neocons.rest.labels :as nl]
-            [clojurewerkz.neocons.rest.nodes :as nn]
-            [clojurewerkz.neocons.rest.relationships :as nrl]
             [clojure.string :as s]
             [tropology.db :as db]
             [tropology.parsing :as p]))

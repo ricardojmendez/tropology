@@ -1,19 +1,11 @@
 (ns tropology.db
   (:require [joda-time :as j]
             [clojure.string :refer [lower-case]]
-            [clojurewerkz.neocons.rest :as nr]
-            [clojurewerkz.neocons.rest.nodes :as nn]
-            [clojurewerkz.neocons.rest.labels :as nl]
-            [clojurewerkz.neocons.rest.cypher :as cy]
-            [clojurewerkz.neocons.rest.relationships :as nrl]
-            [clojurewerkz.neocons.rest.transaction :as tx]
             [korma.core :refer :all]
             [korma.db :as kdb]
             [tropology.base :as b]
-            [com.numergent.url-tools :as ut]
             [taoensso.timbre.profiling :as prof]
             [environ.core :refer [env]]
-            [clojure.string :as str]
             [com.numergent.url-tools :as u]))
 
 

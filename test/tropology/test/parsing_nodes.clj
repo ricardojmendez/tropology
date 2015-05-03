@@ -1,12 +1,10 @@
 (ns tropology.test.parsing-nodes
   (:require [clojure.test :refer :all]
-            [clojurewerkz.neocons.rest.cypher :as cy]
             [taoensso.timbre.profiling :as prof]
             [tropology.test.db-nodes :as tdb]
             [tropology.test.parsing :as tp]
             [tropology.parsing :refer :all]
             [tropology.db :as db]
-            [tropology.parsing :as p]
             [tropology.base :as b]
             [clojure.string :as s]))
 
@@ -192,7 +190,7 @@
       (is (= 5 (count saved)))
       (is (= 4 (count to-query)))
       (doseq [i to-query]
-        (is (p/is-valid-url? i)))
+        (is (is-valid-url? i)))
       (are [code] (first (filter #(= code (b/code-from-url %)) to-query))
                   "main/zeerust"
                   "main/tobecontinued"
