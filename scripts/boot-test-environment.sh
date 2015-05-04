@@ -1,3 +1,3 @@
 boot2docker start
 $(boot2docker shellinit)
-docker start tropology-test
+docker start tropology-test-pg
