@@ -1,10 +1,10 @@
 # Tropology 
 
-Tropology crawls TVTropes.org, converts the relationships between pages into a Neo4j database, and helps you visualize relationships between concepts, tropes, creators and material.
+Tropology crawls TVTropes.org, converts the relationships between pages into a PostgreSQL database, and helps you visualize relationships between concepts, tropes, creators and material.
 
 This is currently a personal experiment.  Consider it raw, pre-alpha code and likely to change.
 
-Current version is 0.2.0
+Current version is 0.3.0-SNAPSHOT.
 
 [You can read more on our site](http://numergent.com/tags/tropology/).
 
@@ -18,20 +18,19 @@ You will need [Leiningen][1] 2.0 or above installed.
 [1]: https://github.com/technomancy/leiningen
 
 
-### Neo4j
+### PostgreSQL
 
-My current development environment is Neo4j 2.2.  The tests are run against a Neo4j node responding on localhost on port 7373 (instead of 7474, to keep it running in parallel with a dev environment).
+My current development environment is PostgreSQL 9.4.1. It expects a database called _tropology_ for the dev environment, and _tropology_test_ for the test environment.
 
-See <pre>create-test-environment.sh</pre> for how I'm creating a Docker container on OS X for tests.
+There are migration scripts included, but they act only upon the tables and do not create the databases.
 
-If you create a database from scratch using a Docker container, you may want to create the following indices up front:
+See <pre>scripts/create-test-environment.sh</pre> for how I'm creating a Docker container on OS X for tests.
 
-    CREATE CONSTRAINT on (p:Article) ASSERT p.code IS UNIQUE; 
-    CREATE INDEX ON :Article(incoming);
-    CREATE INDEX ON :Article(outgoing);
-    CREATE INDEX ON :Article(nextUpdate);
+After you have installed PostgreSQL and created the databases, you'll need to run:
 
-You can also bootstrap it with [a pre-loaded Neo4j database from this location](https://mega.co.nz/#!0gIylZ7J!JAzhr2M2qkjUqE9xgfQXCRLDea5h8OExKPRI9mmxqys).
+    ENV=test lein clj-sql-up migrate
+    lein clj-sql-up migrate
+
 
 ## Running
 
@@ -45,6 +44,12 @@ Then go to http://localhost:3000/ and enter "Anime/SamuraiFlamenco" on the text 
 This will display a (currently somewhat messy) graph of all nodes and related connections.  Clicking any particular node will highlight only that node and its correlated concepts (concepts that both link to the central one and each other).   Double-clicking a node will make a graph out of that node neighborhood.
 
 You can also see the raw data by going to: http://localhost:3000/api/network/Anime/SamuraiFlamenco
+
+## A note on Cursive Clojure
+
+Cursive Clojure does not yet support a way to launch a REPL with specific environment profile. Since the application reads its database connection parameters from the environment configuration, if you start a REPL form Cursive and run the tests against it, you'll be running them against the development database and not the test one.
+
+Make sure you either create a REPL profile specifically for the test settings, or just run the tests via *lein*.
 
 ## Next steps
 

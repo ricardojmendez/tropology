@@ -18,3 +18,6 @@
   [a b]
   (if (or (nil? a) (empty? a)) b a))
 
+(defn in-seq? [s x]
+  (some? (some #{x} s)))
+

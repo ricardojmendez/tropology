@@ -40,7 +40,7 @@
   are the from elements and the values are a collection of all the to referenced
   by that node"
   ([links]
-    (group-pairs links :from :to))
+    (group-pairs links :from-code :to-code))
   ([links from to]
   (->>
     (group-by #(get % from) links)

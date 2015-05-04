@@ -2,7 +2,8 @@
   (:require [tropology.db :as db]
             [com.numergent.url-tools :as ut]
             [taoensso.timbre.profiling :as prof]
-            [tropology.base :as b]))
+            [tropology.base :as b]
+            [clojure.string :as s]))
 
 
 (defn node-size [rel-count]
@@ -18,14 +19,10 @@
 (defn transform-node
   "Transforms a node into the expected map values adds the coordinates"
   [node x y]
-  (let [stringed (->> (clojure.walk/stringify-keys node)    ; Stringify them for consistency, since we'll get some notes that are from a query
-                      (merge {"incoming" 0 "outgoing" 0})   ; Ensure we have outgoing and incoming values
-                      )
-        ]
-    (-> stringed
-        (select-keys ["code" "url" "title"])
-        (assoc "id" (stringed "code"))                      ; We could just send a hash as the id, which would be more succinct, but this allows for quicker debugging.
-        (assoc "x" x "y" y "size" (node-size (stringed "incoming")) "label" (stringed "code")))))
+  (-> node
+      (select-keys [:code :url :title])
+      (assoc :id (:code node))                              ; We could just send a hash as the id, which would be more succinct, but this allows for quicker debugging.
+      (assoc :x x :y y :size (node-size (:incoming node)) :label (:display node))))
 
 (defn edge
   "Returns an edge map. Does not return an index, since those are disposable
@@ -48,35 +45,29 @@
       (concat edges-from edges-to))
     (prof/p :edge-collection)))
 
-(defn query-related-from
-  [conn code-from node]
-  {:node       node
-   :links-from (db/query-common-nodes-from conn code-from (node "code"))})
 
 (defn rand-range [n]
   (- (rand n) (/ n 2)))
 
 (defn network-from-node
-  [code]
+  [from-code]
   (->>
-    (let [conn       (db/get-connection)
-          node       (-> (:data (db/query-by-code conn code)) (transform-node 0 0))
-          nodes-from (db/query-from conn code :LINKSTO)
-          nodes-to   (db/query-to conn :LINKSTO code)
+    (let [code       (s/lower-case from-code)
+          node       (-> (db/query-by-code code) (transform-node 0 0))
+          nodes-from (db/query-from code :LINKSTO)
+          nodes-to   (db/query-to :LINKSTO code)
           node-set   (set (concat nodes-from nodes-to))
-          code-set   (map #(% "code") node-set)
-          related    (->> (db/query-common-nodes-from conn code code-set)
+          related    (->> (db/query-common-nodes-from code)
                           (b/group-pairs)
-                          (map #(hash-map :code (key %) :links-from (val %) :color-from "#00ffc7"))
+                          (pmap #(hash-map :code (key %) :links-from (val %) :color-from "#00ffc7"))
                           )
-          with-base  (conj related {:code code :links-from (map #(% "code") nodes-from) :links-to (map #(% "code") nodes-to)})
+          with-base  (conj related {:code code :links-from (pmap :code nodes-from) :links-to (pmap :code nodes-to)})
           ]
-      (println related)
       {:nodes (conj
-                (map #(transform-node %1 (rand-range 50) (rand-range 50)) node-set)
+                (pmap #(transform-node %1 (rand-range 50) (rand-range 50)) node-set)
                 node)
        :edges (->>
-                (map edge-collection with-base)
+                (pmap edge-collection with-base)
                 flatten
                 (map-indexed #(assoc %2 :id %1)))}
       )
