@@ -114,6 +114,7 @@
      (pmap lower-case)
      (distinct)
      (filter is-valid-url?)
+     (prof/p :get-wiki-links)
      )))
 
 

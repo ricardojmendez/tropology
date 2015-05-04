@@ -9,6 +9,7 @@
             [tropology.parsing :as p]))
 
 (defn wipe-test-db []
+  (delete contents)
   (delete links)
   (delete pages))
 
@@ -54,6 +55,9 @@
 (defn get-all-article-rels []
   (->> (select links)
        (map db/rename-db-keywords)))
+
+(defn get-all-contents []
+  (select contents))
 
 ;
 ; Tests

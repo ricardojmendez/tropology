@@ -20,8 +20,7 @@
   (-> n
       name
       (clojure.string/replace "_" "-")
-      keyword)
-  )
+      keyword))
 
 (defn rename-db-keywords [row]
   (->> (keys row)
@@ -40,6 +39,7 @@
 
 (defentity pages)
 (defentity links)
+(defentity contents)
 
 
 (defn save-page!
@@ -56,6 +56,15 @@
         (update pages (set-fields record) (where {:code code})))
       )
     (prof/p :save-page)))
+
+(defn save-page-contents!
+  "Saves a page contents record, or updates an existing one."
+  [record]
+  (->>
+    (let [code (lower-case (:code record))]
+      (delete contents (where {:code code}))                ; Let's not even retrieve it
+      (insert contents (values record)))
+    (prof/p :save-contents)))
 
 
 ;
@@ -183,12 +192,15 @@
   ([node]
    (create-page-and-links! node nil nil {:is-redirect false}))
   ([node rel links {:keys [is-redirect redirector]}]
-   (let [link-codes (map :code links)
+   (let [code       (lower-case (:code node))
+         link-codes (map :code links)
+         html       (:html node)
          all-codes  (conj link-codes (:code node))]
      (kdb/transaction
-       (save-page! (timestamp-next-update node))
+       (save-page! (-> node timestamp-next-update (dissoc :html)))
+       (save-page-contents! {:code code :html html})
        (create-all-unknown! links)
-       (create-relationships! (:code node) link-codes rel)
+       (create-relationships! code link-codes rel)
        (update pages
                (where {:code [in all-codes]})
                (set-fields {:outgoing (raw "(SELECT COUNT(*) FROM links WHERE from_code = code)")
@@ -230,7 +242,7 @@
                   (where {:is-redirect false :has-error false :next-update [< time-limit]})
                   (order :next-update :ASC)
                   (limit node-limit))
-          (map :url))
+          (pmap :url))
      '())))
 
 ;

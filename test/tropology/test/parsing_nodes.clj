@@ -45,7 +45,11 @@
     (let [path  (str tp/test-file-path "CowboyBebop.html")
           _     (record-page! path "http://tvtropes.org/pmwiki/pmwiki.php/Anime/CowboyBebop")
           saved (tdb/get-all-articles)
-          rels  (tdb/get-all-article-rels)]
+          rels  (tdb/get-all-article-rels)
+          htmls (tdb/get-all-contents)]
+      (is (= 1 (count htmls)))
+      (is (= "anime/cowboybebop" (:code (first htmls))))
+      (is (= 317565 (count (:html (first htmls)))))
       (is (= 650 (count saved)))
       (is (= 650 (count rels)))
       (doseq [node saved]
@@ -122,6 +126,7 @@
           all-nodes (tdb/get-all-articles)
           all-rels  (tdb/get-all-article-rels)
           to-review (db/query-for-codes ["Main/Manga" "Funny/Film" "Main/HumorDissonance" "Creator/TomokazuSugita"])
+          all-htmls (tdb/get-all-contents)
           ]
       (is (= 14983 (count all-nodes)))
       (is (= 16192 (count all-rels)))
@@ -132,8 +137,20 @@
                                     "main/manga" 1 1879
                                     "funny/film" 0 1543
                                     "main/humordissonance" 1 0
-                                    "creator/tomokazusugita" 1 0
-                                    )
+                                    "creator/tomokazusugita" 1 0)
+      (is (= 10 (count all-htmls)))
+      (are [code len] (= len (count (:html (first (filter #(= (:code %) code) all-htmls)))))
+                      "main/manga" 411644
+                      "main/anime" 442350
+                      "funny/film" 433272
+                      "main/actors" 378801
+                      "main/filmsofthe1990s" 441995
+                      "main/comedytropes" 335442
+                      "main/signaturesong" 528673
+                      "main/namestoknowinanime" 394792
+                      "main/westernanimation" 472089
+                      "main/americanseries" 328855
+                      )
       )
     (prof/profile :trace :Database)))
 
@@ -232,10 +249,12 @@
         _     (record-page! path "http://tvtropes.org/pmwiki/pmwiki.php/Main/TakeMeInstead")
         again (tdb/get-all-articles)
         links (korma.core/select db/links (korma.core/where {:from-code "main/takemeinstead"}))
+        html  (first (tdb/get-all-contents))
         ]
-    (is (= (count saved) 5))                                ; There's only five links on the file
-    (is (= (count again) 5))                                ; Same number of links is returned the second time
-    (is (= (count links) 4))                                ; No duplicated links are created
+    (is (= 5 (count saved)))                                ; There's only five links on the file
+    (is (= 5 (count again)))                                ; Same number of links is returned the second time
+    (is (= 4 (count links)))                                ; No duplicated links are created
+    (is (= 9193 (count (:html html))))
     ))
 
 (deftest test-record-page-with-redirect

@@ -3,6 +3,7 @@
 ## 0.3.0 (WIP)
 
 * Migrated the data store to Postgres.
+* We now cache the pages on table _contents_ when we retrieve them.  This will make the database larger, but allow us to run some experiments without having to re-crawl the entire site.
 
 ## 0.2.0
 
