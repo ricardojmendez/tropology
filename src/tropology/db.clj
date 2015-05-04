@@ -267,6 +267,8 @@
   to query from, it returns the information for all nodes that code-from
   links out to that are also related to the starting node code in any
   direction."
+  ([^String common-code]
+   (query-common-nodes-from common-code nil :LINKSTO 1000))
   ([^String common-code codes-from]
    (query-common-nodes-from common-code codes-from :LINKSTO 1000))
   ([^String common-code codes-from rel incoming-link-limit]
