@@ -281,28 +281,27 @@
         _  (relate-nodes! :DIFFREL n3 n4)                   ; To be excluded in most tests below
         ]
     ; Test relationships
-    (let [r (query-common-nodes-from "TestNode/N3" ["TestNode/N1"])]
-      (is (= 2 (count r)))                                  ; N1 links out to N2 and N5, and both are related to N3
-      (is (some #(= (:to-code %) "testnode/n2") r))
-      (is (some #(= (:to-code %) "testnode/n5") r)))
-    (let [r (query-common-nodes-from "TestNode/N3" ["TestNode/N2"])]
-      (is (= 1 (count r)))
-      (is (some #(= (:to-code %) "testnode/n4") r)))             ; N2 links out to N4. N1 is excluded since N2 doesn't link out to it
-    (let [r (query-common-nodes-from "TestNode/N3" ["TestNode/N4"])]
-      (is (= 1 (count r)))
-      (is (some #(= (:to-code %) "testnode/n5") r)))             ; N4 links out to N5, which is related to N3. N6 is excluded because it' not related.
-    (let [r (query-common-nodes-from "TestNode/N3" ["TestNode/N5"])]
-      (is (empty? r)))
-    (let [r (query-common-nodes-from "TestNode/N1" ["TestNode/N2"])]
-      (is (= 1 (count r)))
-      (is (some #(= (:to-code %) "testnode/n3") r))              ; N2 links out to N3 and N4, which are related to N1.
-      )
+    (let [r (query-common-nodes-from "TestNode/N3")]
+      (is (= 4 (count r)))                                  ; N1 links out to N2 and N5, and both are related to N3. So is N4.
+      (are [from to] (some #(and (= (:to-code %) to) (= (:from-code %) from)) r)
+                     "testnode/n1" "testnode/n2"
+                     "testnode/n1" "testnode/n5"
+                     "testnode/n2" "testnode/n4"
+                     "testnode/n4" "testnode/n5"))
+    (let [r (query-common-nodes-from "TestNode/N1")]
+      (is (= 2 (count r)))
+      (are [from to] (some #(and (= (:to-code %) to) (= (:from-code %) from)) r)
+                     "testnode/n2" "testnode/n3"
+                     "testnode/n3" "testnode/n5"))
     ; Test incoming limits
-    (let [r (query-common-nodes-from "TestNode/N3" ["TestNode/N1"] :LINKSTO 400)]
-      (is (= 1 (count r)))                                  ; N2 is excluded because of too many incoming links
-      (is (some #(= (:to-code %) "testnode/n5") r)))
+    (let [r (query-common-nodes-from "TestNode/N3" :LINKSTO 400)]
+      (is (= 2 (count r)))                                  ; N2 is excluded because of too many incoming links
+      (are [from to] (some #(and (= (:to-code %) to) (= (:from-code %) from)) r)
+                     "testnode/n1" "testnode/n5"
+                     "testnode/n4" "testnode/n5")
+      )
     ; Test link relationship types
-    (let [r (query-common-nodes-from "TestNode/N3" ["TestNode/N1"] :DIFFREL 1000)]
+    (let [r (query-common-nodes-from "TestNode/N3" :DIFFREL 1000)]
       (is (= 1 (count r)))                                  ; Only one node in common with that relationship type
       (is (some #(= (:to-code %) "testnode/n4") r)))
 

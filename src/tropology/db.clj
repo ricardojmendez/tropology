@@ -265,14 +265,16 @@
   We could probably write it getting the relationships and walking through
   them, but going with cypher for now to test."
   [^String code rel]
-  (query-node-rel code rel :links.from-code :links.to-code))
+  (->> (query-node-rel code rel :links.from-code :links.to-code)
+       (prof/p :query-from)))
 
 (defn query-to
   "Retrieves the list of nodes that links to a node.
   Yes, the parameter order is the opposite from query-links-from,
   since I think it better indicates the relationship."
   [rel ^String code]
-  (query-node-rel code rel :links.to-code :links.from-code))
+  (->> (query-node-rel code rel :links.to-code :links.from-code)
+       (prof/p :query-to)))
 
 (defn query-common-nodes-from
   "Given a starting node code (common-code) and a list of node codes-from
@@ -280,33 +282,37 @@
   links out to that are also related to the starting node code in any
   direction."
   ([^String common-code]
-   (query-common-nodes-from common-code nil :LINKSTO 1000))
-  ([^String common-code codes-from]
-   (query-common-nodes-from common-code codes-from :LINKSTO 1000))
-  ([^String common-code codes-from rel incoming-link-limit]
-   (let [code  (lower-case common-code)
-         rels  (->>
-                 (union
-                   (queries (subselect links
-                                       (fields [:from-code :code])
-                                       (where {:to-code code :type (name rel)}))
-                            (subselect links
-                                       (fields [:to-code :code])
-                                       (where {:from-code code :type (name rel)}))))
-                 (map :code))
-         final (if (not-empty codes-from)
-                 (filter #(u/in-seq? (map lower-case codes-from) %) rels)
-                 rels
-                 )
-         ]
-     (->> (select links
-                  (join pages (= :links.to-code :pages.code))
-                  (where {:type           (name rel)
-                          :from-code      [in final]
-                          :to-code        [in rels]
-                          :pages.incoming [< incoming-link-limit]
-                          })
-                  )
-          (map rename-db-keywords)
-          )
+   (query-common-nodes-from common-code :LINKSTO 1000))
+  ([^String common-code rel incoming-link-limit]
+   (->>
+     (let [code  (lower-case common-code)
+           query (-> (select* links)
+                     (join :inner [pages :p1] (= :links.to-code :p1.code))
+                     (join :inner [pages :p2] (= :links.from-code :p2.code))
+                     (join :inner [links :l1] (or (and (= :l1.to-code :p1.code)
+                                                       (= :l1.from-code code))
+                                                  (and (= :l1.from-code :p1.code)
+                                                       (= :l1.to-code code))))
+                     (join :inner [links :l2] (or (and (= :l2.to-code :p2.code)
+                                                       (= :l2.from-code code))
+                                                  (and (= :l2.from-code :p2.code)
+                                                       (= :l2.to-code code))))
+                     (fields :from-code :to-code)
+                     (modifier "distinct")
+                     (where {:type        (name rel)
+                             ; :from-code   [in (subselect sub)]
+                             ; :to-code     [in (subselect sub)]
+                             :p1.incoming [< incoming-link-limit]
+                             :p2.incoming [< incoming-link-limit]
+                             :l1.type     (name rel)
+                             :l2.type     (name rel)
+                             })
+                     )
+           ]
+       ; (println (as-sql query))
+       (->> query
+            select
+            (map rename-db-keywords)
+            ))
+     (prof/p :query-common-nodes-from)
      )))

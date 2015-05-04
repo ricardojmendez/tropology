@@ -2,7 +2,8 @@
   (:require [clojure.string :as s]
             [clojure.string :refer [lower-case]]
             [com.numergent.url-tools :as ut]
-            [clojurewerkz.urly.core :as u]))
+            [clojurewerkz.urly.core :as u]
+            [taoensso.timbre.profiling :as prof]))
 
 (def base-path "/pmwiki/pmwiki.php/")
 (def base-host "http://tvtropes.org/")
@@ -46,6 +47,7 @@
     (group-by #(get % from) links)
     (map (fn [kv] [(key kv) (map #(get % to) (val kv))]))
     (into {})
+    (prof/p :group-pairs)
     )))
 
 

@@ -57,7 +57,7 @@
           nodes-from (db/query-from code :LINKSTO)
           nodes-to   (db/query-to :LINKSTO code)
           node-set   (set (concat nodes-from nodes-to))
-          related    (->> (db/query-common-nodes-from code)
+          related    (->> (db/query-common-nodes-from code :LINKSTO 1000)
                           (b/group-pairs)
                           (pmap #(hash-map :code (key %) :links-from (val %) :color-from "#00ffc7"))
                           )
@@ -69,7 +69,8 @@
        :edges (->>
                 (pmap edge-collection with-base)
                 flatten
-                (map-indexed #(assoc %2 :id %1)))}
+                (map-indexed #(assoc %2 :id %1))
+                )}
       )
-    (prof/profile :trace :API))
+    (prof/profile :trace :network-from-node))
   )

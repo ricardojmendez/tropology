@@ -9,7 +9,7 @@
 (deftest test-network-from-node
   (wipe-test-db)
   (let [n1 (create-node! (-> (basic-test-node "TestNode/N1") (assoc :incoming 100)))
-        n2 (create-node! (-> (basic-test-node "TestNode/N2") (assoc :incoming 500))) ; To test limits later
+        n2 (create-node! (-> (basic-test-node "TestNode/N2") (assoc :incoming 100)))
         n3 (create-node! (-> (basic-test-node "TestNode/N3") (assoc :incoming 100)))
         n4 (create-node! (-> (basic-test-node "TestNode/N4") (assoc :incoming 100)))
         n5 (create-node! (-> (basic-test-node "TestNode/N5") (assoc :incoming 100)))
