@@ -78,8 +78,9 @@
     )
   )
 
-(defn create-graph [code]
-  (let [sig     (js/sigma. (clj->js {:renderer
+(defn create-graph [base-code]
+  (let [code    (clojure.string/lower-case base-code)
+        sig     (js/sigma. (clj->js {:renderer
                                                {:type      "canvas"
                                                 :container (.getElementById js/document "graph-container")}
                                      :settings {:defaultNodeColor "#ec5148"
