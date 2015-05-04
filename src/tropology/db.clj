@@ -119,8 +119,7 @@
   [records]
   (->>
     (if (not-empty records)
-      (insert pages (values records))                       ; Doesn't return all records created, just the last one
-      )
+      (insert pages (values records)))                      ; Doesn't return all records created, just the last one
     (prof/p :create-all)))
 
 
@@ -201,38 +200,7 @@
              (assoc :is-redirect true)
              save-page!))
        ))
-
-
-
-    #_ (let [code    (lower-case (:code node))
-          all     (conj links code)
-          main-st (str "MERGE (p:Article {code:{maincode}}) SET "
-                       " p.url = {url}, p.category = {category}, p.host = {host}, "
-                       " p.title = {title}, p.image = {image}, p.type = {type}, "
-                       " p.nextUpdate = {nextUpdate}, p.timeStamp = {timeStamp}, "
-                       " p.display = {display}, "
-                       " p.hasError = {hasError}, p.is-redirect = {is-redirect} "
-                       (if (some? links)
-                         (str "FOREACH (link in {links} |"
-                              " MERGE (p2:Article {code:link}) "
-                              " ON CREATE SET p2.nextUpdate = {timeStamp}, p2.hasError = false, p2.is-redirect = false, p2.timeStamp = {timeStamp} "
-                              " CREATE UNIQUE (p)-[" rel "]->(p2))"))
-                       )
-          p       (-> (merge {:host b/base-host :category (b/category-from-code code) :image nil :has-error false :is-redirect false} node) ; Add defaults
-                      timestamp-next-update
-                      (assoc :maincode code :links links))]
-      (tx/in-transaction
-        conn
-        (tx/statement main-st p)
-        (tx/statement "MATCH ()-[r:LINKSTO]->(n:Article) WHERE n.code in {links} WITH n, COUNT(r) as incoming SET n.incoming = incoming" {:links all})
-        (tx/statement (str "MATCH " (code-to-match "n") "-[r:LINKSTO]->() WITH n, COUNT(r) as outgoing SET n.outgoing = outgoing") {:id code})
-        (tx/statement "MATCH (n:Article) WHERE n.outgoing is null AND n.code in {links} WITH n SET n.outgoing = 0" {:links all})
-        (tx/statement "MATCH (n:Article) WHERE n.incoming is null AND n.code in {links} WITH n SET n.incoming = 0" {:links all})
-        (if is-redirect
-          (tx/statement "MERGE (p:Article {code:{code}}) SET p.is-redirect = true, p.nextUpdate = 0, p.timeStamp = {timeStamp}, p.hasError = false"
-                        {:code redirector, :time-stamp (:time-stamp node)})))
-      ))
-  )
+    ))
 
 
 ;
@@ -302,7 +270,6 @@
   ([^String common-code codes-from]
    (query-common-nodes-from common-code codes-from :LINKSTO 1000))
   ([^String common-code codes-from rel incoming-link-limit]
-    ; PROFILE MATCH (n:Article {code:"Anime/CowboyBebop"})--(m:Article {code:"Main/NoHoldsBarredBeatdown"})-[r:LINKSTO]->(o:Article)--(n) WHERE o.incoming < 1000 RETURN DISTINCT o;
    (let [code  (lower-case common-code)
          rels  (->>
                  (union
