@@ -31,6 +31,14 @@ After you have installed PostgreSQL and created the databases, you'll need to ru
     ENV=test lein clj-sql-up migrate
     lein clj-sql-up migrate
 
+### Sample databases
+
+You have two pg_dump'd options if you wish to use a pre-loaded data set for your dev database.
+
+* [Only pages and links](https://mega.co.nz/#!B55wARCQ!H_4sx3jJIUU3Jx2jn5uQdfXcGEe7skCK9STofern7Xk) (116MBs)
+* [Full crawled contents](https://mega.co.nz/#!80RyWaiC!N6s2PH7QgwscozsDwv2h8108qlu7wp0Pq2hu6tNj-pc) (3.04GBs)
+
+Import into Postgres using psql as usual.
 
 ## Running
 
