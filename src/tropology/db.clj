@@ -300,8 +300,6 @@
                      (fields :from-code :to-code)
                      (modifier "distinct")
                      (where {:type        (name rel)
-                             ; :from-code   [in (subselect sub)]
-                             ; :to-code     [in (subselect sub)]
                              :p1.incoming [< incoming-link-limit]
                              :p2.incoming [< incoming-link-limit]
                              :l1.type     (name rel)
