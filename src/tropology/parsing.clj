@@ -30,6 +30,12 @@
                         (map lower-case)
                         set))
 
+
+
+;
+; Content functions
+;
+
 (defn is-valid-url?
   "Evaluates if a URL is valid for us to crawl or not"
   [url]
@@ -48,6 +54,8 @@
   (let [html (-> url slurp)
         res  (-> html java.io.StringReader. e/html-resource)]
     {:url url :res res :html html}))
+
+
 
 ; (def sample-res (load-resource-url "http://tvtropes.org/pmwiki/pmwiki.php/Anime/CowboyBebop"))
 
@@ -116,6 +124,41 @@
      (filter is-valid-url?)
      (prof/p :get-wiki-links)
      )))
+
+
+(defn get-tropes
+  "Returns a set of tropes list items from a page resource. It looks
+  for the list items under #wikitext that are not a sublist.
+
+  We do this because often trope list items contain sublists themselves,
+  and we don't want to consider them separate tropes. We can't just
+  select for all the li inside #wikitext, since sometimes there's
+  folders or other nesting elements.
+
+  It doesn't seem like we can do an difference between two selectors,
+  so I'm just returning it as a clojure set.  This will change the
+  order in which they appeared on the page, but that is not important.
+  "
+  [res]
+  (let [all-items (-> (e/select res [:#wikitext :li]) set)
+        nested    (-> (e/select res [:#wikitext :li :> :ul :> :li]) set)]
+    (clojure.set/difference all-items nested)
+    ))
+
+
+(defn extract-links
+  "Returns a map with a :res, in where the links included on the
+  received resource are replaced with their contents, and a list
+  of the extracted :links"
+  [e]
+  (let [res (e/at e [:a] #(:content %))]
+    {:res   res
+     :links (->> (e/select e [:a.twikilink])
+                 (map #(get-in % [:attrs :href])))
+     :text  (->> (map #(merge % {:tag :span}) res) first e/emit* (apply str))
+     })
+  )
+
 
 
 (defn save-page-links!
