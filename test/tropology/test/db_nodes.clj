@@ -140,6 +140,13 @@
                        )))
 
 
+(deftest test-get-html
+  (wipe-test-db)
+  (insert contents (values {:code "test-code" :html "Some HTML message that isn't very long"}))
+  (is (= 38 (count (get-html "test-code"))))
+  (is (nil? (get-html "invalid-code"))))
+
+
 (deftest test-query-nodes-when-empty
   (wipe-test-db)
   (is (= (count (query-nodes-to-crawl 100)) 0))

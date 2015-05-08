@@ -245,6 +245,16 @@
           (pmap :url))
      '())))
 
+
+(defn get-html
+  "Returns the HTML for a code, or nil"
+  [code]
+  (->>
+    (select contents (where {:code code}) (fields :html))
+    first
+    :html
+    (prof/p :get-html)))
+
 ;
 ; Link querying
 ;
