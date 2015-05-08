@@ -32,7 +32,7 @@
         _  (relate-nodes! :DIFFREL n3 n4)                   ; To be excluded in tests below
         ]
     ; Test relationships
-    (let [r     (network-from-node "TestNode/N1")
+    (let [r     (network-from-node "testnode/n1")
           nodes (:nodes r)
           edges (:edges r)
           ]

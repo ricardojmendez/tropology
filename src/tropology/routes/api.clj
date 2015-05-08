@@ -1,6 +1,7 @@
 (ns tropology.routes.api
   (:require [liberator.core
              :refer [defresource resource request-method-in]]
+            [clojure.string :refer [lower-case]]
             [compojure.core :refer [defroutes GET ANY]]
             [com.numergent.url-tools :as ut]
             [tropology.api :as api]
@@ -27,7 +28,7 @@
              :allowed-methods [:get]
              :handle-ok (fn [request]
                           (let [{{{label :category, name :name} :params} :request} request
-                                code (str label "/" name)]
+                                code (lower-case (str label "/" name))]
                             (api/network-from-node code)))
              :available-media-types ["application/json"])
 

@@ -50,10 +50,14 @@
   (- (rand n) (/ n 2)))
 
 (defn network-from-node
-  [from-code]
+  "Returns a network of nodes around a code, including: the node, all
+  the nodes that either reference it or that it references, and the
+   relationships between them.
+
+  The node code is case sensitive."
+  [code]
   (->>
-    (let [code       (s/lower-case from-code)
-          node       (-> (db/query-by-code code) (transform-node 0 0))
+    (let [node       (-> (db/query-by-code code) (transform-node 0 0))
           nodes-from (db/query-from code :LINKSTO)
           nodes-to   (db/query-to :LINKSTO code)
           node-set   (set (concat nodes-from nodes-to))
@@ -72,5 +76,4 @@
                 (map-indexed #(assoc %2 :id %1))
                 )}
       )
-    (prof/profile :trace :network-from-node))
-  )
+    (prof/profile :trace :network-from-node)))
