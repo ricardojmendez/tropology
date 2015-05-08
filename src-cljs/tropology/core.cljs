@@ -1,5 +1,7 @@
 (ns tropology.core
   (:require [reagent.core :as reagent :refer [atom]]
+            [clojure.string :refer [lower-case]]
+            [goog.object :as gobject]
             [secretary.core :as secretary]
             [reagent.session :as session]
             [reagent-forms.core :refer [bind-fields]]
@@ -31,6 +33,7 @@
     [:div.navbar-collapse.collapse
      [:ul.nav.navbar-nav
       (nav-item :home "Home" "")
+      (nav-item :tropes "Tropes" "tropes")
       (nav-item :about "About" "about")
       ]]]])
 
@@ -51,7 +54,7 @@
                                              (-> (js* "this")
                                                  .-allNeighborsIndex
                                                  (aget node-id)
-                                                 goog.object/getKeys)) ; The graph keeps the neighbors as properties
+                                                 gobject/getKeys)) ; The graph keeps the neighbors as properties
                                            ))
 
 
@@ -79,7 +82,7 @@
   )
 
 (defn create-graph [base-code]
-  (let [code    (clojure.string/lower-case base-code)
+  (let [code    (lower-case base-code)
         sig     (js/sigma. (clj->js {:renderer
                                                {:type      "canvas"
                                                 :container (.getElementById js/document "graph-container")}
@@ -96,10 +99,10 @@
                     (.startForceAtlas2 sig {:worker true :barnesHutOptimize false})
                     (js/setTimeout #(.stopForceAtlas2 sig) 5000)
                     ; Set the colors
-                    (goog.object/forEach (-> sig .-graph .nodes)
-                                         #(aset % "originalColor" (aget % "color")))
-                    (goog.object/forEach (-> sig .-graph .edges)
-                                         #(aset % "originalColor" (aget % "color")))
+                    (gobject/forEach (-> sig .-graph .nodes)
+                                     #(aset % "originalColor" (aget % "color")))
+                    (gobject/forEach (-> sig .-graph .edges)
+                                     #(aset % "originalColor" (aget % "color")))
 
                     (.bind sig "clickNode"
                            (fn [clicked]
@@ -137,32 +140,58 @@
 
     ))
 
-(defn redraw-graph []
+(defn redraw-graph [trope-code]
   (let [current (:sigma @state)]                            ; Must be set by importer on creation
     (if current
       (do
         (.kill current)
         (swap! state assoc :sigma nil)))
-    (create-graph (-> (.getElementById js/document "trope-code") .-value))
+    ; (create-graph (-> (.getElementById js/document "trope-code") .-value))
+    (create-graph trope-code)
     ))
 
 
-(defn plot []
+(defn list-tropes [trope-code]
+  (.log js/console trope-code))
+
+
+(def trope-code-form
   [:div
-   (text-input :trope-code "Trope code:")
-   [:input {:type     "button" :value "Graph!"
-            :on-click #(redraw-graph)}]
-   [:div {:id "graph-container"}]])
+   (text-input :trope-code "Article code:")])
+
+
+(defn trope-data []
+  (let [form-data (atom {})]
+    (fn []
+      [:div
+       [bind-fields trope-code-form form-data]
+       (cond
+         (= :home (session/get :page)) [:div
+                                        [:input {:type     "button"
+                                                 :value    "Graph!"
+                                                 :on-click #(redraw-graph (:trope-code @form-data))}]
+                                        [:div {:id "graph-container"}]]
+         (= :tropes (session/get :page)) [:div
+                                          [:input {:type     "button"
+                                                   :value    "List tropes"
+                                                   :on-click #(list-tropes (:trope-code @form-data))}]
+                                          [:div {:id "trope-list-container"}]]
+         :else "Nope"
+         )])
+    ))
+
 
 (def pages
-  {:home  plot
-   :about about-page})
+  {:home   trope-data
+   :tropes trope-data
+   :about  about-page})
 
 
 (defn page []
   [(pages (session/get :page))])
 
 (defroute "/" [] (session/put! :page :home))
+(defroute "/tropes" [] (session/put! :page :tropes))
 (defroute "/about" [] (session/put! :page :about))
 
 
