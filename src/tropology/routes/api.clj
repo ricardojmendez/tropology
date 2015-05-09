@@ -32,9 +32,18 @@
                             (api/network-from-node code)))
              :available-media-types ["application/json"])
 
+(defresource tropes
+             :allowed-methods [:get]
+             :handle-ok (fn [request]
+                          (let [{{{label :category, name :name} :params} :request} request
+                                code (lower-case (str label "/" name))]
+                            (api/tropes-from-node code)))
+             :available-media-types ["application/json"])
+
 
 
 (defroutes api-routes
            (ANY "/api/node/:category/:name" [category name] node)
            (ANY "/api/network/:category/:name" [category name] network)
+           (ANY "/api/tropes/:category/:name" [category name] tropes)
            (ANY "/api/home" request home))
