@@ -110,8 +110,7 @@
                                          [com.cemerick/piggieback "0.2.1"]]
                           :plugins      [[lein-figwheel "0.2.3-SNAPSHOT"]]
 
-                          :figwheel
-                                        {:http-server-root "public"
+                          :figwheel     {:http-server-root "public"
                                          :server-port      3449
                                          :css-dirs         ["resources/public/css"]
                                          :ring-handler     tropology.handler/app}

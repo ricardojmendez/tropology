@@ -48,7 +48,10 @@
 ; Graph!
 
 
-(def state (atom {:sigma nil}))
+(def state (atom {:sigma         nil
+                  :tropes        nil
+                  :like-listt    []
+                  :current-piece {}}))
 
 (-> js/sigma .-classes .-graph (.addMethod "neighbors",
                                            (fn [node-id]
@@ -154,13 +157,36 @@
 
 
 
+;
+; Trope list
+;
+
+(defn pick-random-piece []
+  (let [pick    (rand-nth (:tropes @state))
+        element (if (nil? pick) {} pick)]
+    (swap! state assoc :current-piece element))
+  )
+
+(defn vote-on-piece [vote]
+  (cond
+    (= vote :like)
+    (do
+      (swap! state assoc :like-list (conj (:like-list @state) (:current-piece @state)))
+      (swap! state assoc :tropes (remove #(= % (:current-piece @state)) (:tropes @state))))
+    )
+  (pick-random-piece)
+  )
+
 (defn list-tropes [trope-code]
   (.log js/console trope-code)
   (GET (str "/api/tropes/" (lower-case trope-code))
        {:handler (fn [response]
                    (.log js/console (str "Done obtaining " trope-code))
                    (.log js/console response)
-                   (swap! state assoc :tropes response))}
+                   (.log js/console (first response))
+                   (swap! state assoc :tropes response)
+                   (pick-random-piece)
+                   )}
        )
   )
 
@@ -183,14 +209,27 @@
                                         [:div {:id "graph-container"}]]
          (= :tropes (session/get :page)) [:div
                                           [:input {:type     "button"
-                                                   :value    "List tropes"
+                                                   :value    "Retrieve tropes"
                                                    :on-click #(list-tropes (:trope-code @form-data))}]
+                                          [:div {:id "current-piece"}
+                                           [:p {:dangerouslySetInnerHTML {:__html ((:current-piece @state) "text")}}]
+                                           (if (:current-piece @state)
+                                             [:div {:class "trope-vote"}
+                                              [:ul
+                                               (nav-item :trope-like "Interesting" "vote/like")
+                                               (nav-item :trope-like "Skip" "vote/skip")
+                                               (nav-item :trope-dislike "Meh" "vote/dislike")]
+                                              [:span (str "(" (count (:tropes @state)) " remaining)")]
+                                              ]
+                                             )
+                                           ]
                                           [:div {:id "trope-list-container"}
                                            [:ul
-                                            (for [trope (:tropes @state)]
+                                            (for [trope (:like-list @state)]
                                               [:li {:dangerouslySetInnerHTML {:__html (trope "text")}}])
                                             ]
-                                           ]]
+                                           ]
+                                          ]
          :else "Nope"
          )])
     ))
@@ -208,14 +247,16 @@
 (defroute "/" [] (session/put! :page :home))
 (defroute "/tropes" [] (session/put! :page :tropes))
 (defroute "/about" [] (session/put! :page :about))
+(defroute "/vote/like" [] (vote-on-piece :like))
+(defroute "/vote/skip" [] (vote-on-piece :skip))
+(defroute "/vote/dislike" [] (vote-on-piece :dislike))
 
 
 (defn init! []
   (secretary/set-config! :prefix "#")
-  (session/put! :page :home)
+  (session/put! :page :tropes)
   (reagent/render-component [navbar] (.getElementById js/document "navbar"))
   (reagent/render-component [page] (.getElementById js/document "app")))
-
 
 
 
