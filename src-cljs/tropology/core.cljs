@@ -1,5 +1,6 @@
 (ns tropology.core
-  (:require [reagent.core :as reagent :refer [atom]]
+  (:require [ajax.core :refer [GET POST PUT]]
+            [reagent.core :as reagent :refer [atom]]
             [clojure.string :refer [lower-case]]
             [goog.object :as gobject]
             [secretary.core :as secretary]
@@ -151,8 +152,17 @@
     ))
 
 
+
+
 (defn list-tropes [trope-code]
-  (.log js/console trope-code))
+  (.log js/console trope-code)
+  (GET (str "/api/tropes/" (lower-case trope-code))
+       {:handler (fn [response]
+                   (.log js/console (str "Done obtaining " trope-code))
+                   (.log js/console response)
+                   (swap! state assoc :tropes response))}
+       )
+  )
 
 
 (def trope-code-form
@@ -175,7 +185,12 @@
                                           [:input {:type     "button"
                                                    :value    "List tropes"
                                                    :on-click #(list-tropes (:trope-code @form-data))}]
-                                          [:div {:id "trope-list-container"}]]
+                                          [:div {:id "trope-list-container"}
+                                           [:ul
+                                            (for [trope (:tropes @state)]
+                                              [:li {:dangerouslySetInnerHTML {:__html (trope "text")}}])
+                                            ]
+                                           ]]
          :else "Nope"
          )])
     ))
