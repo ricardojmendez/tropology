@@ -53,13 +53,19 @@
                   :like-listt    []
                   :current-piece {}}))
 
-(-> js/sigma .-classes .-graph (.addMethod "neighbors",
-                                           (fn [node-id]
-                                             (-> (js* "this")
-                                                 .-allNeighborsIndex
-                                                 (aget node-id)
-                                                 gobject/getKeys)) ; The graph keeps the neighbors as properties
-                                           ))
+
+; Add a function for finding the neighbors to a node
+(let [graph (-> js/sigma .-classes .-graph)]
+  (if (not (.hasMethod graph "neighbors"))
+    (.addMethod graph "neighbors",
+                (fn [node-id]
+                  (-> (js* "this")
+                      .-allNeighborsIndex
+                      (aget node-id)
+                      gobject/getKeys))                     ; The graph keeps the neighbors as properties
+                )
+    )
+  )
 
 
 (defn in-seq? [s x]
