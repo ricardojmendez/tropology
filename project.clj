@@ -40,8 +40,8 @@
                                         {:output-dir    "resources/public/js/out"
                                          :externs       ["react/externs/react.js" "resources/externs/sigma.js"]
                                          :optimizations :none
-                                         :output-to     "resources/public/js/app.js"
-                                         :source-map    "resources/public/js/out.js.map"
+                                         :output-to     "resources/public/js/core.js"
+                                         :source-map    true
                                          :pretty-print  true
                                          }}}}
 
