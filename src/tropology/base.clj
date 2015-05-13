@@ -11,6 +11,8 @@
 
 (def base-label "Article")
 
+(def view-url "/view/")
+
 (defn category-from-code
   "Returns the node label from a node id, which is expected to be of the form Category/SubCategory.
 

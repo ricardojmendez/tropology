@@ -88,12 +88,13 @@
   (let [name    (str test-file-path "TakeMeInstead-retrieve-tropes.html")
         loaded  (load-resource-url name)
         tropes  (get-tropes (:res loaded))
-        emitted (->> (map extract-links tropes) (map :text))
+        emitted (->> (map process-links tropes) (map :text))
         tag     "<span>"
         ]
+    #_ (clojure.pprint/pprint emitted)
     (is (= 19 (count emitted)))
     (are [snippet] (some #(.contains % snippet) emitted)
-                   "Gundam Wing, Relena"
+                   "Gundam Wing"
                    "Rosario + Vampire"
                    "Princess Tutu"
                    "JoJo's Bizarre Adventure"
@@ -104,7 +105,7 @@
                    "Doma arc"
                    "Mahou Sensei Negima"
                    "Bokurano"
-                   "Sailor Moon Stars"
+                   "Sailor Moon"
                    "Fullmetal Alchemist"
                    "Ace Monster Stardust"
                    "One Piece"
@@ -130,7 +131,7 @@
 (deftest test-trope-link-extraction
   (let [name      (str test-file-path "TakeMeInstead-retrieve-tropes.html")
         loaded    (load-resource-url name)
-        extracted (->> loaded :res get-tropes (map extract-links))
+        extracted (->> loaded :res get-tropes (map process-links))
         sm        (first (filter #(.contains (:text %) "Sailor Moon") extracted))
         ]
     (is (= 19 (count extracted)))

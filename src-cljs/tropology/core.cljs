@@ -22,6 +22,10 @@
 
 ; Original code:
 
+(defn button-item [tag label url]
+  [:li {:class "button"}
+   [:a {:on-click #(secretary/dispatch! (str "#/" url))} label]])
+
 (defn nav-item [tag label url]
   [:li {:class (when (= tag (session/get :page)) "active")}
    [:a {:on-click #(secretary/dispatch! (str "#/" url))} label]])
@@ -49,8 +53,9 @@
 
 
 (def state (atom {:sigma         nil
+                  :current-trope nil
                   :tropes        nil
-                  :like-listt    []
+                  :like-list     []
                   :current-piece {}}))
 
 
@@ -162,10 +167,47 @@
 
 
 
+;
+; Element processing
+;
+
+
+(defn replace-link-for-dispatch
+  "Given a hiccup structure that's assumed to be a link, we go through it
+  to find the map of properties. If found, and one of these properties is
+  a link with class 'twikilink', then we replace said link for a dispatch
+  to a local route."
+  [attrs]
+  (if (and (map? attrs)
+           (= "twikilink" (:class attrs))
+           (:href attrs))
+    (-> attrs
+        (dissoc :href)
+        (assoc :on-click #(secretary/dispatch! (:href attrs)))
+        )
+    attrs
+    )
+  )
+
+(defn process-link [element]
+  "Receives an element as a hiccup structure. If it's a link, then the link
+  is replaced for an action dispatch, otherwise we return the same structure.
+  "
+  (if (and (vector? element)
+           (= :a (first element)))
+    (into [] (map replace-link-for-dispatch element))
+    element))
+
+(defn process-trope
+  "Receives the hiccup data for a trope and processes it before display"
+  [coll]
+  (clojure.walk/prewalk process-link coll))
+
 
 ;
 ; Trope list
 ;
+
 
 (defn pick-random-piece []
   (let [pick    (rand-nth (:tropes @state))
@@ -173,27 +215,39 @@
     (swap! state assoc :current-piece element))
   )
 
-(defn vote-on-piece [vote]
-  (cond
-    (= vote :like)
-    (do
-      (swap! state assoc :like-list (conj (:like-list @state) (:current-piece @state)))
-      (swap! state assoc :tropes (remove #(= % (:current-piece @state)) (:tropes @state))))
+
+(defn add-current-to-like-list []
+  (let [like-list (:like-list @state)
+        current   (:current-piece @state)]
+    (.log js/console (str "Current: " current))
+    (if (not (in-seq? like-list current))
+      (swap! state assoc :like-list (conj like-list current))) ; Can be unified with the reference on vote-on-piece
     )
+  )
+
+(defn vote-on-piece [vote]
+  (if (= vote :like)
+    (add-current-to-like-list))
+  (swap! state assoc :tropes (remove #(= % (:current-piece @state)) (:tropes @state)))
   (pick-random-piece)
   )
 
 (defn list-tropes [trope-code]
-  (.log js/console trope-code)
+  (.log js/console (str "Loading " trope-code))
   (GET (str "/api/tropes/" (lower-case trope-code))
        {:handler (fn [response]
                    (.log js/console (str "Done obtaining " trope-code))
-                   (.log js/console response)
-                   (.log js/console (first response))
-                   (swap! state assoc :tropes response)
+                   (swap! state assoc :current-trope response :tropes (:tropes response))
                    (pick-random-piece)
                    )}
        )
+  )
+
+(defn handle-trope-view
+  "Called when a trope view is dispatched for a code"
+  [code]
+  (add-current-to-like-list)
+  (list-tropes code)
   )
 
 
@@ -203,7 +257,7 @@
 
 
 (defn trope-data []
-  (let [form-data (atom {})]
+  (let [form-data (atom {:trope-code "Anime/SamuraiFlamenco"})]
     (fn []
       [:div
        [bind-fields trope-code-form form-data]
@@ -217,26 +271,32 @@
                                           [:input {:type     "button"
                                                    :value    "Retrieve tropes"
                                                    :on-click #(list-tropes (:trope-code @form-data))}]
+                                          [:div {:id "current-trope"}
+                                           [:h2 {:class "trope-title"} (get-in @state [:current-trope :title])]
+                                           [:p (get-in @state [:current-trope :description])]
+                                           ]
                                           [:div {:id "current-piece"}
-                                           [:p {:dangerouslySetInnerHTML {:__html ((:current-piece @state) "text")}}]
+                                           [:h3 "Random reference"]
+                                           [:p (process-trope (:current-piece @state))]
                                            (if (:current-piece @state)
+                                             [:div [:span (str "(" (count (:tropes @state)) " remaining)")]]
+
                                              [:div {:class "trope-vote"}
                                               [:ul
-                                               (nav-item :trope-like "Interesting" "vote/like")
-                                               (nav-item :trope-like "Skip" "vote/skip")
-                                               (nav-item :trope-dislike "Meh" "vote/dislike")]
-                                              [:span (str "(" (count (:tropes @state)) " remaining)")]
+                                               (button-item :trope-like "Interesting" "vote/like")
+                                               (button-item :trope-like "Skip" "vote/skip")
+                                               ]
                                               ]
                                              )
-                                           ]
-                                          [:div {:id "trope-list-container"}
-                                           [:ul
-                                            (for [trope (:like-list @state)]
-                                              [:li {:dangerouslySetInnerHTML {:__html (trope "text")}}])
+                                           [:div {:id "trope-list-container"}
+                                            [:p "Selected items: "]
+                                            [:ul
+                                             (for [trope (:like-list @state)]
+                                               [:li (process-trope trope)])
+                                             ]
                                             ]
                                            ]
-                                          ]
-         :else "Nope"
+                                          :else "Nope"
          )])
     ))
 
@@ -255,15 +315,12 @@
 (defroute "/about" [] (session/put! :page :about))
 (defroute "/vote/like" [] (vote-on-piece :like))
 (defroute "/vote/skip" [] (vote-on-piece :skip))
-(defroute "/vote/dislike" [] (vote-on-piece :dislike))
-
+(defroute "/view/:label/:name" [label name] (handle-trope-view (str label "/" name)))
+; TODO: Add the current trope to the list of liked tropes only if the user clicks on a
+; view link from the main trope display.  Currently it gets added anyway.
 
 (defn init! []
   (secretary/set-config! :prefix "#")
   (session/put! :page :tropes)
   (reagent/render-component [navbar] (.getElementById js/document "navbar"))
   (reagent/render-component [page] (.getElementById js/document "app")))
-
-
-
-

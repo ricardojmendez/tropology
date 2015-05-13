@@ -8,6 +8,11 @@
             [net.cgrand.enlive-html :as e]))
 
 
+;
+; Edge and node functions
+;
+
+
 (defn node-size [rel-count]
   (cond
     (nil? rel-count) 0.5
@@ -83,10 +88,11 @@
 (defn tropes-from-node
   [code]
   (let [html   (ut/if-empty (db/get-html code) "")
-        tropes (p/get-tropes (-> html java.io.StringReader. e/html-resource))
-        links  (map p/extract-links tropes)
-        ]
-    (->> (map #(select-keys % [:links :text]) links)
-         (sort-by :text))
+        res    (-> html java.io.StringReader. e/html-resource)
+        tropes (p/get-tropes res)
+        links  (map p/process-links tropes)]
+    {:title       (p/content-from-meta res "og:title")
+     :description (p/content-from-meta res "og:description")
+     :tropes      (map :hiccup links)}
     )
   )

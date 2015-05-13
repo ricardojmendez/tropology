@@ -31,6 +31,34 @@
                         set))
 
 
+;
+; Transformation functions
+;
+
+;
+; Enlive transformation functions
+;
+
+(defn enlive->hiccup
+  [el]
+  (if-not (string? el)
+    (->> (map enlive->hiccup (:content el))
+         (concat [(:tag el) (:attrs el)])
+         (keep identity)
+         vec)
+    el))
+
+(defn html->enlive
+  [html]
+  (first (e/html-resource (java.io.StringReader. html))))
+
+(defn html->hiccup [html]
+  (-> html
+      html->enlive
+      enlive->hiccup))
+
+
+
 
 ;
 ; Content functions
@@ -146,18 +174,39 @@
     ))
 
 
-(defn extract-links
+(defn element-replace-href
+  "Given a map for an :a element, if the href matches the pattern of
+  a valid trope node, we replace it with an internal URL of our own
+  so that we can detect clicks on it; and otherwise replace the link
+  altogether with the contents."
+  [a]
+  (let [url (get-in a [:attrs :href])]
+    (if (is-valid-url? url)
+      (-> a
+          (assoc-in [:attrs :href] (str b/view-url (b/code-from-url url)))
+          (assoc-in [:attrs :title] (b/code-from-url url)))
+      (:content a))
+    ))
+
+(defn process-links
   "Returns a map with a :res, in where the links included on the
-  received resource are replaced with their contents, and a list
-  of the extracted :links"
-  [e]
-  (let [res (e/at e [:a] #(:content %))]
-    {:res   res
-     :links (->> (e/select e [:a.twikilink])
-                 (map #(get-in % [:attrs :href])))
-     :text  (->> (map #(merge % {:tag :span}) res) first e/emit* (apply str))
-     })
+  received resource are replaced with using a function, and a list
+  of the extracted :links
+
+  See https://github.com/cgrand/enlive/wiki/Getting-started#using-at"
+  ([element]
+   (process-links element element-replace-href))
+  ([element f-replace]
+   (let [res     (e/at element [:a] f-replace)
+         spanned (map #(merge % {:tag :span}) res)
+         ]
+     {:hiccup   (enlive->hiccup (first spanned))
+      :links (->> (e/select element [:a.twikilink])
+                  (map #(get-in % [:attrs :href])))
+      :text  (->> spanned first e/emit* (apply str))
+      }))
   )
+
 
 
 

@@ -5,7 +5,8 @@
             [compojure.core :refer [defroutes GET ANY]]
             [com.numergent.url-tools :as ut]
             [tropology.api :as api]
-            [tropology.db :as db]))
+            [tropology.db :as db]
+            [io.clojure.liberator-transit]))
 
 (defresource home
              :handle-ok "Hello World!"
@@ -21,7 +22,9 @@
                               (db/query-by-code id)
                               :data
                               (ut/if-empty {}))))
-             :available-media-types ["application/json"])
+             :available-media-types ["application/transit+json"
+                                     "application/transit+msgpack"
+                                     "application/json"])
 
 
 (defresource network
@@ -30,7 +33,9 @@
                           (let [{{{label :category, name :name} :params} :request} request
                                 code (lower-case (str label "/" name))]
                             (api/network-from-node code)))
-             :available-media-types ["application/json"])
+             :available-media-types ["application/transit+json"
+                                     "application/transit+msgpack"
+                                     "application/json"])
 
 (defresource tropes
              :allowed-methods [:get]
@@ -38,7 +43,9 @@
                           (let [{{{label :category, name :name} :params} :request} request
                                 code (lower-case (str label "/" name))]
                             (api/tropes-from-node code)))
-             :available-media-types ["application/json"])
+             :available-media-types ["application/transit+json"
+                                     "application/transit+msgpack"
+                                     "application/json"])
 
 
 
