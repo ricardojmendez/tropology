@@ -30,6 +30,40 @@
                         (map lower-case)
                         set))
 
+
+;
+; Transformation functions
+;
+
+;
+; Enlive transformation functions
+;
+
+(defn enlive->hiccup
+  [el]
+  (if-not (string? el)
+    (->> (map enlive->hiccup (:content el))
+         (concat [(:tag el) (:attrs el)])
+         (keep identity)
+         vec)
+    el))
+
+(defn html->enlive
+  [html]
+  (first (e/html-resource (java.io.StringReader. html))))
+
+(defn html->hiccup [html]
+  (-> html
+      html->enlive
+      enlive->hiccup))
+
+
+
+
+;
+; Content functions
+;
+
 (defn is-valid-url?
   "Evaluates if a URL is valid for us to crawl or not"
   [url]
@@ -48,6 +82,8 @@
   (let [html (-> url slurp)
         res  (-> html java.io.StringReader. e/html-resource)]
     {:url url :res res :html html}))
+
+
 
 ; (def sample-res (load-resource-url "http://tvtropes.org/pmwiki/pmwiki.php/Anime/CowboyBebop"))
 
@@ -116,6 +152,62 @@
      (filter is-valid-url?)
      (prof/p :get-wiki-links)
      )))
+
+
+(defn get-tropes
+  "Returns a set of tropes list items from a page resource. It looks
+  for the list items under #wikitext that are not a sublist.
+
+  We do this because often trope list items contain sublists themselves,
+  and we don't want to consider them separate tropes. We can't just
+  select for all the li inside #wikitext, since sometimes there's
+  folders or other nesting elements.
+
+  It doesn't seem like we can do an difference between two selectors,
+  so I'm just returning it as a clojure set.  This will change the
+  order in which they appeared on the page, but that is not important.
+  "
+  [res]
+  (let [all-items (-> (e/select res [:#wikitext :li]) set)
+        nested    (-> (e/select res [:#wikitext :li :> :ul :> :li]) set)]
+    (clojure.set/difference all-items nested)
+    ))
+
+
+(defn element-replace-href
+  "Given a map for an :a element, if the href matches the pattern of
+  a valid trope node, we replace it with an internal URL of our own
+  so that we can detect clicks on it; and otherwise replace the link
+  altogether with the contents."
+  [a]
+  (let [url (get-in a [:attrs :href])]
+    (if (is-valid-url? url)
+      (-> a
+          (assoc-in [:attrs :href] (str b/view-url (b/code-from-url url)))
+          (assoc-in [:attrs :title] (b/code-from-url url)))
+      (:content a))
+    ))
+
+(defn process-links
+  "Returns a map with a :res, in where the links included on the
+  received resource are replaced with using a function, and a list
+  of the extracted :links
+
+  See https://github.com/cgrand/enlive/wiki/Getting-started#using-at"
+  ([element]
+   (process-links element element-replace-href))
+  ([element f-replace]
+   (let [res     (e/at element [:a] f-replace)
+         spanned (map #(merge % {:tag :span}) res)
+         ]
+     {:hiccup   (enlive->hiccup (first spanned))
+      :links (->> (e/select element [:a.twikilink])
+                  (map #(get-in % [:attrs :href])))
+      :text  (->> spanned first e/emit* (apply str))
+      }))
+  )
+
+
 
 
 (defn save-page-links!

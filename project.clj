@@ -30,6 +30,7 @@
                            [cheshire "5.4.0"]
                            [korma "0.4.0"]
                            [org.postgresql/postgresql "9.4-1201-jdbc41"]
+                           [io.clojure/liberator-transit "0.3.0"]
                            ]
 
 
@@ -40,8 +41,8 @@
                                         {:output-dir    "resources/public/js/out"
                                          :externs       ["react/externs/react.js" "resources/externs/sigma.js"]
                                          :optimizations :none
-                                         :output-to     "resources/public/js/app.js"
-                                         :source-map    "resources/public/js/out.js.map"
+                                         :output-to     "resources/public/js/core.js"
+                                         :source-map    true
                                          :pretty-print  true
                                          }}}}
 
@@ -110,8 +111,7 @@
                                          [com.cemerick/piggieback "0.2.1"]]
                           :plugins      [[lein-figwheel "0.2.3-SNAPSHOT"]]
 
-                          :figwheel
-                                        {:http-server-root "public"
+                          :figwheel     {:http-server-root "public"
                                          :server-port      3449
                                          :css-dirs         ["resources/public/css"]
                                          :ring-handler     tropology.handler/app}

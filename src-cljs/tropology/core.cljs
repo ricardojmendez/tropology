@@ -1,5 +1,8 @@
 (ns tropology.core
-  (:require [reagent.core :as reagent :refer [atom]]
+  (:require [ajax.core :refer [GET POST PUT]]
+            [reagent.core :as reagent :refer [atom]]
+            [clojure.string :refer [lower-case]]
+            [goog.object :as gobject]
             [secretary.core :as secretary]
             [reagent.session :as session]
             [reagent-forms.core :refer [bind-fields]]
@@ -19,6 +22,10 @@
 
 ; Original code:
 
+(defn button-item [tag label url]
+  [:li {:class "button"}
+   [:a {:on-click #(secretary/dispatch! (str "#/" url))} label]])
+
 (defn nav-item [tag label url]
   [:li {:class (when (= tag (session/get :page)) "active")}
    [:a {:on-click #(secretary/dispatch! (str "#/" url))} label]])
@@ -31,6 +38,7 @@
     [:div.navbar-collapse.collapse
      [:ul.nav.navbar-nav
       (nav-item :home "Home" "")
+      (nav-item :tropes "Tropes" "tropes")
       (nav-item :about "About" "about")
       ]]]])
 
@@ -44,15 +52,25 @@
 ; Graph!
 
 
-(def state (atom {:sigma nil}))
+(def state (atom {:sigma         nil
+                  :current-trope nil
+                  :tropes        nil
+                  :like-list     []
+                  :current-piece {}}))
 
-(-> js/sigma .-classes .-graph (.addMethod "neighbors",
-                                           (fn [node-id]
-                                             (-> (js* "this")
-                                                 .-allNeighborsIndex
-                                                 (aget node-id)
-                                                 goog.object/getKeys)) ; The graph keeps the neighbors as properties
-                                           ))
+
+; Add a function for finding the neighbors to a node
+(let [graph (-> js/sigma .-classes .-graph)]
+  (if (not (.hasMethod graph "neighbors"))
+    (.addMethod graph "neighbors",
+                (fn [node-id]
+                  (-> (js* "this")
+                      .-allNeighborsIndex
+                      (aget node-id)
+                      gobject/getKeys))                     ; The graph keeps the neighbors as properties
+                )
+    )
+  )
 
 
 (defn in-seq? [s x]
@@ -79,7 +97,7 @@
   )
 
 (defn create-graph [base-code]
-  (let [code    (clojure.string/lower-case base-code)
+  (let [code    (lower-case base-code)
         sig     (js/sigma. (clj->js {:renderer
                                                {:type      "canvas"
                                                 :container (.getElementById js/document "graph-container")}
@@ -96,10 +114,10 @@
                     (.startForceAtlas2 sig {:worker true :barnesHutOptimize false})
                     (js/setTimeout #(.stopForceAtlas2 sig) 5000)
                     ; Set the colors
-                    (goog.object/forEach (-> sig .-graph .nodes)
-                                         #(aset % "originalColor" (aget % "color")))
-                    (goog.object/forEach (-> sig .-graph .edges)
-                                         #(aset % "originalColor" (aget % "color")))
+                    (gobject/forEach (-> sig .-graph .nodes)
+                                     #(aset % "originalColor" (aget % "color")))
+                    (gobject/forEach (-> sig .-graph .edges)
+                                     #(aset % "originalColor" (aget % "color")))
 
                     (.bind sig "clickNode"
                            (fn [clicked]
@@ -137,42 +155,172 @@
 
     ))
 
-(defn redraw-graph []
+(defn redraw-graph [trope-code]
   (let [current (:sigma @state)]                            ; Must be set by importer on creation
     (if current
       (do
         (.kill current)
         (swap! state assoc :sigma nil)))
-    (create-graph (-> (.getElementById js/document "trope-code") .-value))
+    ; (create-graph (-> (.getElementById js/document "trope-code") .-value))
+    (create-graph trope-code)
     ))
 
 
-(defn plot []
+
+;
+; Element processing
+;
+
+
+(defn replace-link-for-dispatch
+  "Given a hiccup structure that's assumed to be a link, we go through it
+  to find the map of properties. If found, and one of these properties is
+  a link with class 'twikilink', then we replace said link for a dispatch
+  to a local route."
+  [attrs]
+  (if (and (map? attrs)
+           (= "twikilink" (:class attrs))
+           (:href attrs))
+    (-> attrs
+        (dissoc :href)
+        (assoc :on-click #(secretary/dispatch! (:href attrs)))
+        )
+    attrs
+    )
+  )
+
+(defn process-link [element]
+  "Receives an element as a hiccup structure. If it's a link, then the link
+  is replaced for an action dispatch, otherwise we return the same structure.
+  "
+  (if (and (vector? element)
+           (= :a (first element)))
+    (into [] (map replace-link-for-dispatch element))
+    element))
+
+(defn process-trope
+  "Receives the hiccup data for a trope and processes it before display"
+  [coll]
+  (clojure.walk/prewalk process-link coll))
+
+
+;
+; Trope list
+;
+
+
+(defn pick-random-piece []
+  (let [pick    (rand-nth (:tropes @state))
+        element (if (nil? pick) {} pick)]
+    (swap! state assoc :current-piece element))
+  )
+
+
+(defn add-current-to-like-list []
+  (let [like-list (:like-list @state)
+        current   (:current-piece @state)]
+    (.log js/console (str "Current: " current))
+    (if (not (in-seq? like-list current))
+      (swap! state assoc :like-list (conj like-list current))) ; Can be unified with the reference on vote-on-piece
+    )
+  )
+
+(defn vote-on-piece [vote]
+  (if (= vote :like)
+    (add-current-to-like-list))
+  (swap! state assoc :tropes (remove #(= % (:current-piece @state)) (:tropes @state)))
+  (pick-random-piece)
+  )
+
+(defn list-tropes [trope-code]
+  (.log js/console (str "Loading " trope-code))
+  (GET (str "/api/tropes/" (lower-case trope-code))
+       {:handler (fn [response]
+                   (.log js/console (str "Done obtaining " trope-code))
+                   (swap! state assoc :current-trope response :tropes (:tropes response))
+                   (pick-random-piece)
+                   )}
+       )
+  )
+
+(defn handle-trope-view
+  "Called when a trope view is dispatched for a code"
+  [code]
+  (add-current-to-like-list)
+  (list-tropes code)
+  )
+
+
+(def trope-code-form
   [:div
-   (text-input :trope-code "Trope code:")
-   [:input {:type     "button" :value "Graph!"
-            :on-click #(redraw-graph)}]
-   [:div {:id "graph-container"}]])
+   (text-input :trope-code "Article code:")])
+
+
+(defn trope-data []
+  (let [form-data (atom {:trope-code "Anime/SamuraiFlamenco"})]
+    (fn []
+      [:div
+       [bind-fields trope-code-form form-data]
+       (cond
+         (= :home (session/get :page)) [:div
+                                        [:input {:type     "button"
+                                                 :value    "Graph!"
+                                                 :on-click #(redraw-graph (:trope-code @form-data))}]
+                                        [:div {:id "graph-container"}]]
+         (= :tropes (session/get :page)) [:div
+                                          [:input {:type     "button"
+                                                   :value    "Retrieve tropes"
+                                                   :on-click #(list-tropes (:trope-code @form-data))}]
+                                          [:div {:id "current-trope"}
+                                           [:h2 {:class "trope-title"} (get-in @state [:current-trope :title])]
+                                           [:p (get-in @state [:current-trope :description])]
+                                           ]
+                                          [:div {:id "current-piece"}
+                                           [:h3 "Random reference"]
+                                           [:p (process-trope (:current-piece @state))]
+                                           (if (:current-piece @state)
+                                             [:div [:span (str "(" (count (:tropes @state)) " remaining)")]]
+
+                                             [:div {:class "trope-vote"}
+                                              [:ul
+                                               (button-item :trope-like "Interesting" "vote/like")
+                                               (button-item :trope-like "Skip" "vote/skip")
+                                               ]
+                                              ]
+                                             )
+                                           [:div {:id "trope-list-container"}
+                                            [:p "Selected items: "]
+                                            [:ul
+                                             (for [trope (:like-list @state)]
+                                               [:li (process-trope trope)])
+                                             ]
+                                            ]
+                                           ]
+                                          :else "Nope"
+         )])
+    ))
+
 
 (def pages
-  {:home  plot
-   :about about-page})
+  {:home   trope-data
+   :tropes trope-data
+   :about  about-page})
 
 
 (defn page []
   [(pages (session/get :page))])
 
 (defroute "/" [] (session/put! :page :home))
+(defroute "/tropes" [] (session/put! :page :tropes))
 (defroute "/about" [] (session/put! :page :about))
-
+(defroute "/vote/like" [] (vote-on-piece :like))
+(defroute "/vote/skip" [] (vote-on-piece :skip))
+(defroute "/view/:label/:name" [label name] (handle-trope-view (str label "/" name)))
+; TODO: Add the current trope to the list of liked tropes only if the user clicks on a
+; view link from the main trope display.  Currently it gets added anyway.
 
 (defn init! []
   (secretary/set-config! :prefix "#")
-  (session/put! :page :home)
+  (session/put! :page :tropes)
   (reagent/render-component [navbar] (.getElementById js/document "navbar"))
   (reagent/render-component [page] (.getElementById js/document "app")))
-
-
-
-
-

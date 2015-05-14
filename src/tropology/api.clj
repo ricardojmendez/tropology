@@ -3,7 +3,14 @@
             [com.numergent.url-tools :as ut]
             [taoensso.timbre.profiling :as prof]
             [tropology.base :as b]
-            [clojure.string :as s]))
+            [clojure.string :as s]
+            [tropology.parsing :as p]
+            [net.cgrand.enlive-html :as e]))
+
+
+;
+; Edge and node functions
+;
 
 
 (defn node-size [rel-count]
@@ -77,3 +84,15 @@
                 )}
       )
     (prof/profile :trace :network-from-node)))
+
+(defn tropes-from-node
+  [code]
+  (let [html   (ut/if-empty (db/get-html code) "")
+        res    (-> html java.io.StringReader. e/html-resource)
+        tropes (p/get-tropes res)
+        links  (map p/process-links tropes)]
+    {:title       (p/content-from-meta res "og:title")
+     :description (p/content-from-meta res "og:description")
+     :tropes      (map :hiccup links)}
+    )
+  )

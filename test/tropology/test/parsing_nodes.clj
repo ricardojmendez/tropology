@@ -46,10 +46,8 @@
           _     (record-page! path "http://tvtropes.org/pmwiki/pmwiki.php/Anime/CowboyBebop")
           saved (tdb/get-all-articles)
           rels  (tdb/get-all-article-rels)
-          htmls (tdb/get-all-contents)]
-      (is (= 1 (count htmls)))
-      (is (= "anime/cowboybebop" (:code (first htmls))))
-      (is (= 317565 (count (:html (first htmls)))))
+          html  (db/get-html "anime/cowboybebop")]
+      (is (= 317565 (count html)))
       (is (= 650 (count saved)))
       (is (= 650 (count rels)))
       (doseq [node saved]
@@ -126,7 +124,6 @@
           all-nodes (tdb/get-all-articles)
           all-rels  (tdb/get-all-article-rels)
           to-review (db/query-for-codes ["Main/Manga" "Funny/Film" "Main/HumorDissonance" "Creator/TomokazuSugita"])
-          all-htmls (tdb/get-all-contents)
           ]
       (is (= 14983 (count all-nodes)))
       (is (= 16192 (count all-rels)))
@@ -138,8 +135,8 @@
                                     "funny/film" 0 1543
                                     "main/humordissonance" 1 0
                                     "creator/tomokazusugita" 1 0)
-      (is (= 10 (count all-htmls)))
-      (are [code len] (= len (count (:html (first (filter #(= (:code %) code) all-htmls)))))
+      (is (= 10 (count (tdb/get-all-contents))))
+      (are [code len] (= len (count (db/get-html code)))
                       "main/manga" 411644
                       "main/anime" 442350
                       "funny/film" 433272
@@ -152,7 +149,7 @@
                       "main/americanseries" 328855
                       )
       )
-    (prof/profile :trace :Database)))
+    (prof/profile :trace :test-import-lot)))
 
 (deftest test-record-page-live
   ; Load a live page. I don't check for how many nodes we're saving since that can
