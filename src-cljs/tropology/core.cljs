@@ -10,6 +10,11 @@
   (:require-macros [secretary.core :refer [defroute]]))
 
 
+
+;
+; Components
+;
+
 (defn row [label & body]
   [:div.row
    [:div.col-md-2 [:span label]]
@@ -20,9 +25,7 @@
                                    :id    id}]))
 
 
-; Original code:
-
-(defn button-item [tag label url]
+(defn button-item [label url]
   [:li {:class "button"}
    [:a {:on-click #(secretary/dispatch! (str "#/" url))} label]])
 
@@ -240,8 +243,7 @@
                    (swap! state assoc :current-trope response :tropes (:tropes response))
                    (pick-random-piece)
                    )}
-       )
-  )
+       ))
 
 (defn handle-trope-view
   "Called when a trope view is dispatched for a code"
@@ -261,42 +263,37 @@
     (fn []
       [:div
        [bind-fields trope-code-form form-data]
-       (cond
-         (= :home (session/get :page)) [:div
-                                        [:input {:type     "button"
-                                                 :value    "Graph!"
-                                                 :on-click #(redraw-graph (:trope-code @form-data))}]
-                                        [:div {:id "graph-container"}]]
-         (= :tropes (session/get :page)) [:div
-                                          [:input {:type     "button"
-                                                   :value    "Retrieve tropes"
-                                                   :on-click #(list-tropes (:trope-code @form-data))}]
-                                          [:div {:id "current-trope"}
-                                           [:h2 {:class "trope-title"} (get-in @state [:current-trope :title])]
-                                           [:p (get-in @state [:current-trope :description])]
-                                           ]
-                                          [:div {:id "current-piece"}
-                                           [:h3 "Random reference"]
-                                           [:p (process-trope (:current-piece @state))]
-                                           (if (:current-piece @state)
-                                             [:div [:span (str "(" (count (:tropes @state)) " remaining)")]]
+       (condp = (session/get :page)
+         :home [:div
+                [:input {:type     "button"
+                         :value    "Graph!"
+                         :on-click #(redraw-graph (:trope-code @form-data))}]
+                [:div {:id "graph-container"}]]
+         :tropes [:div
+                  [:input {:type     "button"
+                           :value    "Retrieve references"
+                           :on-click #(list-tropes (:trope-code @form-data))}]
+                  [:div {:id "current-trope"}
+                   [:h2 {:class "trope-title"} (get-in @state [:current-trope :title])]
+                   [:p (get-in @state [:current-trope :description])]]
+                  [:div {:id "current-piece"}
+                   [:h3 "Random reference"]
+                   [:p (process-trope (:current-piece @state))]
+                   (if (:current-piece @state)
+                     [:div [:span (str "(" (count (:tropes @state)) " remaining)")]]
 
-                                             [:div {:class "trope-vote"}
-                                              [:ul
-                                               (button-item :trope-like "Interesting" "vote/like")
-                                               (button-item :trope-like "Skip" "vote/skip")
-                                               ]
-                                              ]
-                                             )
-                                           [:div {:id "trope-list-container"}
-                                            [:p "Selected items: "]
-                                            [:ul
-                                             (for [trope (:like-list @state)]
-                                               [:li (process-trope trope)])
-                                             ]
-                                            ]
-                                           ]
-                                          :else "Nope"
+                     [:div {:class "trope-vote"}
+                      [:ul
+                       (button-item "Interesting" "vote/like")
+                       (button-item "Skip" "vote/skip")]]
+                     )
+                   [:div {:id "trope-list-container"}
+                    [:p "Selected items: "]
+                    [:ul
+                     (for [trope (:like-list @state)]
+                       [:li (process-trope trope)])]]
+                   ]]
+
          )])
     ))
 
