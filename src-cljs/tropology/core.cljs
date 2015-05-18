@@ -61,7 +61,6 @@
 (re-frame/register-handler
   :vote
   (fn [app-state [_ vote]]
-    (.log js/console (str "Voted  " vote))
     (let [current-ref (get-in app-state [:article-data :current-reference])]
       (if (= vote :like)
         (re-frame/dispatch [:add-like current-ref]))
@@ -205,7 +204,7 @@
          [:p "Selected items: "]
          [:ul
           (for [trope @like-list]
-            [:li (process-trope trope [false])])]
+            ^{:key (hash trope)} [:li (process-trope trope [false])])]
          ])
       ]])
   )
