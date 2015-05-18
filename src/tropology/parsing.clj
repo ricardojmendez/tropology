@@ -183,7 +183,7 @@
   (let [url (get-in a [:attrs :href])]
     (if (is-valid-url? url)
       (-> a
-          (assoc-in [:attrs :href] (str b/view-url (b/code-from-url url)))
+          (assoc-in [:attrs :href] (b/code-from-url url))
           (assoc-in [:attrs :title] (b/code-from-url url)))
       (:content a))
     ))
@@ -200,10 +200,10 @@
    (let [res     (e/at element [:a] f-replace)
          spanned (map #(merge % {:tag :span}) res)
          ]
-     {:hiccup   (enlive->hiccup (first spanned))
-      :links (->> (e/select element [:a.twikilink])
-                  (map #(get-in % [:attrs :href])))
-      :text  (->> spanned first e/emit* (apply str))
+     {:hiccup (enlive->hiccup (first spanned))
+      :links  (->> (e/select element [:a.twikilink])
+                   (map #(get-in % [:attrs :href])))
+      :text   (->> spanned first e/emit* (apply str))
       }))
   )
 

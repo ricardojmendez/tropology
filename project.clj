@@ -25,12 +25,12 @@
                            [http-kit "2.1.19"]
                            [reagent-forms "0.5.0"]
                            [reagent-utils "0.1.4"]
-                           [secretary "1.2.3"]
                            [liberator "0.12.2"]
                            [cheshire "5.4.0"]
                            [korma "0.4.0"]
                            [org.postgresql/postgresql "9.4-1201-jdbc41"]
                            [io.clojure/liberator-transit "0.3.0"]
+                           [re-frame "0.4.0"]
                            ]
 
 
