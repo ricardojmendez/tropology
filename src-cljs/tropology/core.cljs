@@ -187,6 +187,16 @@
 
 
 
+(defn graph-display [form-data class]
+  [:div {:class class}
+   [bind-fields trope-code-form form-data]
+   [:div
+    [:input {:type     "button"
+             :value    "Graph!"
+             :on-click #(graph/redraw-graph (:trope-code @form-data))}]
+    [:div {:id "graph-container"}]]]
+  )
+
 (defn article-display [form-data class]
   (let [current-article (re-frame/subscribe [:article-data :current-article])
         current-ref     (re-frame/subscribe [:article-data :current-reference])
@@ -237,13 +247,7 @@
         ]
     (fn []
       [:div
-       [:div {:class (when (not= @ui-state :home) "hidden")}
-        [bind-fields trope-code-form form-data]
-        [:div
-         [:input {:type     "button"
-                  :value    "Graph!"
-                  :on-click #(graph/redraw-graph (:trope-code @form-data))}]
-         [:div {:id "graph-container"}]]]
+       [graph-display form-data (when (not= @ui-state :home) "hidden")]
        [article-display form-data (when (not= @ui-state :tropes) "hidden")]
        [about-page (when (not= @ui-state :about) "hidden")]]
       )))
