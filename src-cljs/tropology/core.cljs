@@ -98,9 +98,9 @@
 
 (defn replace-link-for-dispatch
   "Given a hiccup structure that's assumed to be a link, we go through it
-  to find the map of properties. If found, and one of these properties is
-  a link with class 'twikilink', then we replace said link for a dispatch
-  to a local route."
+   to find the map of properties. If found, and one of these properties is
+   a link with class 'twikilink', then we replace said link for a dispatch
+   to a local route."
   [attrs extra-params]
   (if (and (map? attrs)
            (= "twikilink" (:class attrs))
@@ -111,19 +111,34 @@
     attrs
     ))
 
-(defn process-link [element extra-params]
+(defn add-key-meta
+  "Add a meta with the key to all elements in the vector. It's usually called
+   when we are processing a series of :li vectors, since React expects them to
+   have a unique key."
+  [elements]
+  (loop [remaining elements
+         acc       []]
+    (if (empty? remaining)
+      acc
+      (recur (rest remaining)
+             (conj acc ^{:key (hash (first remaining))} (first remaining))))))
+
+(defn process-element [element extra-params]
   "Receives an element as a hiccup structure. If it's a link, then the link
-  is replaced for an action dispatch, otherwise we return the same structure.
-  "
-  (if (and (vector? element)
-           (= :a (first element)))
-    (into [] (map #(replace-link-for-dispatch % extra-params) element))
-    element))
+   is replaced for an action dispatch; for a :ul, it adds a key as meta to all
+   the nested elements; otherwise we return the same structure."
+  (if (vector? element)
+    (condp = (first element)
+      :a (into [] (map #(replace-link-for-dispatch % extra-params) element))
+      :ul (into [:ul] (add-key-meta (rest element)))
+      element)
+    element
+    ))
 
 (defn process-trope
   "Receives the hiccup data for a trope and processes it before display"
   [coll extra-params]
-  (clojure.walk/prewalk #(process-link % extra-params) coll))
+  (clojure.walk/prewalk #(process-element % extra-params) coll))
 
 
 ;
