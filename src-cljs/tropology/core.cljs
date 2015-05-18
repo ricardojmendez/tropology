@@ -15,7 +15,7 @@
 
 
 (defn general-query
-  [db, [sid element-id]]
+  [db [sid element-id]]
   (reaction (get-in @db [sid element-id])))
 
 (re-frame/register-sub :ui-state general-query)
@@ -186,7 +186,7 @@
       ; [:p "Hello article"]
       [:input {:type     "button"
                :value    "Retrieve references"
-               :on-click #(re-frame/dispatch [:load-article (:trope-code @form-data)])}]
+               :on-click #(re-frame/dispatch [:load-article (:trope-code @form-data) false])}]
       [:div {:id "current-trope"}
        [:h2 {:class "trope-title"} (:title @current-article)]
        [:p (:description @current-article)]]
