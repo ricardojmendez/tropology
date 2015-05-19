@@ -44,14 +44,15 @@
     (if like-current?
       (re-frame/dispatch [:add-like (get-in app-state [:article-data :current-reference])]))
     (GET (str "/api/tropes/" (lower-case trope-code))
-         {:handler #(re-frame/dispatch [:load-article-done %])})
-    ; TODO Handle error
+         {:handler       #(re-frame/dispatch [:load-article-done %])
+          :error-handler #(re-frame/dispatch [:load-article-error %])})
     app-state))
 
 
 (re-frame/register-handler
   :load-article-done
   (fn [app-state [_ response]]
+    (re-frame/dispatch [:clear-errors])
     (re-frame/dispatch [:pick-random-reference])
     (-> app-state
         (assoc-in [:article-data :current-article] response)
@@ -88,6 +89,18 @@
           pick    (rand-nth tropes)
           element (if (nil? pick) {} pick)]
       (assoc-in app-state [:article-data :current-reference] element))))
+
+(re-frame/register-handler
+  :load-article-error
+  (fn [app-state [_ error]]
+    (.log js/console (str "Error loading article: " (:status-text error)))
+    (assoc-in app-state [:ui-state :errors] (cons (:status-text error) (get-in app-state [:ui-state :errors])))
+    ))
+
+(re-frame/register-handler
+  :clear-errors
+  (fn [app-state [_]]
+    (assoc-in app-state [:ui-state :errors] nil)))
 
 
 
@@ -203,9 +216,15 @@
         like-list       (re-frame/subscribe [:article-data :like-list])
         references      (re-frame/subscribe [:article-data :tropes])
         remaining       (reaction (count @references))
+        errors          (re-frame/subscribe [:ui-state :errors])
         ]
+
     [:div {:class class}
      [bind-fields trope-code-form form-data]
+     (if errors
+       [:div {:class "form-group has-error" :on-click #(re-frame/dispatch [:clear-errors])}
+        (for [error @errors]
+          ^{:key (rand-int 999999)} [:div [:label {:class "control-label"} error]])])
      [:div
       ; [:p "Hello article"]
       [:input {:type     "button"
