@@ -33,9 +33,8 @@
                           (let [{{{label :category, name :name} :params} :request} request
                                 code (lower-case (str label "/" name))]
                             (api/network-from-node code)))
-             :available-media-types ["application/transit+json"
-                                     "application/transit+msgpack"
-                                     "application/json"])
+             ; Network does not return transit+jason because sigma wouldn't know what to do with it
+             :available-media-types ["application/json"])
 
 (defresource tropes
              :allowed-methods [:get]
