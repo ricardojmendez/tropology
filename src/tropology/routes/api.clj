@@ -38,14 +38,15 @@
 
 (defresource tropes
              :allowed-methods [:get]
+             :exists? (fn [request]
+                        (let [{{{label :category, name :name} :params} :request} request
+                              code (lower-case (str label "/" name))]
+                          (api/tropes-from-node code)))
              :handle-ok (fn [request]
-                          (let [{{{label :category, name :name} :params} :request} request
-                                code (lower-case (str label "/" name))]
-                            (api/tropes-from-node code)))
+                          (select-keys request [:title :description :tropes]))
              :available-media-types ["application/transit+json"
                                      "application/transit+msgpack"
                                      "application/json"])
-
 
 
 (defroutes api-routes
