@@ -102,6 +102,12 @@
   (fn [app-state [_]]
     (assoc-in app-state [:ui-state :errors] nil)))
 
+(re-frame/register-handler
+  :draw-graph
+  (fn [app-state [_ code]]
+    (graph/redraw-graph code)
+    app-state))
+
 
 
 ;
@@ -168,9 +174,8 @@
                                    :id    id}]))
 
 
-(defn button-item [label dispatch-vals]
-  [:li {:class "button"}
-   [:a {:on-click #(re-frame/dispatch dispatch-vals)} label]])
+(defn button-item [label class dispatch-vals]
+  [:button {:type "button" :class (str "btn " class) :on-click #(re-frame/dispatch dispatch-vals)} label])
 
 (defn nav-item [selected item-key label]
   [:li {:class (when (= selected item-key) "active")}
@@ -204,9 +209,7 @@
   [:div {:class class}
    [bind-fields trope-code-form form-data]
    [:div
-    [:input {:type     "button"
-             :value    "Graph!"
-             :on-click #(graph/redraw-graph (:trope-code @form-data))}]
+    [button-item "Graph!" "btn-primary" [:draw-graph (:trope-code @form-data)]]
     [:div {:id "graph-container"}]]]
   )
 
@@ -227,9 +230,7 @@
           ^{:key (rand-int 999999)} [:div [:label {:class "control-label"} error]])])
      [:div
       ; [:p "Hello article"]
-      [:input {:type     "button"
-               :value    "Retrieve references"
-               :on-click #(re-frame/dispatch [:load-article (:trope-code @form-data) false])}]
+      [button-item "Retrieve references" "btn-primary" [:load-article (:trope-code @form-data) false]]
       [:div {:id "current-trope"}
        [:h2 {:class "trope-title"} (:title @current-article)]
        [:p (:description @current-article)]]
@@ -238,10 +239,10 @@
          [:h3 "Random reference"]
          [:p (process-trope @current-ref [true])]
          [:div [:span (str "(" @remaining " remaining)")]]
-         [:div {:class "trope-vote"}
-          [:ul
-           [button-item "Interesting" [:vote :like]]
-           [button-item "Skip" [:vote :skip]]]]]
+         [:div
+           [button-item "Interesting" "btn-success" [:vote :like]]
+           [button-item "Skip" "btn-info" [:vote :skip]]]]
+
         )
       (if (some? @like-list)
         [:div {:id "trope-list-container"}

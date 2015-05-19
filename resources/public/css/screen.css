@@ -8,3 +8,7 @@ body {
 .hidden {
     visibility: hidden
 }
+
+.btn {
+    margin-right: 5px;
+}
