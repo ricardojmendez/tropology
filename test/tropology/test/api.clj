@@ -4,7 +4,9 @@
             [taoensso.timbre.profiling :as prof]
             [tropology.test.db-nodes :refer :all]
             [tropology.api :refer :all]
-            [tropology.parsing :as p]))
+            [tropology.parsing :as p]
+            [tropology.test.parsing :as tp]
+            [tropology.api :as api]))
 
 (deftest test-network-from-node
   (wipe-test-db)
@@ -57,3 +59,24 @@
                            ))
 
     ))
+
+
+(deftest test-tropes-from-node
+  (wipe-test-db)
+  ; Test that we get the right amount of article references
+  (let [name (str tp/test-file-path "TakeMeInstead-retrieve-tropes.html")
+        _    (p/record-page! name "http://tvtropes.org/pmwiki/pmwiki.php/Main/TakeMeInstead")
+        info (api/tropes-from-node "main/takemeinstead")
+        ]
+    (is (= 3 (count info)))
+    (is (= "Take Me Instead - TV Tropes" (:title info)))
+    (is (.startsWith (:description info) "A character offers"))
+    (is (= 19 (count (:tropes info))))
+    (doseq [trope (:tropes info)]
+      (is (vector? trope))                                  ; Every trope refrence returned is a vector
+      (is (keyword? (first trope)))                         ; and it starts with a keyword (for hiccup)
+      ))
+  (let [info (api/tropes-from-node "main/takemeinstead-er")
+        ]
+    (is (nil? info)))
+  )

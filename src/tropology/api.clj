@@ -72,8 +72,7 @@
                           (b/group-pairs)
                           (pmap #(hash-map :code (key %) :links-from (val %) :color-from "#00ffc7"))
                           )
-          with-base  (conj related {:code code :links-from (pmap :code nodes-from) :links-to (pmap :code nodes-to)})
-          ]
+          with-base  (conj related {:code code :links-from (pmap :code nodes-from) :links-to (pmap :code nodes-to)})]
       {:nodes (conj
                 (pmap #(transform-node %1 (rand-range 50) (rand-range 50)) node-set)
                 node)
@@ -91,8 +90,10 @@
         res    (-> html java.io.StringReader. e/html-resource)
         tropes (p/get-tropes res)
         links  (map p/process-links tropes)]
-    {:title       (p/content-from-meta res "og:title")
-     :description (p/content-from-meta res "og:description")
-     :tropes      (map :hiccup links)}
+    (if (empty? html)
+      nil
+      {:title       (p/content-from-meta res "og:title")
+       :description (p/content-from-meta res "og:description")
+       :tropes      (map :hiccup links)})
     )
   )
