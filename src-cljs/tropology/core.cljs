@@ -91,7 +91,7 @@
   :pick-random-reference
   (fn [app-state [_]]
     (let [tropes  (get-in app-state [:article-data :tropes])
-          pick    (rand-nth tropes)
+          pick    (rand-nth (not-empty tropes))
           element (if (nil? pick) {} pick)]
       (assoc-in app-state [:article-data :current-reference] element))))
 
@@ -179,8 +179,8 @@
                                    :id    id}]))
 
 
-(defn button-item [label class dispatch-vals]
-  [:button {:type "button" :class (str "btn " class) :on-click #(re-frame/dispatch dispatch-vals)} label])
+(defn button-item [label class dispatch-vals is-disabled?]
+  [:button {:type "button" :class (str "btn " class) :disabled is-disabled? :on-click #(re-frame/dispatch dispatch-vals)} label])
 
 (defn nav-item [selected item-key label]
   [:li {:class (when (= selected item-key) "active")}
@@ -214,7 +214,7 @@
   [:div {:class class}
    [bind-fields trope-code-form form-data]
    [:div
-    [button-item "Graph!" "btn-primary" [:draw-graph (:trope-code @form-data)]]
+    [button-item "Graph!" "btn-primary" [:draw-graph (:trope-code @form-data)] false]
     [:div {:id "graph-container"}]]]
   )
 
@@ -244,15 +244,16 @@
          [:p (process-trope @current-ref [true])]
          [:div [:span (str "(" @remaining " remaining)")]]
          [:div
-          [button-item "Interesting" "btn-success" [:vote :like]]
-          [button-item "Skip" "btn-info" [:vote :skip]]]])
+          [button-item "Interesting" "btn-success" [:vote :like] (empty? @current-ref)]
+          [button-item "Skip" "btn-info" [:vote :skip] (>=  0 @remaining)]]])
       (if (some? @like-list)
         [:div {:id "trope-list-container"}
-         [:p "Selected items: "]
+         [:hr]
+         [:h2 "Selected items"]
          [:ul
           (for [trope @like-list]
             ^{:key (hash trope)} [:li (process-trope (:ref trope) [false])
-                                  " (" [:a {:on-click #(re-frame/dispatch [:load-article (:code trope) false])} (:display trope)] ")"  ])]
+                                  " (" [:a {:on-click #(re-frame/dispatch [:load-article (:code trope) false])} (:display trope)] ")"])]
          ])
       ]])
   )
