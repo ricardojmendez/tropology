@@ -89,11 +89,16 @@
   (let [html   (ut/if-empty (db/get-html code) "")
         res    (-> html java.io.StringReader. e/html-resource)
         tropes (p/get-tropes res)
-        links  (map p/process-links tropes)]
+        links  (map p/process-links tropes)
+        node   (p/node-data-from-meta res)
+        ]
+
     (if (empty? html)
       nil
-      {:title       (p/content-from-meta res "og:title")
+      {:title       (:title node)
        :description (p/content-from-meta res "og:description")
+       :code        code
+       :display     (:display node)
        :tropes      (map :hiccup links)})
     )
   )

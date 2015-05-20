@@ -43,7 +43,7 @@
                               code (lower-case (str label "/" name))]
                           (api/tropes-from-node code)))
              :handle-ok (fn [request]
-                          (select-keys request [:title :description :tropes]))
+                          (select-keys request [:title :description :tropes :code :display]))
              :available-media-types ["application/transit+json"
                                      "application/transit+msgpack"
                                      "application/json"])

@@ -32,10 +32,10 @@
     (-> id (s/split #"/") first (ut/if-empty "Unknown"))))
 
 (defn display-from-url [^String url]
-  (-> (u/path-of url) (s/replace base-path "")))
+  (when url (-> (u/path-of url) (s/replace base-path ""))))
 
 (defn code-from-url [^String url]
-  (-> url display-from-url lower-case))
+  (when url (-> url display-from-url lower-case)))
 
 
 (defn group-pairs
