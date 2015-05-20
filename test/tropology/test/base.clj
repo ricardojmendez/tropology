@@ -39,5 +39,21 @@
                        3 [1 2]
                        4 [1 2])
 
-    )
-  )
+    ))
+
+
+(deftest test-display-from-url
+  (are [display url] (= display (display-from-url url))
+                     "Main/BigBad" "http://tvtropes.org/pmwiki/pmwiki.php/Main/BigBad"
+                     "Manga/AhMyGoddess" "http://tvtropes.org/pmwiki/pmwiki.php/Manga/AhMyGoddess"
+                     "Main/TakeMeInstead" "http://tvtropes.org/pmwiki/pmwiki.php/Main/TakeMeInstead"
+                     nil nil
+                     ))
+
+(deftest test-code-from-url
+  (are [display url] (= display (code-from-url url))
+                     "main/illgirl" "http://tvtropes.org/pmwiki/pmwiki.php/Main/IllGirl"
+                     "anime/princesstutu" "http://tvtropes.org/pmwiki/pmwiki.php/Anime/PrincessTutu"
+                     nil nil
+                     ))
+
