@@ -42,7 +42,9 @@
   :load-article
   (fn [app-state [_ trope-code like-current?]]
     (if like-current?
-      (re-frame/dispatch [:add-like (get-in app-state [:article-data :current-reference])]))
+      (re-frame/dispatch [:add-like
+                          (get-in app-state [:article-data :current-reference])
+                          (get-in app-state [:article-data :current-article])]))
     (GET (str "/api/tropes/" (lower-case trope-code))
          {:handler       #(re-frame/dispatch [:load-article-done %])
           :error-handler #(re-frame/dispatch [:load-article-error %])})
@@ -64,7 +66,7 @@
   (fn [app-state [_ vote]]
     (let [current-ref (get-in app-state [:article-data :current-reference])]
       (if (= vote :like)
-        (re-frame/dispatch [:add-like current-ref]))
+        (re-frame/dispatch [:add-like current-ref (get-in app-state [:article-data :current-article])]))
       (re-frame/dispatch [:pick-random-reference])
       (assoc-in app-state
                 [:article-data :tropes]
@@ -74,10 +76,13 @@
 
 (re-frame/register-handler
   :add-like
-  (fn [app-state [_ article-ref]]
-    (let [like-list (get-in app-state [:article-data :like-list])]
-      (if (not (in-seq? like-list article-ref))
-        (assoc-in app-state [:article-data :like-list] (conj like-list article-ref))
+  (fn [app-state [_ article-ref current-article]]
+    (let [like-list (get-in app-state [:article-data :like-list])
+          element   {:ref article-ref :code (:code current-article) :display (:display current-article)}
+          ]
+      (.log js/console current-article)
+      (if (not (in-seq? like-list element))
+        (assoc-in app-state [:article-data :like-list] (conj like-list element))
         app-state)
       )))
 
@@ -229,7 +234,6 @@
         (for [error @errors]
           ^{:key (rand-int 999999)} [:div [:label {:class "control-label"} error]])])
      [:div
-      ; [:p "Hello article"]
       [button-item "Retrieve references" "btn-primary" [:load-article (:trope-code @form-data) false]]
       [:div {:id "current-trope"}
        [:h2 {:class "trope-title"} (:title @current-article)]
@@ -240,16 +244,15 @@
          [:p (process-trope @current-ref [true])]
          [:div [:span (str "(" @remaining " remaining)")]]
          [:div
-           [button-item "Interesting" "btn-success" [:vote :like]]
-           [button-item "Skip" "btn-info" [:vote :skip]]]]
-
-        )
+          [button-item "Interesting" "btn-success" [:vote :like]]
+          [button-item "Skip" "btn-info" [:vote :skip]]]])
       (if (some? @like-list)
         [:div {:id "trope-list-container"}
          [:p "Selected items: "]
          [:ul
           (for [trope @like-list]
-            ^{:key (hash trope)} [:li (process-trope trope [false])])]
+            ^{:key (hash trope)} [:li (process-trope (:ref trope) [false])
+                                  " (" [:a {:on-click #(re-frame/dispatch [:load-article (:code trope) false])} (:display trope)] ")"  ])]
          ])
       ]])
   )
