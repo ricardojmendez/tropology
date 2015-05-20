@@ -136,7 +136,7 @@
   "Returns the pages for the list of codes provided"
   [codes]
   (->> (select pages
-               (fields :code :display :category :url :has-error :error :is-redirect :incoming :outgoing :next-update :time-stamp)
+               (fields :code :display :category :url :has-error :error :is-redirect :incoming :outgoing :next-update :time-stamp :description)
                (where {:code [in (map lower-case codes)]}))
        (map rename-db-keywords)
        (prof/p :query-for-codes)

@@ -96,7 +96,7 @@
     (if (empty? html)
       nil
       {:title       (:title node)
-       :description (p/content-from-meta res "og:description")
+       :description (:description node)
        :code        code
        :display     (:display node)
        :tropes      (map :hiccup links)})

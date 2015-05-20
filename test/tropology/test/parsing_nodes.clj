@@ -46,7 +46,8 @@
           _     (record-page! path "http://tvtropes.org/pmwiki/pmwiki.php/Anime/CowboyBebop")
           saved (tdb/get-all-articles)
           rels  (tdb/get-all-article-rels)
-          html  (db/get-html "anime/cowboybebop")]
+          html  (db/get-html "anime/cowboybebop")
+          item  (db/query-by-code "anime/cowboybebop")]
       (is (= 317565 (count html)))
       (is (= 650 (count saved)))
       (is (= 650 (count rels)))
@@ -55,7 +56,8 @@
           (if (= "anime/cowboybebop" (:code node))
             (is (= {:outgoing 650 :incoming 1} values))     ; The page links to itself. Consider removing that.
             (is (= {:outgoing 0 :incoming 1} values))
-            ))))
+            )))
+      (is (.startsWith (:description item) "Immodestly billed as")))
     (prof/profile :trace :Database)
     ))
 

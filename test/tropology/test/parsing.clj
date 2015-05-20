@@ -58,7 +58,8 @@
                       :display "Anime/CowboyBebop"
                       :category "anime"
                       :has-error false
-                      :is-redirect false)))
+                      :is-redirect false)
+    (is (.startsWith (:description node-data) "Immodestly billed"))))
 
 (deftest test-get-wiki-links
   (let [name   (str test-file-path "CowboyBebop.html")

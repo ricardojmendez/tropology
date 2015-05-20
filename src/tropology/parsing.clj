@@ -117,6 +117,7 @@
      :display     display
      :title       (content-from-meta res "og:title")
      :image       (content-from-meta res "og:image")
+     :description (content-from-meta res "og:description")
      :type        (-> (content-from-meta res "og:type") (ut/if-nil ""))}))
 
 (defn node-data-from-url
