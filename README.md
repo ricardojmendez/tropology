@@ -69,6 +69,8 @@ You can also see the raw data by going to: http://localhost:3000/api/network/Ani
 
 I'm finding the trope text exploration more interesting. When you enter an article code, it'll display the article's title and summary, along with a random trope mention from the list included on that article. You can choose to mark the snippet as interesting, which adds it to a list of tropes clicked, or skip it.
 
+You will need the full database in order to do text exploration.
+
 **BEWARE: THAR BE SPOILERS**!
 
 If you find a trope mentioned interesting, you can also click on the trope link.  This will load it as the next article being reviewed, as well as add the text snippet to the list of articles you've liked.
@@ -80,11 +82,9 @@ None of this information is currently saved, since I'm only playing with the tro
 
 I'm liking the text trope exploration, and will be blending it with the graph display (which by itself doesn't contain that much information).  Next steps are:
 
-* Cleaning up the front end code before it gets messier. It has grown organically and is full of haphazard experiments. Currently reading up on [re-frame](https://github.com/Day8/re-frame).
 * Show a graph of the pieces the user has liked, the articles referenced on them, and which articles those have in common.
 * We're currently showing as possible snippets all *twikilink* elements, but some summary articles use that only to link to other sub-sections and don't contain any actual information.  See about filtering them out.
 * Handle redirects. While exploring we can encounter a link to *Anime/SailorMoon*, which is an article that is only a redirect to *Manga/SailorMoon*. The back end API that returns the references doesn't currently handle redirects.
-* Clicking on a link for an article adds the currently viewed snippet to the liked list, regardless of if you clicked on it from the liked list or from the currently viewed snippet.
 
 
 
