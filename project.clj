@@ -1,34 +1,36 @@
-(defproject tropology "0.2.0-SNAPSHOT"
+(defproject tropology "0.3.0"
             :description "Tropology - Crawling and Visualizing TVTropes"
             :url "http://numergent.com/tags/tropology/"
 
-            :dependencies [[org.clojure/clojure "1.6.0"]
-                           [org.clojure/clojurescript "0.0-3123" :scope "provided"]
-                           [cljs-ajax "0.3.10"]
+            :dependencies [[org.clojure/clojure "1.7.0-beta3"]
+                           [org.clojure/clojurescript "0.0-3269" :scope "provided"]
+                           [cljs-ajax "0.3.11"]
                            [ring-server "0.4.0"]
                            [selmer "0.8.2"]
                            [com.taoensso/timbre "3.4.0"]
                            [com.taoensso/tower "3.0.2"]
-                           [markdown-clj "0.9.65"]
+                           [markdown-clj "0.9.66"]
                            [environ "1.0.0"]
                            [im.chit/cronj "1.4.3"]
-                           [compojure "1.3.2"]
-                           [ring/ring-defaults "0.1.4"]
+                           [compojure "1.3.4"]
+                           [ring/ring-defaults "0.1.5"]
                            [ring/ring-session-timeout "0.1.0"]
-                           [ring-middleware-format "0.4.0"]
-                           [noir-exception "0.2.3"]
+                           [ring-middleware-format "0.5.0"]
+                           [noir-exception "0.2.5"]
                            [bouncer "0.3.2"]
-                           [prone "0.8.1"]
+                           [prone "0.8.2"]
                            [enlive "1.1.5"]
-                           [clojurewerkz/neocons "3.1.0-beta3"]
                            [com.curiosity/urly "2.0.0-alpha6"]
                            [clojure.joda-time "0.4.0"]
                            [http-kit "2.1.19"]
-                           [reagent-forms "0.4.6"]
+                           [reagent-forms "0.5.1"]
                            [reagent-utils "0.1.4"]
-                           [secretary "1.2.2"]
-                           [liberator "0.12.2"]
+                           [liberator "0.13"]
                            [cheshire "5.4.0"]
+                           [korma "0.4.1"]
+                           [org.postgresql/postgresql "9.4-1201-jdbc41"]
+                           [io.clojure/liberator-transit "0.3.0"]
+                           [re-frame "0.4.0"]
                            ]
 
 
@@ -39,12 +41,12 @@
                                         {:output-dir    "resources/public/js/out"
                                          :externs       ["react/externs/react.js" "resources/externs/sigma.js"]
                                          :optimizations :none
-                                         :output-to     "resources/public/js/app.js"
-                                         :source-map    "resources/public/js/out.js.map"
+                                         :output-to     "resources/public/js/core.js"
+                                         :source-map    true
                                          :pretty-print  true
                                          }}}}
 
-            :clean-targets ^{:protect false} ["resources/public/js"]
+            :clean-targets ^{:protect false} ["resources/public/js" "target"]
 
             :min-lein-version "2.0.0"
             :uberjar-name "tropology.jar"
@@ -54,9 +56,10 @@
             :main tropology.core
 
             :plugins [[lein-ring "0.9.1"]
-                      [lein-cljsbuild "1.0.4"]
+                      [lein-cljsbuild "1.0.6"]
                       [lein-environ "1.0.0"]
-                      [lein-ancient "0.6.0"]]
+                      [lein-ancient "0.6.7"]
+                      [clj-sql-up "0.3.7"]]
 
 
             :ring {:handler      tropology.handler/app
@@ -64,13 +67,19 @@
                    :destroy      tropology.handler/destroy
                    :uberwar-name "tropology.war"}
 
+            :clj-sql-up {:database-test "jdbc:postgresql://192.168.59.103:5432/tropology_test?user=postgres&password=testdb"
+                         :database      "jdbc:postgresql://192.168.59.103:5432/tropology?user=postgres&password=testdb"
+                         :deps          [[org.postgresql/postgresql "9.4-1201-jdbc41"]]
+                         }
+
 
 
             :profiles
             {
              :uberjar    {:omit-source true
                           :env         {:production  true
-                                        :db-url      "http://neo4j:testneo4j@localhost:7474/db/data/"
+                                        :db-name     "tropology"
+                                        :db-host     "localhost"
                                         :update-cron "0 /3 * * * * *"
                                         :update-size 3
                                         :expiration  14
@@ -97,13 +106,11 @@
                                          [ring/ring-devel "1.3.2"]
                                          [pjstadig/humane-test-output "0.7.0"]
                                          [leiningen "2.5.1"]
-                                         [figwheel "0.2.5"]
-                                         [weasel "0.6.0"]
-                                         [com.cemerick/piggieback "0.1.6-SNAPSHOT"]]
-                          :plugins      [[lein-figwheel "0.2.3-SNAPSHOT"]]
+                                         [figwheel "0.3.3" :exclusions [org.clojure/clojure]]
+                                         [weasel "0.6.0"]]
+                          :plugins      [[lein-figwheel "0.3.3"]]
 
-                          :figwheel
-                                        {:http-server-root "public"
+                          :figwheel     {:http-server-root "public"
                                          :server-port      3449
                                          :css-dirs         ["resources/public/css"]
                                          :ring-handler     tropology.handler/app}
@@ -113,9 +120,29 @@
                           :source-paths ["env/dev/clj"]
                           :cljsbuild    {:builds {:app {:source-paths ["env/dev/cljs"]}}}
                           :env          {:dev             true
-                                         :db-url          "http://neo4j:testneo4j@localhost:7474/db/data/"
+                                         :db-name         "tropology"
+                                         :db-host         "192.168.59.103"
+                                         :db-user         "postgres"
+                                         :db-password     "testdb"
                                          :update-cron     "0 /2 * * * * *"
                                          :update-size     5
                                          :update-disabled true
                                          :expiration      14
+                                         }}
+             :test       {:dependencies [[pjstadig/humane-test-output "0.7.0"]
+                                         [leiningen "2.5.1"]]
+                          :repl-options {:init-ns tropology.repl}
+                          :injections   [(require 'pjstadig.humane-test-output)
+                                         (pjstadig.humane-test-output/activate!)]
+                          :source-paths ["env/dev/clj"]
+                          :cljsbuild    {:builds {:app {:source-paths ["env/dev/cljs"]}}}
+                          :env          {:dev             true
+                                         :db-name         "tropology_test"
+                                         :db-host         "192.168.59.103"
+                                         :db-user         "postgres"
+                                         :db-password     "testdb"
+                                         :update-cron     "0 /2 * * * * *"
+                                         :update-size     5
+                                         :update-disabled true
+                                         :expiration      10
                                          }}})

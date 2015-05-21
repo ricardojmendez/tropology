@@ -1,11 +1,173 @@
 (ns tropology.core
-  (:require [reagent.core :as reagent :refer [atom]]
-            [secretary.core :as secretary]
-            [reagent.session :as session]
+  (:require [ajax.core :refer [GET POST PUT]]
+            [reagent.core :as reagent :refer [atom]]
+            [clojure.string :refer [lower-case]]
             [reagent-forms.core :refer [bind-fields]]
-            [ajax.core :refer [POST]])
-  (:require-macros [secretary.core :refer [defroute]]))
+            [re-frame.core :as re-frame]
+            [tropology.graph :as graph]
+            [tropology.utils :refer [in-seq?]]
+            )
+  (:require-macros [reagent.ratom :refer [reaction]]))
 
+;
+; Queries
+;
+
+
+(defn general-query
+  [db [sid element-id]]
+  (reaction (get-in @db [sid element-id])))
+
+(re-frame/register-sub :ui-state general-query)
+(re-frame/register-sub :article-data general-query)
+
+
+;
+; Handlers
+;
+
+(re-frame/register-handler
+  :initialize
+  (fn
+    [db _]
+    (merge db {:ui-state {:active-section :tropes}})))
+
+(re-frame/register-handler
+  :navbar-click
+  (fn [app-state [_ item-key]]
+    (assoc-in app-state [:ui-state :active-section] item-key)))
+
+
+(re-frame/register-handler
+  :load-article
+  (fn [app-state [_ trope-code like-current?]]
+    (if like-current?
+      (re-frame/dispatch [:add-like
+                          (get-in app-state [:article-data :current-reference])
+                          (get-in app-state [:article-data :current-article])]))
+    (GET (str "/api/tropes/" (lower-case trope-code))
+         {:handler       #(re-frame/dispatch [:load-article-done %])
+          :error-handler #(re-frame/dispatch [:load-article-error %])})
+    app-state))
+
+
+(re-frame/register-handler
+  :load-article-done
+  (fn [app-state [_ response]]
+    (re-frame/dispatch [:clear-errors])
+    (re-frame/dispatch [:pick-random-reference])
+    (-> app-state
+        (assoc-in [:article-data :current-article] response)
+        (assoc-in [:article-data :tropes] (:tropes response)))))
+
+
+(re-frame/register-handler
+  :vote
+  (fn [app-state [_ vote]]
+    (let [current-ref (get-in app-state [:article-data :current-reference])]
+      (if (= vote :like)
+        (re-frame/dispatch [:add-like current-ref (get-in app-state [:article-data :current-article])]))
+      (re-frame/dispatch [:pick-random-reference])
+      (assoc-in app-state
+                [:article-data :tropes]
+                (remove #(= % current-ref) (get-in app-state [:article-data :tropes])))
+      )))
+
+
+(re-frame/register-handler
+  :add-like
+  (fn [app-state [_ article-ref current-article]]
+    (let [like-list (get-in app-state [:article-data :like-list])
+          element   {:ref article-ref :code (:code current-article) :display (:display current-article)}
+          ]
+      (.log js/console current-article)
+      (if (not (in-seq? like-list element))
+        (assoc-in app-state [:article-data :like-list] (conj like-list element))
+        app-state)
+      )))
+
+
+(re-frame/register-handler
+  :pick-random-reference
+  (fn [app-state [_]]
+    (let [tropes  (get-in app-state [:article-data :tropes])
+          pick    (rand-nth (not-empty tropes))
+          element (if (nil? pick) {} pick)]
+      (assoc-in app-state [:article-data :current-reference] element))))
+
+(re-frame/register-handler
+  :load-article-error
+  (fn [app-state [_ error]]
+    (.log js/console (str "Error loading article: " (:status-text error)))
+    (assoc-in app-state [:ui-state :errors] (cons (:status-text error) (get-in app-state [:ui-state :errors])))
+    ))
+
+(re-frame/register-handler
+  :clear-errors
+  (fn [app-state [_]]
+    (assoc-in app-state [:ui-state :errors] nil)))
+
+(re-frame/register-handler
+  :draw-graph
+  (fn [app-state [_ code]]
+    (graph/redraw-graph code)
+    app-state))
+
+
+
+;
+; Element processing
+;
+
+
+(defn replace-link-for-dispatch
+  "Given a hiccup structure that's assumed to be a link, we go through it
+   to find the map of properties. If found, and one of these properties is
+   a link with class 'twikilink', then we replace said link for a dispatch
+   to a local route."
+  [attrs extra-params]
+  (if (and (map? attrs)
+           (= "twikilink" (:class attrs))
+           (:href attrs))
+    (-> attrs
+        (dissoc :href)
+        (assoc :on-click #(re-frame/dispatch (into [] (concat [:load-article (:href attrs)] extra-params)))))
+    attrs
+    ))
+
+(defn add-key-meta
+  "Add a meta with the key to all elements in the vector. It's usually called
+   when we are processing a series of :li vectors, since React expects them to
+   have a unique key."
+  [elements]
+  (loop [remaining elements
+         acc       []]
+    (if (empty? remaining)
+      acc
+      (recur (rest remaining)
+             (conj acc ^{:key (hash (first remaining))} (first remaining))))))
+
+(defn process-element [element extra-params]
+  "Receives an element as a hiccup structure. If it's a link, then the link
+   is replaced for an action dispatch; for a :ul, it adds a key as meta to all
+   the nested elements; otherwise we return the same structure."
+  (if (vector? element)
+    (condp = (first element)
+      :a (into [] (map #(replace-link-for-dispatch % extra-params) element))
+      :ul (into [:ul] (add-key-meta (rest element)))
+      element)
+    element
+    ))
+
+(defn process-trope
+  "Receives the hiccup data for a trope and processes it before display"
+  [coll extra-params]
+  (clojure.walk/prewalk #(process-element % extra-params) coll))
+
+
+;
+; Components
+;
 
 (defn row [label & body]
   [:div.row
@@ -17,161 +179,105 @@
                                    :id    id}]))
 
 
-; Original code:
+(defn button-item [label class dispatch-vals is-disabled?]
+  [:button {:type "button" :class (str "btn " class) :disabled is-disabled? :on-click #(re-frame/dispatch dispatch-vals)} label])
 
-(defn nav-item [tag label url]
-  [:li {:class (when (= tag (session/get :page)) "active")}
-   [:a {:on-click #(secretary/dispatch! (str "#/" url))} label]])
+(defn nav-item [selected item-key label]
+  [:li {:class (when (= selected item-key) "active")}
+   [:a {:on-click #(re-frame/dispatch [:navbar-click item-key])} label]])
+
+
+(def trope-code-form
+  [:div
+   (text-input :trope-code "Article code:")])
+
 
 (defn navbar []
-  [:div.navbar.navbar-inverse.navbar-fixed-top
-   [:div.container
-    [:div.navbar-header
-     [:a.navbar-brand {:href "#/"} "tropology"]]
-    [:div.navbar-collapse.collapse
-     [:ul.nav.navbar-nav
-      (nav-item :home "Home" "")
-      (nav-item :about "About" "about")
-      ]]]])
+  (let [selected (re-frame/subscribe [:ui-state :active-section])]
+    (fn []
+      (do
+        [:div.navbar.navbar-inverse.navbar-fixed-top
+         [:div.container
+          [:div.navbar-header
+           [:a.navbar-brand {:href "#/"} "tropology"]]
+          [:div.navbar-collapse.collapse
+           [:ul.nav.navbar-nav
+            (nav-item @selected :home "Home")
+            (nav-item @selected :tropes "Tropes")
+            (nav-item @selected :about "About")
+            ]]]]))
+    ))
 
-(defn about-page []
-  [:div
+
+
+(defn graph-display [form-data class]
+  [:div {:class class}
+   [bind-fields trope-code-form form-data]
+   [:div
+    [button-item "Graph!" "btn-primary" [:draw-graph (:trope-code @form-data)] false]
+    [:div {:id "graph-container"}]]]
+  )
+
+(defn article-display [form-data class]
+  (let [current-article (re-frame/subscribe [:article-data :current-article])
+        current-ref     (re-frame/subscribe [:article-data :current-reference])
+        like-list       (re-frame/subscribe [:article-data :like-list])
+        references      (re-frame/subscribe [:article-data :tropes])
+        remaining       (reaction (count @references))
+        errors          (re-frame/subscribe [:ui-state :errors])
+        ]
+
+    [:div {:class class}
+     [bind-fields trope-code-form form-data]
+     (if errors
+       [:div {:class "form-group has-error" :on-click #(re-frame/dispatch [:clear-errors])}
+        (for [error @errors]
+          ^{:key (rand-int 999999)} [:div [:label {:class "control-label"} error]])])
+     [:div
+      [button-item "Retrieve references" "btn-primary" [:load-article (:trope-code @form-data) false]]
+      [:div {:id "current-trope"}
+       [:h2 {:class "trope-title"} (:title @current-article)]
+       [:p (:description @current-article)]]
+      (if (some? @current-article)
+        [:div {:id "current-piece"}
+         [:h3 "Random reference"]
+         [:p (process-trope @current-ref [true])]
+         [:div [:span (str "(" @remaining " remaining)")]]
+         [:div
+          [button-item "Interesting" "btn-success" [:vote :like] (empty? @current-ref)]
+          [button-item "Skip" "btn-info" [:vote :skip] (>=  0 @remaining)]]])
+      (if (some? @like-list)
+        [:div {:id "trope-list-container"}
+         [:hr]
+         [:h2 "Selected items"]
+         [:ul
+          (for [trope @like-list]
+            ^{:key (hash trope)} [:li (process-trope (:ref trope) [false])
+                                  " (" [:a {:on-click #(re-frame/dispatch [:load-article (:code trope) false])} (:display trope)] ")"])]
+         ])
+      ]])
+  )
+
+(defn about-page [class]
+  [:div {:class class}
    [:main]
    [:div "this is the story of tropology... work in progress"]
    ])
 
 
-; Graph!
-
-
-(def state (atom {:sigma nil}))
-
-(-> js/sigma .-classes .-graph (.addMethod "neighbors",
-                                           (fn [node-id]
-                                             (-> (js* "this")
-                                                 .-allNeighborsIndex
-                                                 (aget node-id)
-                                                 goog.object/getKeys)) ; The graph keeps the neighbors as properties
-                                           ))
-
-
-(defn in-seq? [s x]
-  (some? (some #{x} s)))
-
-(defn refresh-graph [sig centerNodeId]
-  (let [db    (aget sig "db")
-        graph (-> sig .-graph)]
-    (.killForceAtlas2 sig)
-    (-> sig .-camera (.goTo (clj->js {:x 0 :y 0 :angle 0 :ratio 1})))
-    (.clear graph)
-    (.read graph (.neighborhood db centerNodeId))
-    (let [nodes (.nodes graph)
-          len   (.-length nodes)]
-      (map-indexed (fn [i node]
-                     (aset node "x" (Math/cos (/ (* 2 i Math/PI) len)))
-                     (aset node "y" (Math/cos (/ (* 2 i Math/PI) len))))
-                   nodes))
-    (.refresh sig)
-    (.startForceAtlas2 sig {:worker true :barnesHutOptimize false})
-    (js/setTimeout #(.stopForceAtlas2 sig) 2000)
-    (swap! state assoc :sigma sig)
-    )
-  )
-
-(defn create-graph [code]
-  (let [sig     (js/sigma. (clj->js {:renderer
-                                               {:type      "canvas"
-                                                :container (.getElementById js/document "graph-container")}
-                                     :settings {:defaultNodeColor "#ec5148"
-                                                :labelSizeRation  2
-                                                :edgeLabelSize    "fixed"
-                                                }}))
-        db      (js/sigma.plugins.neighborhoods.)
-        on-done (fn []
-                  (do
-                    (.bind sig "doubleClickNode", #((if-not (-> % .-data .-node .-center)
-                                                      (refresh-graph sig (-> % .-data .-node .-id)))))
-                    (refresh-graph sig code)
-                    (.startForceAtlas2 sig {:worker true :barnesHutOptimize false})
-                    (js/setTimeout #(.stopForceAtlas2 sig) 5000)
-                    ; Set the colors
-                    (goog.object/forEach (-> sig .-graph .nodes)
-                                         #(aset % "originalColor" (aget % "color")))
-                    (goog.object/forEach (-> sig .-graph .edges)
-                                         #(aset % "originalColor" (aget % "color")))
-
-                    (.bind sig "clickNode"
-                           (fn [clicked]
-                             (let [nodes         (-> sig .-graph .nodes) ; Re-bind in case it changed
-                                   edges         (-> sig .-graph .edges)
-                                   node-id       (-> clicked .-data .-node .-id)
-                                   nodes-to-keep (-> (.neighbors (.-graph sig) node-id) (.concat node-id))
-                                   groups        (group-by #(in-seq? nodes-to-keep (.-id %)) nodes)]
-                               (doseq [node (groups true)]
-                                 (do
-                                   (aset node "color" (aget node "originalColor"))
-                                   (aset node "showStatus"
-                                         (if (= node-id code)
-                                           "-"              ; Whatever, use default
-                                           "a"              ; Always
-                                           ))))
-                               (doseq [node (groups false)]
-                                 (do
-                                   (aset node "color" "#eee")
-                                   (aset node "showStatus" "n"))) ; Never
-                               (.forEach edges              ; One idiomatic, one not as much
-                                         (fn [edge]
-                                           (if (and
-                                                 (in-seq? nodes-to-keep (.-source edge))
-                                                 (in-seq? nodes-to-keep (.-target edge)))
-                                             (aset edge "color" (aget edge "originalColor"))
-                                             (aset edge "color" "#eee"))))
-                               (.refresh sig)))
-                           )
-                    ))
+(defn app-display []
+  (let [form-data (atom {:trope-code "Anime/SamuraiFlamenco"})
+        ui-state  (re-frame/subscribe [:ui-state :active-section])
         ]
-    (aset sig "db" db)
-    (swap! state assoc :sigma sig)
-    (.load db (str js/context "/api/network/" code) on-done)
-
-    ))
-
-(defn redraw-graph []
-  (let [current (:sigma @state)]                            ; Must be set by importer on creation
-    (if current
-      (do
-        (.kill current)
-        (swap! state assoc :sigma nil)))
-    (create-graph (-> (.getElementById js/document "trope-code") .-value))
-    ))
-
-
-(defn plot []
-  [:div
-   (text-input :trope-code "Trope code:")
-   [:input {:type     "button" :value "Graph!"
-            :on-click #(redraw-graph)}]
-   [:div {:id "graph-container"}]])
-
-(def pages
-  {:home  plot
-   :about about-page})
-
-
-(defn page []
-  [(pages (session/get :page))])
-
-(defroute "/" [] (session/put! :page :home))
-(defroute "/about" [] (session/put! :page :about))
+    (fn []
+      [:div
+       [graph-display form-data (when (not= @ui-state :home) "hidden")]
+       [article-display form-data (when (not= @ui-state :tropes) "hidden")]
+       [about-page (when (not= @ui-state :about) "hidden")]]
+      )))
 
 
 (defn init! []
-  (secretary/set-config! :prefix "#")
-  (session/put! :page :home)
-  (reagent/render-component [navbar] (.getElementById js/document "navbar"))
-  (reagent/render-component [page] (.getElementById js/document "app")))
-
-
-
-
-
+  (re-frame/dispatch-sync [:initialize])
+  (reagent/render [navbar] (.getElementById js/document "navbar"))
+  (reagent/render [app-display] (.getElementById js/document "app")))

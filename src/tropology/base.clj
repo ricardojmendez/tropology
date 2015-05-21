@@ -2,13 +2,16 @@
   (:require [clojure.string :as s]
             [clojure.string :refer [lower-case]]
             [com.numergent.url-tools :as ut]
-            [clojurewerkz.urly.core :as u]))
+            [clojurewerkz.urly.core :as u]
+            [taoensso.timbre.profiling :as prof]))
 
 (def base-path "/pmwiki/pmwiki.php/")
 (def base-host "http://tvtropes.org/")
 (def base-url (str "http://tvtropes.org" base-path))
 
 (def base-label "Article")
+
+(def view-url "/view/")
 
 (defn category-from-code
   "Returns the node label from a node id, which is expected to be of the form Category/SubCategory.
@@ -29,10 +32,10 @@
     (-> id (s/split #"/") first (ut/if-empty "Unknown"))))
 
 (defn display-from-url [^String url]
-  (-> (u/path-of url) (s/replace base-path "")))
+  (when url (-> (u/path-of url) (s/replace base-path ""))))
 
 (defn code-from-url [^String url]
-  (-> url display-from-url lower-case))
+  (when url (-> url display-from-url lower-case)))
 
 
 (defn group-pairs
@@ -40,12 +43,13 @@
   are the from elements and the values are a collection of all the to referenced
   by that node"
   ([links]
-    (group-pairs links :from :to))
+    (group-pairs links :from-code :to-code))
   ([links from to]
   (->>
     (group-by #(get % from) links)
     (map (fn [kv] [(key kv) (map #(get % to) (val kv))]))
     (into {})
+    (prof/p :group-pairs)
     )))
 
 

@@ -35,20 +35,12 @@
       (swap! state assoc :isRunning true)
       (try
         (do
-          (timbre/info (str "Remaining " (count (db/query-nodes-to-crawl (db/get-connection) 9999999)) " updating " (:total opts) "... "))
-          (p/crawl-and-update! (db/get-connection) (Integer. (:total opts))))
+          (timbre/info (str "Remaining " (count (db/query-nodes-to-crawl 9999999)) " updating " (:total opts) "... "))
+          (p/crawl-and-update! (Integer. (:total opts))))
         (catch Throwable t (timbre/error (str "Exception while crawling: " t))))
       (timbre/info "Done crawling.")
       (swap! state assoc :isRunning false))
     (timbre/info "Not crawling because of on-going import process.")))
-
-
-(defn update-handler [t opts]
-  (timbre/info "Updating link totals")
-  (try
-    (db/update-link-count! (db/get-connection))
-    (catch Throwable t (timbre/error (str "Exception while updating: " t))))
-  (timbre/info "Done updating."))
 
 
 
@@ -58,11 +50,6 @@
    :schedule (:update-cron env)
    :opts     {:total (:update-size env)}})
 
-(def update-task
-  {:id       "update-task"
-   :handler  update-handler
-   :schedule "0 0 /6 * * * *"
-   :opts     {}})
 
 (def cj (cronj/cronj :entries [crawl-task]))
 
@@ -74,7 +61,7 @@
 (defn seed-database []
   (do
     (timbre/info "Seeding...")
-    (if-not (db/query-by-code (db/get-connection) "Anime/SamuraiFlamenco")
+    (if-not (db/query-by-code "Anime/SamuraiFlamenco")
       (->
         (p/load-resource-url "http://tvtropes.org/pmwiki/pmwiki.php/Anime/SamuraiFlamenco")
         p/save-page-links!))
