@@ -1,9 +1,9 @@
-(defproject tropology "0.3.0"
+(defproject tropology "0.4.0-SNAPSHOT"
             :description "Tropology - Crawling and Visualizing TVTropes"
             :url "http://numergent.com/tags/tropology/"
 
             :dependencies [[org.clojure/clojure "1.7.0-beta3"]
-                           [org.clojure/clojurescript "0.0-3269" :scope "provided"]
+                           [org.clojure/clojurescript "0.0-3291" :scope "provided"]
                            [cljs-ajax "0.3.11"]
                            [ring-server "0.4.0"]
                            [selmer "0.8.2"]
