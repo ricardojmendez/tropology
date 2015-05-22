@@ -126,6 +126,9 @@ iframe {
 }
 .header .profile-image {
   margin-right: 30px;
+  max-width: 300px;
+  max-height: 300px;
+
 }
 .header .profile-content .name {
   color: #49515a;
@@ -515,6 +518,8 @@ iframe {
   .header .profile-image {
     float: none !important;
     margin: 0 auto;
+    max-width: 300px;
+    max-height: 300px;
   }
   .header .profile-content {
     float: none !important;
