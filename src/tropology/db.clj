@@ -99,24 +99,6 @@
     (merge {:time-stamp now :next-update now} data)))
 
 
-;
-; Query helpers
-;
-
-(defn code-to-match
-  "Returns match pattern string for an id, including the node label, with
-  the prefix name for the pattern.
-
-  I'm not a fan of not being able to pass the label as a parameter, but them's
-  the breaks. neo4j's parsing seems strong enough that code injection is
-  unlikely."
-  ([prefix]
-   (code-to-match prefix "id" b/base-label))
-  ([prefix id-param]
-   (code-to-match prefix id-param b/base-label))
-  ([prefix id-param label]
-   (str "(" prefix ":" label " {code:{" id-param "}})")))
-
 
 ;
 ; Page import
