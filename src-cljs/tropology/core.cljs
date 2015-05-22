@@ -30,6 +30,7 @@
   :initialize
   (fn
     [db _]
+    (re-frame/dispatch [:load-article "anime/samuraiflamenco" false])
     (merge db {:ui-state {:active-section :tropes}})))
 
 (re-frame/register-handler
@@ -78,7 +79,7 @@
   :add-like
   (fn [app-state [_ article-ref current-article]]
     (let [like-list (get-in app-state [:article-data :like-list])
-          element   {:ref article-ref :code (:code current-article) :display (:display current-article)}
+          element   {:ref article-ref :code (:code current-article) :display (:display current-article) :image (:image current-article)}
           ]
       (.log js/console current-article)
       (if (not (in-seq? like-list element))
@@ -179,8 +180,8 @@
                                    :id    id}]))
 
 
-(defn button-item [label class dispatch-vals is-disabled?]
-  [:button {:type "button" :class (str "btn " class) :disabled is-disabled? :on-click #(re-frame/dispatch dispatch-vals)} label])
+(defn button-item [label class dispatch-vals is-disabled? extra-items]
+  [:button {:type "button" :class (str "btn " class) :disabled is-disabled? :on-click #(re-frame/dispatch dispatch-vals)} extra-items label])
 
 (defn nav-item [selected item-key label]
   [:li {:class (when (= selected item-key) "active")}
@@ -192,23 +193,6 @@
    (text-input :trope-code "Article code:")])
 
 
-(defn navbar []
-  (let [selected (re-frame/subscribe [:ui-state :active-section])]
-    (fn []
-      (do
-        [:div.navbar.navbar-inverse.navbar-fixed-top
-         [:div.container
-          [:div.navbar-header
-           [:a.navbar-brand {:href "#/"} "tropology"]]
-          [:div.navbar-collapse.collapse
-           [:ul.nav.navbar-nav
-            (nav-item @selected :home "Home")
-            (nav-item @selected :tropes "Tropes")
-            (nav-item @selected :about "About")
-            ]]]]))
-    ))
-
-
 
 (defn graph-display [form-data class]
   [:div {:class class}
@@ -218,14 +202,83 @@
     [:div {:id "graph-container"}]]]
   )
 
+(defn header-display []
+  (let [current-article (re-frame/subscribe [:article-data :current-article])]
+    (fn []
+      [:span
+       ; TODO Max size for the image
+       [:img {:class "profile-image img-responsive pull-left" :src (:image @current-article) :alt (:title @current-article)}]
+       [:div {:class "profile-content"}
+        [:h1 {:class "name"} (:title @current-article)]
+        [:p (:description @current-article)]]
+       ; TODO: Create as a button
+       [:a {:class "btn btn-cta-primary pull-right"}
+        [:i {:class "fa fa-paper-plane"}]
+        "Random Article"]]
+      )))
+
+(defn reference-display []
+  (let [current-ref (re-frame/subscribe [:article-data :current-reference])
+        references  (re-frame/subscribe [:article-data :tropes])
+        remaining   (reaction (count @references))]
+    (fn []
+      [:span
+       [:div {:class "desc text-left"}
+        [:p (process-trope @current-ref [true])]]
+       [button-item "Interesting" "btn-info btn-cta-secondary" [:vote :like] (empty? @current-ref) [:i {:class "fa fa-thumbs-o-up"}]]
+       [button-item "Skip" "btn-default" [:vote :skip] (>= 0 @remaining)]
+       [:p {:class "summary"} (str "(" @remaining " remaining)")]
+       ])
+    ))
+
+
+(defn trope-row [{:keys [ref code display image]}]
+  [:div {:class "item row"}
+   [:a {:class "col-md-2 col-sm-2 col-xs-12" :on-click #(re-frame/dispatch [:load-article code false])}
+    [:img {:class "img-responsive project-image" :src image}]]
+   [:div {:class "desc col-md-10 col-sm-10 col-xs-12"}
+    [:p (process-trope ref [false])]
+    [:p
+     [:a {:class "more-link" :on-click #(re-frame/dispatch [:load-article code false])}
+      [:li {:class "fa fa-external-link"}]
+      display]]
+    ]
+   ]
+  )
+
+(defn like-list-display []
+  (let [like-list       (re-frame/subscribe [:article-data :like-list])]
+    (fn []
+      [:div
+       (for [trope @like-list]
+         ^{:key (hash trope)} [trope-row trope])
+       ])))
+
+(defn error-list-display []
+  (let [errors          (re-frame/subscribe [:ui-state :errors])]
+    (fn []
+      (if @errors
+        [:section {:class "section latest has-error form-group" :on-click #(re-frame/dispatch [:clear-errors])}
+         [:div {:class "section-inner"}
+          [:h2 {:class "heading"} "There seems to have been a problem..."]
+          [:div {:class "content"}
+           (for [error @errors]
+             ^{:key (rand-int 999999)} [:div [:label {:class "control-label"} error]])
+           ]
+          ]]
+
+        )
+      )
+    )
+  )
+
 (defn article-display [form-data class]
   (let [current-article (re-frame/subscribe [:article-data :current-article])
         current-ref     (re-frame/subscribe [:article-data :current-reference])
         like-list       (re-frame/subscribe [:article-data :like-list])
         references      (re-frame/subscribe [:article-data :tropes])
         remaining       (reaction (count @references))
-        errors          (re-frame/subscribe [:ui-state :errors])
-        ]
+        errors          (re-frame/subscribe [:ui-state :errors])]
 
     [:div {:class class}
      [bind-fields trope-code-form form-data]
@@ -245,7 +298,7 @@
          [:div [:span (str "(" @remaining " remaining)")]]
          [:div
           [button-item "Interesting" "btn-success" [:vote :like] (empty? @current-ref)]
-          [button-item "Skip" "btn-info" [:vote :skip] (>=  0 @remaining)]]])
+          [button-item "Skip" "btn-info" [:vote :skip] (>= 0 @remaining)]]])
       (if (some? @like-list)
         [:div {:id "trope-list-container"}
          [:hr]
@@ -258,26 +311,12 @@
       ]])
   )
 
-(defn about-page [class]
-  [:div {:class class}
-   [:main]
-   [:div "this is the story of tropology... work in progress"]
-   ])
-
-
-(defn app-display []
-  (let [form-data (atom {:trope-code "Anime/SamuraiFlamenco"})
-        ui-state  (re-frame/subscribe [:ui-state :active-section])
-        ]
-    (fn []
-      [:div
-       [graph-display form-data (when (not= @ui-state :home) "hidden")]
-       [article-display form-data (when (not= @ui-state :tropes) "hidden")]
-       [about-page (when (not= @ui-state :about) "hidden")]]
-      )))
 
 
 (defn init! []
   (re-frame/dispatch-sync [:initialize])
-  (reagent/render [navbar] (.getElementById js/document "navbar"))
-  (reagent/render [app-display] (.getElementById js/document "app")))
+  (reagent/render [header-display] (.getElementById js/document "header"))
+  (reagent/render [reference-display] (.getElementById js/document "current-reference"))
+  (reagent/render [like-list-display] (.getElementById js/document "like-list"))
+  (reagent/render [error-list-display] (.getElementById js/document "error-list"))
+  )

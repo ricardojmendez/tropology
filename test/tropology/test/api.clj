@@ -68,10 +68,11 @@
         _    (p/record-page! name "http://tvtropes.org/pmwiki/pmwiki.php/Main/TakeMeInstead")
         info (api/tropes-from-node "main/takemeinstead")
         ]
-    (is (= 5 (count info)))
+    (is (= 6 (count info)))
     (is (= "Take Me Instead - TV Tropes" (:title info)))
     (is (= "Main/TakeMeInstead" (:display info)))
     (is (= "main/takemeinstead" (:code info)))
+    (is (= "http://static.tvtropes.org/logo_blue_small.png" (:image info)))
     (is (.startsWith (:description info) "A character offers"))
     (is (= 19 (count (:tropes info))))
     (doseq [trope (:tropes info)]

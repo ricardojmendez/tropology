@@ -96,6 +96,7 @@
     (if (empty? html)
       nil
       {:title       (:title node)
+       :image       (:image node)
        :description (:description node)
        :code        code
        :display     (:display node)
