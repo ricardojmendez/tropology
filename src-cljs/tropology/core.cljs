@@ -206,15 +206,12 @@
   (let [current-article (re-frame/subscribe [:article-data :current-article])]
     (fn []
       [:span
-       ; TODO Max size for the image
        [:img {:class "profile-image img-responsive pull-left" :src (:image @current-article) :alt (:title @current-article)}]
        [:div {:class "profile-content"}
         [:h1 {:class "name"} (:title @current-article)]
         [:p (:description @current-article)]]
-       ; TODO: Create as a button
-       [:a {:class "btn btn-cta-primary pull-right"}
-        [:i {:class "fa fa-paper-plane"}]
-        "Random Article"]]
+       [button-item "Random Article" "btn-cta-primary pull-right" [:load-article ""] false [:i {:class "fa fa-paper-plane"}]]
+       ]
       )))
 
 (defn reference-display []
