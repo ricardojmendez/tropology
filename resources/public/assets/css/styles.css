@@ -543,6 +543,8 @@ iframe {
   }
 }
 
+/* ======= Additions ======= */
+
 .hidden {
   visibility: hidden
 }
@@ -555,4 +557,14 @@ iframe {
   max-width: 1600px;
   height: 1500px;
   margin: auto;
+}
+
+.item {
+  position: relative;
+}
+
+.to-bottom {
+  position: absolute;
+  bottom: 0px;
+  right: 0px;
 }

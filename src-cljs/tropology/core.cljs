@@ -81,11 +81,18 @@
     (let [like-list (get-in app-state [:article-data :like-list])
           element   {:ref article-ref :code (:code current-article) :display (:display current-article) :image (:image current-article)}
           ]
-      (.log js/console current-article)
+      #_ (.log js/console current-article)
       (if (not (in-seq? like-list element))
         (assoc-in app-state [:article-data :like-list] (conj like-list element))
         app-state)
       )))
+
+(re-frame/register-handler
+  :remove-like
+  (fn [app-state [_ article-ref]]
+    (.log js/console (str "Removing " article-ref))
+    (assoc-in app-state [:article-data :like-list] (remove #(= article-ref (:ref %)) (get-in app-state [:article-data :like-list])))
+    ))
 
 
 (re-frame/register-handler
@@ -240,11 +247,12 @@
       [:li {:class "fa fa-external-link"}]
       display]]
     ]
+   [button-item "Remove" "btn-danger pull-right to-bottom" [:remove-like ref] false [:i {:class "fa fa-remove"}]]
    ]
   )
 
 (defn like-list-display []
-  (let [like-list       (re-frame/subscribe [:article-data :like-list])]
+  (let [like-list (re-frame/subscribe [:article-data :like-list])]
     (fn []
       [:div
        (for [trope @like-list]
