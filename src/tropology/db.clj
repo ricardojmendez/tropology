@@ -114,6 +114,16 @@
     (prof/p :create-all)))
 
 
+(defn fetch-random-contents-code []
+  (->> (select contents
+               (fields :code)
+               (order (raw "random()"))
+               (limit 1))
+       (map rename-db-keywords)
+       first
+       :code
+       (prof/p :fetch-random-code)))
+
 (defn query-for-codes
   "Returns the pages for the list of codes provided"
   [codes]

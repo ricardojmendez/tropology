@@ -86,13 +86,14 @@
 
 (defn tropes-from-node
   [code]
-  (let [html   (ut/if-empty (db/get-html code) "")
+  (let [html   (-> (if (= code "/") (db/fetch-random-contents-code) code)
+                   db/get-html
+                   (ut/if-empty ""))
         res    (-> html java.io.StringReader. e/html-resource)
         tropes (p/get-tropes res)
         links  (map p/process-links tropes)
         node   (p/node-data-from-meta res)
         ]
-
     (if (empty? html)
       nil
       {:title       (:title node)
@@ -100,6 +101,5 @@
        :description (:description node)
        :code        code
        :display     (:display node)
-       :tropes      (map :hiccup links)})
-    )
+       :tropes      (map :hiccup links)}))
   )

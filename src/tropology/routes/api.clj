@@ -52,5 +52,6 @@
 (defroutes api-routes
            (ANY "/api/node/:category/:name" [category name] node)
            (ANY "/api/network/:category/:name" [category name] network)
+           (ANY "/api/tropes/" [] tropes)
            (ANY "/api/tropes/:category/:name" [category name] tropes)
            (ANY "/api/home" request home))

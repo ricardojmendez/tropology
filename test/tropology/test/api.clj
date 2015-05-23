@@ -64,22 +64,29 @@
 (deftest test-tropes-from-node
   (wipe-test-db)
   ; Test that we get the right amount of article references
-  (let [name (str tp/test-file-path "TakeMeInstead-retrieve-tropes.html")
-        _    (p/record-page! name "http://tvtropes.org/pmwiki/pmwiki.php/Main/TakeMeInstead")
-        info (api/tropes-from-node "main/takemeinstead")
-        ]
-    (is (= 6 (count info)))
-    (is (= "Take Me Instead - TV Tropes" (:title info)))
-    (is (= "Main/TakeMeInstead" (:display info)))
-    (is (= "main/takemeinstead" (:code info)))
-    (is (= "http://static.tvtropes.org/logo_blue_small.png" (:image info)))
-    (is (.startsWith (:description info) "A character offers"))
-    (is (= 19 (count (:tropes info))))
-    (doseq [trope (:tropes info)]
-      (is (vector? trope))                                  ; Every trope refrence returned is a vector
-      (is (keyword? (first trope)))                         ; and it starts with a keyword (for hiccup)
-      ))
-  (let [info (api/tropes-from-node "main/takemeinstead-er")
-        ]
-    (is (nil? info)))
+  (testing "Confirm we get the right number of article references"
+    (let [name (str tp/test-file-path "TakeMeInstead-retrieve-tropes.html")
+          _    (p/record-page! name "http://tvtropes.org/pmwiki/pmwiki.php/Main/TakeMeInstead")
+          info (api/tropes-from-node "main/takemeinstead")
+          ]
+      (is (= 6 (count info)))
+      (is (= "Take Me Instead - TV Tropes" (:title info)))
+      (is (= "Main/TakeMeInstead" (:display info)))
+      (is (= "main/takemeinstead" (:code info)))
+      (is (= "http://static.tvtropes.org/logo_blue_small.png" (:image info)))
+      (is (.startsWith (:description info) "A character offers"))
+      (is (= 19 (count (:tropes info))))
+      (doseq [trope (:tropes info)]
+        (is (vector? trope))                                ; Every trope refrence returned is a vector
+        (is (keyword? (first trope)))                       ; and it starts with a keyword (for hiccup)
+        )))
+  (testing "Invalid code should return nil"
+    (let [info (api/tropes-from-node "main/takemeinstead-er")]
+      (is (nil? info))))
+  (testing "Receiving a slash as the code return a random trope"
+    (let [info (api/tropes-from-node "/")]
+      (is (:code info))))
+  (testing "Receiving empty string as the code returns nil"
+    (is (nil? (api/tropes-from-node "")))
+    (is (nil? (api/tropes-from-node nil))))
   )
