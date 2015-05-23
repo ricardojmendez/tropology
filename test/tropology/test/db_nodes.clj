@@ -6,7 +6,8 @@
             [tropology.base :as b]
             [clojure.string :as s]
             [tropology.db :as db]
-            [tropology.parsing :as p]))
+            [tropology.parsing :as p]
+            [tropology.test.parsing :as tp]))
 
 (defn wipe-test-db []
   (delete contents)
@@ -167,6 +168,29 @@
                       :title       (str "Test node " i)
                       :is-redirect is-redirect
                       :has-error   false})))))
+
+(defn create-contents!
+  ([n file-path]
+   (create-contents! n file-path 0))
+  ([n file-path base-n]
+   (let [html (slurp (str tp/test-file-path file-path))]
+     (dotimes [s n]
+       (db/save-page-contents! {:code (str "TestNode/" (+ s base-n))
+                                :html html})
+       ))))
+
+
+(deftest test-fetch-random-code
+  (wipe-test-db)
+  (create-nodes! 50 false)
+  (create-contents! 10 "TakeMeInstead-pruned.html")
+  (is (= 10 (count (get-all-contents))))
+  (is (= 50 (count (get-all-articles))))
+  (dotimes [_ 100]
+    ; Run this a few times to ensure we can always get a random code
+    (is (not-empty (db/fetch-random-contents-code)))
+    ))
+
 
 (deftest test-query-nodes-node-limit
   (wipe-test-db)
