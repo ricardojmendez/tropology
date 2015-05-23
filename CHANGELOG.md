@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 0.4.0
+
+* New look to help focus on the text exploration.
+* Updated Clojure to 1.7
+
 ## 0.3.0
 
 * Migrated the data store to Postgres.

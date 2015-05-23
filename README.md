@@ -82,6 +82,7 @@ None of this information is currently saved, since I'm only playing with the tro
 
 I'm liking the text trope exploration, and will be blending it with the graph display (which by itself doesn't contain that much information).  Next steps are:
 
+* Pursue occasional _unexpected DOM mutation_ or _invariant violation_ issues from React. I suspect it happens on cases where we get an error displaying some of the scraped HTML.
 * Show a graph of the pieces the user has liked, the articles referenced on them, and which articles those have in common.
 * We're currently showing as possible snippets all *twikilink* elements, but some summary articles use that only to link to other sub-sections and don't contain any actual information.  See about filtering them out.
 * Handle redirects. While exploring we can encounter a link to *Anime/SailorMoon*, which is an article that is only a redirect to *Manga/SailorMoon*. The back end API that returns the references doesn't currently handle redirects.
