@@ -254,7 +254,7 @@
     (is (= 5 (count saved)))                                ; There's only five links on the file
     (is (= 5 (count again)))                                ; Same number of links is returned the second time
     (is (= 4 (count links)))                                ; No duplicated links are created
-    (is (= 9193 (count (:html html))))
+    (is (= 9381 (count (:html html))))
     ))
 
 (deftest test-record-page-with-redirect

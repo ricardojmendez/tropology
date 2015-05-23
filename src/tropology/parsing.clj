@@ -146,6 +146,7 @@
   ([res host]
    (->>
      (e/select res [:#wikitext :a.twikilink])
+     (remove #(= "nofollow" (get-in % [:attrs :rel])))
      (pmap #(get-in % [:attrs :href]))
      (pmap #(u/resolve host %))
      (pmap lower-case)
