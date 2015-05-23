@@ -1,6 +1,5 @@
 (ns tropology.test.api
   (:require [clojure.test :refer :all]
-            [korma.core :refer :all]
             [taoensso.timbre.profiling :as prof]
             [tropology.test.db-nodes :refer :all]
             [tropology.api :refer :all]

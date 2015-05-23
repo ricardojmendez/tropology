@@ -1,4 +1,5 @@
 (ns tropology.test.db-nodes
+  (:refer-clojure :exclude [update])
   (:require [clojure.test :refer :all]
             [korma.core :refer :all]
             [taoensso.timbre.profiling :as prof]

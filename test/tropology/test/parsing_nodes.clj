@@ -3,6 +3,7 @@
             [taoensso.timbre.profiling :as prof]
             [tropology.test.db-nodes :as tdb]
             [tropology.test.parsing :as tp]
+            [korma.core :refer [select where]]
             [tropology.parsing :refer :all]
             [tropology.db :as db]
             [tropology.base :as b]
@@ -247,7 +248,7 @@
         saved (tdb/get-all-articles)
         _     (record-page! path "http://tvtropes.org/pmwiki/pmwiki.php/Main/TakeMeInstead")
         again (tdb/get-all-articles)
-        links (korma.core/select db/links (korma.core/where {:from-code "main/takemeinstead"}))
+        links (select db/links (where {:from-code "main/takemeinstead"}))
         html  (first (tdb/get-all-contents))
         ]
     (is (= 5 (count saved)))                                ; There's only five links on the file
