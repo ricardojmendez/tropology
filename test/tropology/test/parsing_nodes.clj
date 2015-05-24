@@ -154,6 +154,30 @@
       )
     (prof/profile :trace :test-import-lot)))
 
+
+(deftest test-import-retains-display
+  ; Ensure that if page B references page A, and A already exists in the system when B is
+  ; imported, the display value does not end up all in lowercase.
+  (tdb/wipe-test-db)
+  (testing "Display is initially lowercase"
+    ; The og:url for the Anime.html file contains a query. This test helps us
+    ; ensure that the node is NOT recorded as a redirect when the provencance
+    ; does not exactly match the URL
+    (let [_    (record-page! (str tp/test-file-path "Anime.html") "http://tvtropes.org/pmwiki/pmwiki.php/main/anime")
+          recs (db/query-for-codes ["main/anime" "anime/cowboybebop"])]
+      (are [code display] (first (filter #(and (= code (:code %)) (= display (:display %))) recs))
+                          "main/anime" "Main/Anime"
+                          "anime/cowboybebop" "anime/cowboybebop" ; Display comes from URL, which is lower case
+                          )))
+  (testing "Display is remains upper case when importing reference"
+    (let [_    (record-page! (str tp/test-file-path "CowboyBebop.html") "http://tvtropes.org/pmwiki/pmwiki.php/anime/cowboybebop")
+          recs (db/query-for-codes ["main/anime" "anime/cowboybebop"])]
+      (are [code display] (first (filter #(and (= code (:code %)) (= display (:display %))) recs))
+                          "main/anime" "Main/Anime"         ; Display isn't overridden from the lowercase url
+                          "anime/cowboybebop" "Anime/CowboyBebop"
+                          )))
+  )
+
 (deftest test-record-page-live
   ; Load a live page. I don't check for how many nodes we're saving since that can
   ; and will change along with the page.
@@ -292,14 +316,36 @@
     ))
 
 
-(deftest test-record-page-case-sensitivity
+(deftest test-redirect-case-sensitivity
   ; On this test we pass a provenance URL which will differ from the page's og:url,
   ; but just in that the URL's case is not the same. It should not be marked as a
   ; redirect.
   (tdb/wipe-test-db)
   (let [path       (str tp/test-file-path "TakeMeInstead-pruned.html")
         _          (record-page! path "http://tvtropes.org/pmwiki/pmwiki.php/main/takeMEinstEAD")
-        main-node  (db/query-by-code "Main/TakeMeInstead")
+        main-node  (db/query-by-code "main/takemeinstead")
+        links-main (db/query-from "Main/TakeMeInstead" :LINKSTO)
+        ]
+    (are [property value] (= value (main-node property))
+                          :has-error false
+                          :category "main"
+                          :code "main/takemeinstead"
+                          :display "Main/TakeMeInstead"
+                          :is-redirect false
+                          :url "http://tvtropes.org/pmwiki/pmwiki.php/Main/TakeMeInstead")
+    (is (= 4 (count links-main)))
+    ))
+
+(deftest test-redirect-ignores-query
+  ; We now pass a provenance that has a query. TVTropes sometimes does this
+  ; to indicate that a page is being redirected to from another one, but
+  ; all it actually cares about is the root path.
+  ;
+  ; Queries should be ignored for redirect purposes.
+  (tdb/wipe-test-db)
+  (let [path       (str tp/test-file-path "TakeMeInstead-pruned.html")
+        _          (record-page! path "http://tvtropes.org/pmwiki/pmwiki.php/main/takemeinstead?a=1")
+        main-node  (db/query-by-code "main/takemeinstead")
         links-main (db/query-from "Main/TakeMeInstead" :LINKSTO)
         ]
     (are [property value] (= value (main-node property))

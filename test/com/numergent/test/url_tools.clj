@@ -24,3 +24,11 @@
     (is (= (host-string-of "http://tvtropes.org/somePath")      "http://tvtropes.org/"))
     (is (= (host-string-of "http://tvtropes.org/somePath?q=1")  "http://tvtropes.org/"))
     (is (= (host-string-of "https://tvtropes.org/somePath?q=1") "https://tvtropes.org/"))))
+
+(deftest url-without-query-tests
+    (is (= (without-query "http://tvtropes.org")               "http://tvtropes.org/"))
+    (is (= (without-query "http://tvtropes.org/")              "http://tvtropes.org/"))
+    (is (= (without-query "http://tvtropes.org/somePath")      "http://tvtropes.org/somePath"))
+    (is (= (without-query "http://tvtropes.org/somePath?q=1")  "http://tvtropes.org/somePath"))
+    (is (= (without-query "https://tvtropes.org/somePath?q=1") "https://tvtropes.org/somePath"))
+  )

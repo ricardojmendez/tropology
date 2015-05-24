@@ -8,6 +8,11 @@
   [url]
   (str (u/protocol-of url) "://" (u/host-of url) "/"))
 
+(defn without-query
+  "Returns the url and path of a URL, removing any query"
+  [url]
+  (str (u/protocol-of url) "://" (u/host-of url) (u/path-of url)))
+
 (defn if-nil
   "Returns a if not nil, b if otherwise"
   [a b]
