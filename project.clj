@@ -42,7 +42,7 @@
                                          :externs       ["react/externs/react.js" "resources/externs/sigma.js"]
                                          :optimizations :none
                                          :output-to     "resources/public/js/core.js"
-                                         :source-map    true
+                                         :source-map    "resources/public/js/core.js.map"
                                          :pretty-print  true
                                          }}}}
 
