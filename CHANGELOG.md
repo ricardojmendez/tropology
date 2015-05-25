@@ -5,6 +5,7 @@
 * New look to help focus on the text exploration.
 * Updated Clojure to 1.7
 * Fixed import issue when dealing with nodes that were potentially marked as redirects. This will likely require a re-crawl.
+* If a page is a re-direct, we now track which page it redirects to. 
 
 ## 0.3.0
 

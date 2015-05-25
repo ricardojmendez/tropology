@@ -302,6 +302,7 @@
                           :code "main/takemeinstead"
                           :display "Main/TakeMeInstead"
                           :is-redirect false
+                          :redirects-to nil
                           :url "http://tvtropes.org/pmwiki/pmwiki.php/Main/TakeMeInstead")
     (are [property value] (= value (redir-node property))
                           :has-error false
@@ -309,6 +310,7 @@
                           :is-redirect true
                           :display "Main/TakeMeInsteadRedirector"
                           :category "main"
+                          :redirects-to "main/takemeinstead"
                           :url "http://tvtropes.org/pmwiki/pmwiki.php/Main/TakeMeInsteadRedirector"
                           )
     (is (empty? links-redir))

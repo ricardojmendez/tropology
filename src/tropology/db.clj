@@ -1,4 +1,5 @@
 (ns tropology.db
+  (:refer-clojure :exclude [update])
   (:require [joda-time :as j]
             [clojure.string :refer [lower-case]]
             [korma.core :refer :all]
@@ -128,7 +129,6 @@
   "Returns the pages for the list of codes provided"
   [codes]
   (->> (select pages
-               (fields :code :display :category :url :has-error :error :is-redirect :incoming :outgoing :next-update :time-stamp :description)
                (where {:code [in (map lower-case codes)]}))
        (map rename-db-keywords)
        (prof/p :query-for-codes)
@@ -198,10 +198,11 @@
                (set-fields {:outgoing (raw "(SELECT COUNT(*) FROM links WHERE from_code = code)")
                             :incoming (raw "(SELECT COUNT(*) FROM links WHERE to_code = code)")
                             }))
+       ; Save the redirector last, since it needs to reference the previous record
        (if is-redirect
          (-> redirector
              timestamp-update
-             (assoc :is-redirect true)
+             (assoc :is-redirect true :redirects-to code)
              save-page!))
        ))
     ))
