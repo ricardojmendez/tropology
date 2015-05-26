@@ -4,7 +4,7 @@ Tropology crawls TVTropes.org, converts the relationships between pages into a P
 
 This is currently a personal experiment.  Consider it raw, pre-alpha code and likely to change.
 
-Current version is 0.3.0-SNAPSHOT.
+Current version is 0.4.0-SNAPSHOT.
 
 [You can read more on our site](http://numergent.com/tags/tropology/).
 
@@ -31,14 +31,13 @@ After you have installed PostgreSQL and created the databases, you'll need to ru
     ENV=test lein clj-sql-up migrate
     lein clj-sql-up migrate
 
-### Sample databases
+### Sample database
 
-You have two pg_dump'd options if you wish to use a pre-loaded data set for your dev database.
-
-* [Only pages and links](https://mega.co.nz/#!B55wARCQ!H_4sx3jJIUU3Jx2jn5uQdfXcGEe7skCK9STofern7Xk) (116MBs)
-* [Full crawled contents](https://mega.co.nz/#!80RyWaiC!N6s2PH7QgwscozsDwv2h8108qlu7wp0Pq2hu6tNj-pc) (3.04GBs)
+[Here you can find a pg_dump'd copy of the fully scanned site](https://mega.co.nz/#!EhZxhBhK!lT38KiMhGxTbjGKD6tJuimc48Tay4ILkEt70evgeM7c). It's 3.22GBs, and includes the entire CC-licensed pages for those matching our crawl settings.
 
 Import into Postgres using psql as usual.
+
+I'm no longer publishing a database version without the contents, since the current visualization and exploration rely on the HTML to extract the reference descriptions.
 
 ## Running
 
@@ -71,11 +70,11 @@ I'm finding the trope text exploration more interesting. When you enter an artic
 
 You will need the full database in order to do text exploration.
 
-**BEWARE: THAR BE SPOILERS**!
+**BEWARE: THAR BE SPOILERS**!  I am not yet applying any style that would hide topic spoilers.
 
 If you find a trope mentioned interesting, you can also click on the trope link.  This will load it as the next article being reviewed, as well as add the text snippet to the list of articles you've liked.
 
-None of this information is currently saved, since I'm only playing with the trope exploration.
+None of this information is currently saved, since I'm only playing with the trope exploration, but that's on my to do list.
 
 
 ## Next steps
