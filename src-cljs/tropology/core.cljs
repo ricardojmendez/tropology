@@ -177,37 +177,9 @@
 ; Components
 ;
 
-(defn row [label & body]
-  [:div.row
-   [:div.col-md-2 [:span label]]
-   [:div.col-md-3 body]])
-
-(defn text-input [id label]
-  (row label [:input.form-control {:field :text
-                                   :id    id}]))
-
-
 (defn button-item [label class dispatch-vals is-disabled? extra-items]
-  [:button {:type "button" :class (str "btn " class) :disabled is-disabled? :on-click #(re-frame/dispatch dispatch-vals)} extra-items label])
+  [:button {:type :button :class (str "btn " class) :disabled is-disabled? :on-click #(re-frame/dispatch dispatch-vals)} extra-items label])
 
-(defn nav-item [selected item-key label]
-  [:li {:class (when (= selected item-key) "active")}
-   [:a {:on-click #(re-frame/dispatch [:navbar-click item-key])} label]])
-
-
-(def trope-code-form
-  [:div
-   (text-input :trope-code "Article code:")])
-
-
-
-(defn graph-display [form-data class]
-  [:div {:class class}
-   [bind-fields trope-code-form form-data]
-   [:div
-    [button-item "Graph!" "btn-primary" [:draw-graph (:trope-code @form-data)] false]
-    [:div {:id "graph-container"}]]]
-  )
 
 (defn header-display []
   (let [current-article (re-frame/subscribe [:article-data :current-article])]
@@ -260,7 +232,7 @@
        ])))
 
 (defn error-list-display []
-  (let [errors          (re-frame/subscribe [:ui-state :errors])]
+  (let [errors (re-frame/subscribe [:ui-state :errors])]
     (fn []
       (if @errors
         [:section {:class "section latest has-error form-group" :on-click #(re-frame/dispatch [:clear-errors])}
@@ -271,51 +243,7 @@
              ^{:key (rand-int 999999)} [:div [:label {:class "control-label"} error]])
            ]
           ]]
-
-        )
-      )
-    )
-  )
-
-(defn article-display [form-data class]
-  (let [current-article (re-frame/subscribe [:article-data :current-article])
-        current-ref     (re-frame/subscribe [:article-data :current-reference])
-        like-list       (re-frame/subscribe [:article-data :like-list])
-        references      (re-frame/subscribe [:article-data :tropes])
-        remaining       (reaction (count @references))
-        errors          (re-frame/subscribe [:ui-state :errors])]
-
-    [:div {:class class}
-     [bind-fields trope-code-form form-data]
-     (if errors
-       [:div {:class "form-group has-error" :on-click #(re-frame/dispatch [:clear-errors])}
-        (for [error @errors]
-          ^{:key (rand-int 999999)} [:div [:label {:class "control-label"} error]])])
-     [:div
-      [button-item "Retrieve references" "btn-primary" [:load-article (:trope-code @form-data) false]]
-      [:div {:id "current-trope"}
-       [:h2 {:class "trope-title"} (:title @current-article)]
-       [:p (:description @current-article)]]
-      (if (some? @current-article)
-        [:div {:id "current-piece"}
-         [:h3 "Random reference"]
-         [:p (process-trope @current-ref [true])]
-         [:div [:span (str "(" @remaining " remaining)")]]
-         [:div
-          [button-item "Interesting" "btn-success" [:vote :like] (empty? @current-ref)]
-          [button-item "Skip" "btn-info" [:vote :skip] (>= 0 @remaining)]]])
-      (if (some? @like-list)
-        [:div {:id "trope-list-container"}
-         [:hr]
-         [:h2 "Selected items"]
-         [:ul
-          (for [trope @like-list]
-            ^{:key (hash trope)} [:li (process-trope (:ref trope) [false])
-                                  " (" [:a {:on-click #(re-frame/dispatch [:load-article (:code trope) false])} (:display trope)] ")"])]
-         ])
-      ]])
-  )
-
+        ))))
 
 
 (defn init! []
