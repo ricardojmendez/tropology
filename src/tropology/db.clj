@@ -218,8 +218,8 @@
   that this is not the same as getting the node directly via its internal id."
   [code]
   (->>
-    (->> (query-for-codes [code])
-         first)
+    (when (not-empty code)
+      (first (query-for-codes [code])))
     (prof/p :query-by-code)))
 
 (defn query-nodes-to-crawl

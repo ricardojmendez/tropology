@@ -86,7 +86,9 @@
 
 (defn tropes-from-node
   [code]
-  (let [html   (-> (if (= code "/") (db/fetch-random-contents-code) code)
+  (let [to-get (if (= code "/") (db/fetch-random-contents-code) code)
+        node   (db/query-by-code to-get)
+        html   (-> (if (:is-redirect node) (:redirects-to node) to-get)
                    db/get-html
                    (ut/if-empty ""))
         res    (-> html java.io.StringReader. e/html-resource)
@@ -99,7 +101,7 @@
       {:title       (:title node)
        :image       (:image node)
        :description (:description node)
-       :code        code
+       :code        (:code node)
        :display     (:display node)
        :tropes      (map :hiccup links)}))
   )

@@ -133,6 +133,7 @@
 (deftest test-query-by-code
   (wipe-test-db)
   (is (nil? (query-by-code "TestNode/ForQuerying")))
+  (is (nil? (query-by-code nil)))
   (let [_    (create-page-and-links! (basic-test-node "TestNode/ForQuerying"))
         node (query-by-code "TestNode/ForQuerying")]
     (is (not= node nil))
