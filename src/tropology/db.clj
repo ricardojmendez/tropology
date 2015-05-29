@@ -229,7 +229,7 @@
   ([node-limit]
    (query-nodes-to-crawl node-limit (.getMillis (j/date-time))))
   ([node-limit time-limit]
-   (if (> node-limit 0)                                     ; If we pass a limit of 0, applying ORDER BY will raise an exception
+   (if (pos? node-limit)                                    ; If we pass a limit of 0, applying ORDER BY will raise an exception
      (->> (select pages
                   (fields :url)
                   (where {:is-redirect false :has-error false :next-update [< time-limit]})

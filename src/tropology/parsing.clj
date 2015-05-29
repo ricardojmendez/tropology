@@ -79,7 +79,7 @@
 (defn load-resource-url [url]
   "Loads a html-resource from a URL. Returns a map with the original :url and
   :res for the resource"
-  (let [html (-> url slurp)
+  (let [html (slurp url)
         res  (-> html java.io.StringReader. e/html-resource)]
     {:url url :res res :html html}))
 
@@ -142,7 +142,7 @@
   "Obtains the wiki links from a html-resource.  Assumes that there will be a
    meta tag with property og:url where it can get the site url from."
   ([res]
-   (let [og-host  (ut/host-string-of (content-from-meta res "og:url"))]
+   (let [og-host (ut/host-string-of (content-from-meta res "og:url"))]
      (get-wiki-links res og-host)))
   ([res host]
    (->>
@@ -270,6 +270,6 @@
        ; and let them be retried later, that would require pinging TVTropes
        ; again for the file. I'm leaving as is for now to avoid flooding them
        ; with requests.
-       (map #(record-page! %))
+       (map record-page!)
        doall
        (prof/profile :trace :Crawl)))
