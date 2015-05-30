@@ -1,7 +1,7 @@
 (ns tropology.core
   (:require [ajax.core :refer [GET POST PUT]]
             [reagent.core :as reagent :refer [atom]]
-            [clojure.string :refer [lower-case]]
+            [clojure.string :refer [lower-case split trim]]
             [reagent-forms.core :refer [bind-fields]]
             [re-frame.core :as re-frame]
             [tropology.graph :as graph]
@@ -90,7 +90,7 @@
 (re-frame/register-handler
   :remove-like
   (fn [app-state [_ article-ref]]
-    (.log js/console (str "Removing " article-ref))
+    #_ (.log js/console (str "Removing " article-ref))
     (assoc-in app-state [:article-data :like-list] (remove #(= article-ref (:ref %)) (get-in app-state [:article-data :like-list])))
     ))
 
@@ -155,22 +155,66 @@
       (recur (rest remaining)
              (conj acc ^{:key (hash (first remaining))} (first remaining))))))
 
-(defn process-element [element extra-params]
+
+(defn process-a [element extra-params]
+  (if (= :a (first element))
+    (into [] (map #(replace-link-for-dispatch % extra-params) element))
+    element))
+
+(defn process-ul [element]
+  (if (= :ul (first element))
+    (into [:ul] (add-key-meta (rest element)))
+    element))
+
+(defn process-span [element]
+  (if (= :span (first element))
+    (let [attrs (second element)
+          tail  (nthrest element 2)]
+      (cond
+        (= "notelabel" (:class attrs)) nil
+        (map? attrs) (into [:span (dissoc attrs :id :onclick)] tail)
+        :else element
+        ))
+    element))
+
+
+(defn process-style [element]
+  (let [head  (first element)
+        attrs (second element)
+        tail  (nthrest element 2)
+        style (:style attrs)]
+    (if (and (not-empty style)
+             (string? style))
+      (into [head
+             (assoc attrs :style (->> (split style #"\;")
+                                      (map #(split % #"\:"))
+                                      (into {}))
+                          :onclick nil)]
+            tail)
+      element)
+    ))
+
+
+
+(defn process-element [processor element]
   "Receives an element as a hiccup structure. If it's a link, then the link
    is replaced for an action dispatch; for a :ul, it adds a key as meta to all
    the nested elements; otherwise we return the same structure."
   (if (vector? element)
-    (condp = (first element)
-      :a (into [] (map #(replace-link-for-dispatch % extra-params) element))
-      :ul (into [:ul] (add-key-meta (rest element)))
-      element)
+    (processor element)
     element
     ))
 
 (defn process-trope
   "Receives the hiccup data for a trope and processes it before display"
   [coll extra-params]
-  (clojure.walk/prewalk #(process-element % extra-params) coll))
+  (let [element-processor (comp #(process-a % extra-params)
+                                process-ul
+                                process-style
+                                process-span)]
+    (clojure.walk/prewalk #(process-element element-processor %) coll)
+    )
+  )
 
 
 ;
