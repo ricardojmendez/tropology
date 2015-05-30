@@ -263,7 +263,7 @@
       [:li {:class "fa fa-external-link"}]
       display]]
     ]
-   [button-item "Remove" "btn-danger pull-right to-bottom" [:remove-like ref] false [:i {:class "fa fa-remove"}]]
+   [button-item "Remove" "btn-danger pull-right to-bottom no-print" [:remove-like ref] false [:i {:class "fa fa-remove"}]]
    ]
   )
 
