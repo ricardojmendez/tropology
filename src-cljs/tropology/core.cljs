@@ -155,22 +155,33 @@
       (recur (rest remaining)
              (conj acc ^{:key (hash (first remaining))} (first remaining))))))
 
-(defn process-element [element extra-params]
+
+(defn process-a [element extra-params]
+  (if (= :a (first element))
+    (into [] (map #(replace-link-for-dispatch % extra-params) element))
+    element))
+
+(defn process-ul [element _]
+  (if (= :ul (first element))
+    (into [:ul] (add-key-meta (rest element)))
+    element))
+
+
+(def element-processor (apply comp [process-a process-ul]))
+
+(defn process-element [processor element extra-params]
   "Receives an element as a hiccup structure. If it's a link, then the link
    is replaced for an action dispatch; for a :ul, it adds a key as meta to all
    the nested elements; otherwise we return the same structure."
   (if (vector? element)
-    (condp = (first element)
-      :a (into [] (map #(replace-link-for-dispatch % extra-params) element))
-      :ul (into [:ul] (add-key-meta (rest element)))
-      element)
+    (processor element extra-params)
     element
     ))
 
 (defn process-trope
   "Receives the hiccup data for a trope and processes it before display"
   [coll extra-params]
-  (clojure.walk/prewalk #(process-element % extra-params) coll))
+  (clojure.walk/prewalk #(process-element element-processor % extra-params) coll))
 
 
 ;
