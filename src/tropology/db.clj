@@ -1,4 +1,5 @@
 (ns tropology.db
+  (:refer-clojure :exclude [update])
   (:require [joda-time :as j]
             [clojure.string :refer [lower-case]]
             [korma.core :refer :all]
@@ -99,24 +100,6 @@
     (merge {:time-stamp now :next-update now} data)))
 
 
-;
-; Query helpers
-;
-
-(defn code-to-match
-  "Returns match pattern string for an id, including the node label, with
-  the prefix name for the pattern.
-
-  I'm not a fan of not being able to pass the label as a parameter, but them's
-  the breaks. neo4j's parsing seems strong enough that code injection is
-  unlikely."
-  ([prefix]
-   (code-to-match prefix "id" b/base-label))
-  ([prefix id-param]
-   (code-to-match prefix id-param b/base-label))
-  ([prefix id-param label]
-   (str "(" prefix ":" label " {code:{" id-param "}})")))
-
 
 ;
 ; Page import
@@ -132,11 +115,20 @@
     (prof/p :create-all)))
 
 
+(defn fetch-random-contents-code []
+  (->> (select contents
+               (fields :code)
+               (order (raw "random()"))
+               (limit 1))
+       (map rename-db-keywords)
+       first
+       :code
+       (prof/p :fetch-random-code)))
+
 (defn query-for-codes
   "Returns the pages for the list of codes provided"
   [codes]
   (->> (select pages
-               (fields :code :display :category :url :has-error :error :is-redirect :incoming :outgoing :next-update :time-stamp :description)
                (where {:code [in (map lower-case codes)]}))
        (map rename-db-keywords)
        (prof/p :query-for-codes)
@@ -206,10 +198,11 @@
                (set-fields {:outgoing (raw "(SELECT COUNT(*) FROM links WHERE from_code = code)")
                             :incoming (raw "(SELECT COUNT(*) FROM links WHERE to_code = code)")
                             }))
+       ; Save the redirector last, since it needs to reference the previous record
        (if is-redirect
          (-> redirector
              timestamp-update
-             (assoc :is-redirect true)
+             (assoc :is-redirect true :redirects-to code)
              save-page!))
        ))
     ))
@@ -225,8 +218,8 @@
   that this is not the same as getting the node directly via its internal id."
   [code]
   (->>
-    (->> (query-for-codes [code])
-         first)
+    (when (not-empty code)
+      (first (query-for-codes [code])))
     (prof/p :query-by-code)))
 
 (defn query-nodes-to-crawl
@@ -236,7 +229,7 @@
   ([node-limit]
    (query-nodes-to-crawl node-limit (.getMillis (j/date-time))))
   ([node-limit time-limit]
-   (if (> node-limit 0)                                     ; If we pass a limit of 0, applying ORDER BY will raise an exception
+   (if (pos? node-limit)                                    ; If we pass a limit of 0, applying ORDER BY will raise an exception
      (->> (select pages
                   (fields :url)
                   (where {:is-redirect false :has-error false :next-update [< time-limit]})

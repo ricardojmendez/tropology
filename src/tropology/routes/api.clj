@@ -43,7 +43,7 @@
                               code (lower-case (str label "/" name))]
                           (api/tropes-from-node code)))
              :handle-ok (fn [request]
-                          (select-keys request [:title :description :tropes :code :display]))
+                          (select-keys request [:title :description :tropes :code :display :image]))
              :available-media-types ["application/transit+json"
                                      "application/transit+msgpack"
                                      "application/json"])
@@ -52,5 +52,6 @@
 (defroutes api-routes
            (ANY "/api/node/:category/:name" [category name] node)
            (ANY "/api/network/:category/:name" [category name] network)
+           (ANY "/api/tropes/" [] tropes)
            (ANY "/api/tropes/:category/:name" [category name] tropes)
            (ANY "/api/home" request home))

@@ -6,7 +6,7 @@
 
 (defn home-page []
   (layout/render
-    "home.html" {:docs (-> "docs/readme.md" io/resource slurp)}))
+    "dev-1.4.html" {:docs (-> "docs/readme.md" io/resource slurp)}))
 
 (defn about-page []
   (layout/render "about.html"))

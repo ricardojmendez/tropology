@@ -79,7 +79,7 @@
 (defn load-resource-url [url]
   "Loads a html-resource from a URL. Returns a map with the original :url and
   :res for the resource"
-  (let [html (-> url slurp)
+  (let [html (slurp url)
         res  (-> html java.io.StringReader. e/html-resource)]
     {:url url :res res :html html}))
 
@@ -106,7 +106,9 @@
   "Returns the relevant metadata of a html-resource as a map, including things
   we care about like the node label."
   [res]
-  (let [og-url  (content-from-meta res "og:url")
+  ; Remove the query from the URL since TVTropes will include any parameters
+  ; passed on the og:url, but does not actually consider them.
+  (let [og-url  (-> (content-from-meta res "og:url") ut/without-query)
         display (b/display-from-url og-url)
         code    (b/code-from-url og-url)]
     {:code        code
@@ -140,12 +142,12 @@
   "Obtains the wiki links from a html-resource.  Assumes that there will be a
    meta tag with property og:url where it can get the site url from."
   ([res]
-   (let [og-url  (content-from-meta res "og:url")
-         og-host (ut/host-string-of og-url)]
+   (let [og-host (ut/host-string-of (content-from-meta res "og:url"))]
      (get-wiki-links res og-host)))
   ([res host]
    (->>
      (e/select res [:#wikitext :a.twikilink])
+     (remove #(= "nofollow" (get-in % [:attrs :rel])))
      (pmap #(get-in % [:attrs :href]))
      (pmap #(u/resolve host %))
      (pmap lower-case)
@@ -218,7 +220,7 @@
   [{:keys [url res html]}]
   (->>
     (let [node  (-> (node-data-from-meta res) db/timestamp-next-update (merge {:html html}))
-          redir {:is-redirect (not= (lower-case url) (lower-case (:url node)))
+          redir {:is-redirect (not= (lower-case (ut/without-query url)) (lower-case (:url node)))
                  :redirector  (node-data-from-url url)}
           links (get-wiki-links res b/base-host)
           ]
@@ -268,6 +270,6 @@
        ; and let them be retried later, that would require pinging TVTropes
        ; again for the file. I'm leaving as is for now to avoid flooding them
        ; with requests.
-       (map #(record-page! %))
+       (map record-page!)
        doall
        (prof/profile :trace :Crawl)))
