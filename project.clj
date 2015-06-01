@@ -107,7 +107,7 @@
                                          [pjstadig/humane-test-output "0.7.0"]
                                          [leiningen "2.5.1"]
                                          [figwheel "0.3.3" :exclusions [org.clojure/clojure]]
-                                         [weasel "0.6.0"]]
+                                         ]
                           :plugins      [[lein-figwheel "0.3.3"]]
 
                           :figwheel     {:http-server-root "public"
