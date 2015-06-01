@@ -3,7 +3,7 @@
             :url "http://numergent.com/tags/tropology/"
 
             :dependencies [[org.clojure/clojure "1.7.0-RC1"]
-                           [org.clojure/clojurescript "0.0-3291" :scope "provided"]
+                           [org.clojure/clojurescript "0.0-3297" :scope "provided"]
                            [cljs-ajax "0.3.11"]
                            [ring-server "0.4.0"]
                            [selmer "0.8.2"]
@@ -26,11 +26,11 @@
                            [reagent-forms "0.5.1"]
                            [reagent-utils "0.1.4"]
                            [liberator "0.13"]
-                           [cheshire "5.4.0"]
+                           [cheshire "5.5.0"]
                            [korma "0.4.1"]
                            [org.postgresql/postgresql "9.4-1201-jdbc41"]
                            [io.clojure/liberator-transit "0.3.0"]
-                           [re-frame "0.4.0"]
+                           [re-frame "0.4.1"]
                            ]
 
 
