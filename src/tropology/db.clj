@@ -167,10 +167,7 @@
 
 
 (defn create-page-and-links!
-  "Creates a page and all its related to links in a single call.
-
-  Any pages it needs to create in order to link to _will not_ have the URL
-  or category set, since I haven't found a way to pass a map yet.
+  "Creates a page and all its related to links in a single transaction.
 
   I considered doing a try-times here so that we can parallelize and retry
   in transient exceptions. It doesn't make any sense to retry and walk into
@@ -252,7 +249,7 @@
 ; Link querying
 ;
 
-(defn query-node-rel
+(defn- query-node-rel
   [^String code rel from to]
   (->> (select pages
                (fields :code :url :title :display :url :category :incoming :outgoing)

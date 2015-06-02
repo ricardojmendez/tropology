@@ -146,7 +146,9 @@
 (defn add-key-meta
   "Add a meta with the key to all elements in the vector. It's usually called
    when we are processing a series of :li vectors, since React expects them to
-   have a unique key."
+   have a unique key. Does not consider the possibility that the link might
+   be external - if that's the case, the even handler will just report that it
+   was unable to load the article."
   [elements]
   (loop [remaining elements
          acc       []]
@@ -156,17 +158,34 @@
              (conj acc ^{:key (hash (first remaining))} (first remaining))))))
 
 
-(defn process-a [element extra-params]
+(defn process-a
+  "For an :a element, replace the link with a dispatch command so that we can
+  load the relevant article."
+  [element extra-params]
   (if (= :a (first element))
     (into [] (map #(replace-link-for-dispatch % extra-params) element))
     element))
 
-(defn process-ul [element]
+(defn process-ul
+  "For every li inside a ul element that we are about to render, make sure that
+  we add a key as part of the metadata to avoid raising issues with React."
+  [element]
   (if (= :ul (first element))
     (into [:ul] (add-key-meta (rest element)))
     element))
 
-(defn process-span [element]
+(defn process-span
+  "Handle two cases which could cause trouble with span elements.
+
+  If the element received is a span, and the class for it indicates that it's
+  a note label, discard the element altogether.  These notes are a dispaly
+  peculiarity from TVTropes that we don't particularly case about.
+
+  Also remove any pre-existing onclick attributes, as we don't want to
+  keep any code from TVTropes (should probably consider removing other events
+  as well).
+  "
+  [element]
   (if (= :span (first element))
     (let [attrs (second element)
           tail  (nthrest element 2)]
@@ -178,7 +197,12 @@
     element))
 
 
-(defn process-style [element]
+(defn process-style
+  "Assuming the attributes for an element contain a style key, and the value
+  for this key is a string, it parses the string's values into a map. Otherwise
+  we would get hiccup throwing an error before rendering it, which causes
+  a problem for React."
+  [element]
   (let [head  (first element)
         attrs (second element)
         tail  (nthrest element 2)
@@ -197,16 +221,15 @@
 
 
 (defn process-element [processor element]
-  "Receives an element as a hiccup structure. If it's a link, then the link
-   is replaced for an action dispatch; for a :ul, it adds a key as meta to all
-   the nested elements; otherwise we return the same structure."
+  "Applies a processor to an element, assuming that if it's a vector it'll be a hiccup structure."
   (if (vector? element)
     (processor element)
     element
     ))
 
 (defn process-trope
-  "Receives the hiccup data for a trope and processes it before display"
+  "Receives the hiccup data for a trope and processes it before display. See
+  the comments on every one of the element processors for details."
   [coll extra-params]
   (let [element-processor (comp #(process-a % extra-params)
                                 process-ul
@@ -284,6 +307,7 @@
           [:h2 {:class "heading"} "There seems to have been a problem..."]
           [:div {:class "content"}
            (for [error @errors]
+             ; We can't do a hash of the message, since we may get the same message more than once.
              ^{:key (rand-int 999999)} [:div [:label {:class "control-label"} error]])
            ]
           ]]

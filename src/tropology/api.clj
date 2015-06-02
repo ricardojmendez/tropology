@@ -59,7 +59,7 @@
 (defn network-from-node
   "Returns a network of nodes around a code, including: the node, all
   the nodes that either reference it or that it references, and the
-   relationships between them.
+  relationships between them.
 
   The node code is case sensitive."
   [code]
