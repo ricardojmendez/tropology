@@ -2,6 +2,7 @@
   (:require [ajax.core :refer [GET POST PUT]]
             [reagent.core :as reagent :refer [atom]]
             [clojure.string :refer [lower-case split trim]]
+            [clojure.set :refer [union]]
             [reagent-forms.core :refer [bind-fields]]
             [re-frame.core :as re-frame]
             [tropology.graph :as graph]
@@ -31,7 +32,8 @@
   (fn
     [db _]
     (re-frame/dispatch [:load-article "anime/samuraiflamenco" false])
-    (merge db {:ui-state {:active-section :references}})))
+    (merge db {:ui-state {:show-graph?    false
+                          :active-section :references}})))
 
 (re-frame/register-handler
   :navbar-click
@@ -55,6 +57,7 @@
 (re-frame/register-handler
   :load-article-done
   (fn [app-state [_ response]]
+    ; TODO: On load done, move the page up to the top
     (re-frame/dispatch [:clear-errors])
     (re-frame/dispatch [:pick-random-reference])
     (-> app-state
@@ -116,10 +119,17 @@
   (fn [app-state [_]]
     (assoc-in app-state [:ui-state :errors] nil)))
 
+
+(re-frame/register-handler
+  :set-show-graph
+  (fn [app-state [_ show?]]
+    (assoc-in app-state [:ui-state :show-graph?] show?)
+    ))
+
 (re-frame/register-handler
   :draw-graph
-  (fn [app-state [_ code]]
-    (graph/redraw-graph code)
+  (fn [app-state [_ code-list]]
+    (graph/redraw-graph code-list)
     app-state))
 
 
@@ -237,8 +247,7 @@
                                 process-style
                                 process-span)]
     (clojure.walk/prewalk #(process-element element-processor %) coll)
-    )
-  )
+    ))
 
 
 ;
@@ -304,6 +313,30 @@
          ^{:key (hash trope)} [trope-reference-row trope])
        ])))
 
+(defn graph-display []
+  (let [show-graph? (re-frame/subscribe [:ui-state :show-graph?])
+        like-list   (re-frame/subscribe [:article-data :like-list])
+        code-list   (reaction (reduce union (map #(into #{(:code %)} (set (get-in % [:ref :links]))) @like-list)))]
+    (fn []
+      [:span
+       [:div {:class "text-left"}
+        [:a {:on-click #(re-frame/dispatch [:set-show-graph (not @show-graph?)])}
+         (if @show-graph? "Hide" "Show")]]
+       (if @show-graph?
+         [:a {:on-click #(re-frame/dispatch [:draw-graph @code-list])}
+          "Refresh"
+          ]
+         )
+       (if @show-graph?
+         [:div {:id "graph-area"}
+          (re-frame/dispatch [:draw-graph @code-list])
+          ])
+       ]
+      )
+    )
+
+  )
+
 (defn error-list-display []
   (let [errors (re-frame/subscribe [:ui-state :errors])]
     (fn []
@@ -320,10 +353,13 @@
         ))))
 
 
+
+
 (defn init! []
   (re-frame/dispatch-sync [:initialize])
   (reagent/render [header-display] (.getElementById js/document "header"))
   (reagent/render [reference-display] (.getElementById js/document "current-reference"))
   (reagent/render [like-list-display] (.getElementById js/document "like-list"))
   (reagent/render [error-list-display] (.getElementById js/document "error-list"))
+  (reagent/render [graph-display] (.getElementById js/document "graph-container"))
   )

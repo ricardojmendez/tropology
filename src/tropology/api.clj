@@ -23,13 +23,20 @@
     :else 32
     ))
 
+
+(defn rand-range [n]
+  (- (rand n) (/ n 2)))
+
+
 (defn transform-node
   "Transforms a node into the expected map values adds the coordinates"
-  [node x y]
-  (-> node
-      (select-keys [:code :url :title])
-      (assoc :id (:code node))                              ; We could just send a hash as the id, which would be more succinct, but this allows for quicker debugging.
-      (assoc :x x :y y :size (node-size (:incoming node)) :label (:display node))))
+  ([node]
+   (transform-node node (rand-range 10) (rand-range 10)))
+  ([node x y]
+   (-> node
+       (select-keys [:code :url :title])
+       (assoc :id (:code node))                             ; We could just send a hash as the id, which would be more succinct, but this allows for quicker debugging.
+       (assoc :x x :y y :size (node-size (:incoming node)) :label (:display node)))))
 
 (defn edge
   "Returns an edge map. Does not return an index, since those are disposable
@@ -53,8 +60,25 @@
     (prof/p :edge-collection)))
 
 
-(defn rand-range [n]
-  (- (rand n) (/ n 2)))
+
+(defn node-relationships
+  [code-list]
+  (->>
+    (let [nodes       (->> (db/query-for-codes code-list)
+                           (remove nil?)
+                           (map transform-node))
+          connections (db/query-rel-list code-list)
+          groups      (->> (b/group-pairs connections)
+                           (pmap #(hash-map :code (key %) :links-from (val %))))
+          ]
+      {:nodes nodes
+       :edges (->> (pmap edge-collection groups)
+                   flatten
+                   (map-indexed #(assoc %2 :id %1)))}
+      )
+    (prof/profile :trace :node-relationships)
+    ))
+
 
 (defn network-from-node
   "Returns a network of nodes around a code, including: the node, all
@@ -83,6 +107,7 @@
                 )}
       )
     (prof/profile :trace :network-from-node)))
+
 
 (defn tropes-from-node
   [code]

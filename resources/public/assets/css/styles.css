@@ -561,9 +561,9 @@ iframe {
   margin-right: 5px;
 }
 
-#graph-container {
+#graph-area {
   max-width: 1600px;
-  height: 1500px;
+  height: 800px;
   margin: auto;
 }
 

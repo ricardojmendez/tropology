@@ -26,6 +26,16 @@
                                      "application/transit+msgpack"
                                      "application/json"])
 
+(defresource connections
+             :allowed-methods [:get]
+             :handle-ok (fn [ctx]
+                          (let [query (get-in ctx [:request :params :code-list])]
+                            (clojure.pprint/pprint query)
+                            (api/node-relationships query)
+                            )
+                          )
+             ; Will be read by sigma, so don't return transit+json
+             :available-media-types ["application/json"])
 
 (defresource network
              :allowed-methods [:get]
@@ -33,8 +43,10 @@
                           (let [{{{label :category, name :name} :params} :request} request
                                 code (lower-case (str label "/" name))]
                             (api/network-from-node code)))
-             ; Network does not return transit+jason because sigma wouldn't know what to do with it
+             ; Network does not return transit+json because sigma wouldn't know what to do with it
              :available-media-types ["application/json"])
+
+
 
 (defresource tropes
              :allowed-methods [:get]
@@ -50,6 +62,7 @@
 
 
 (defroutes api-routes
+           (ANY "/api/connections/" request connections)
            (ANY "/api/node/:category/:name" [category name] node)
            (ANY "/api/network/:category/:name" [category name] network)
            (ANY "/api/tropes/" [] tropes)
