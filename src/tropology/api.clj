@@ -13,30 +13,44 @@
 ;
 
 
-(defn node-size [rel-count]
+(defn node-size-multiplier [rel-count]
   (cond
     (nil? rel-count) 0.5
-    (< rel-count 10) 2
-    (< rel-count 100) 4
-    (< rel-count 500) 8
-    (< rel-count 1000) 16
-    :else 32
+    (< rel-count 10) 1
+    :else (* 2 (Math/log10 rel-count))
     ))
 
 
 (defn rand-range [n]
   (- (rand n) (/ n 2)))
 
+(defn color-from-code [code]
+  (apply str (into ["#"] (take 6 (format "%x" (hash code)))))
+  )
+
 
 (defn transform-node
   "Transforms a node into the expected map values adds the coordinates"
   ([node]
-   (transform-node node (rand-range 10) (rand-range 10)))
+   (let [raw  (hash (:code node))
+         sign (Math/signum (float raw))
+         x    (* sign (Math/log10 (Math/abs raw)))
+         y    (* -1 sign (Math/log (Math/abs raw)))]
+     (transform-node node x y)
+     )
+    )
   ([node x y]
    (-> node
        (select-keys [:code :url :title])
        (assoc :id (:code node))                             ; We could just send a hash as the id, which would be more succinct, but this allows for quicker debugging.
-       (assoc :x x :y y :size (node-size (:incoming node)) :label (:display node)))))
+       (assoc :x x
+              :y y
+              :size (* (node-size-multiplier (:incoming node))
+                       (count (:code node)))
+              :color (color-from-code (:code node))
+              :label (-> (:display node)
+                         (s/split #"/")
+                         second)))))
 
 (defn edge
   "Returns an edge map. Does not return an index, since those are disposable
@@ -54,7 +68,7 @@
     color-from :color-from
     color-to   :color-to}]
   (->>
-    (let [edges-from (map #(edge code %1 (ut/if-nil color-from "#ff3300")) links-from)
+    (let [edges-from (map #(edge code %1 (ut/if-nil color-from (color-from-code code))) links-from)
           edges-to   (map #(edge %1 code (ut/if-nil color-to "#0066ff")) links-to)]
       (concat edges-from edges-to))
     (prof/p :edge-collection)))
@@ -65,7 +79,7 @@
   [code-list]
   (->>
     (let [nodes       (->> (db/query-for-codes code-list)
-                           (remove nil?)
+                           (remove empty?)
                            (map transform-node))
           connections (db/query-rel-list code-list)
           groups      (->> (b/group-pairs connections)

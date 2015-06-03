@@ -30,7 +30,6 @@
              :allowed-methods [:get]
              :handle-ok (fn [ctx]
                           (let [query (get-in ctx [:request :params :code-list])]
-                            (clojure.pprint/pprint query)
                             (api/node-relationships query)
                             )
                           )

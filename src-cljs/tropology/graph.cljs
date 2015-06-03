@@ -46,6 +46,7 @@
                                        (clj->js {:worker                         true
                                                  :barnesHutOptimize              true
                                                  :adjustSizes                    true
+                                                 :scalingRatio                   10
                                                  :outboundAttractionDistribution true}))
                     (js/setTimeout #(.stopForceAtlas2 sig) 5000)
                     ; Set the colors
@@ -62,7 +63,8 @@
                                    nodes-to-keep (-> (.neighbors (.-graph sig) node-id) (.concat node-id))
                                    groups        (group-by #(in-seq? nodes-to-keep (.-id %)) nodes)]
                                (doseq [node (groups true)]
-                                 (aset node "color" (aget node "originalColor")))
+                                 (aset node "color" (aget node "originalColor"))
+                                 (aset node "showStatus" "t"))
                                (doseq [node (groups false)]
                                  (do
                                    (aset node "color" "#eee")
