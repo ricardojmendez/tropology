@@ -103,5 +103,7 @@
        :description (:description node)
        :code        (:code node)
        :display     (:display node)
-       :tropes      (map :hiccup links)}))
+       :references  (map #(hash-map :hiccup (:hiccup %)
+                                    :links (map b/code-from-url (:links %)))
+                         links)}))
   )
