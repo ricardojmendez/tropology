@@ -74,23 +74,25 @@ You will need the full database in order to do text exploration.
 
 If you find a trope mentioned interesting, you can also click on the trope link.  This will load it as the next article being reviewed, as well as add the text snippet to the list of articles you've liked.
 
+You will be able to display a graph of the relationships between the concepts you have liked. Clicking on any of the nodes will show the immediately related concepts, and double clicking will load that article for further exploration.
+
 None of this information is currently saved, since I'm only playing with the trope exploration, but that's on my to do list.
 
 
 ## Next steps
 
-I'm liking the text trope exploration, and will be blending it with the graph display (which by itself doesn't contain that much information).  Next steps are:
+I'm liking the text trope exploration, and will be blending it with the graph display (which by itself doesn't contain that much information).  Next steps I'm considering are:
 
-* Show a graph of the pieces the user has liked, the articles referenced on them, and which articles those have in common.
 * Save a set of references we've found interesting during the exploration stage.
-* Pursue occasional _unexpected DOM mutation_ or _invariant violation_ issues from React. I suspect it happens on cases where we get an error displaying some of the scraped HTML.
 * We're currently showing as possible snippets all *twikilink* elements, but some summary articles use that only to link to other sub-sections and don't contain any actual information.  See about filtering them out.
 
 
 ## License
 
-TV Tropes content is licensed under a Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License. 
+Tropology is released under the [Eclipse Public License 1.0](https://tldrlegal.com/license/eclipse-public-license-1.0-(epl-1.0)).
 
-Released under the [Eclipse Public License 1.0](https://tldrlegal.com/license/eclipse-public-license-1.0-(epl-1.0)).
+Includes [Sigma.js](http://sigmajs.org/) for visualization.
+
+TV Tropes content is licensed under a Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License. 
 
 Copyright © 2015 Numergent Limited
