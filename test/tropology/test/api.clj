@@ -75,10 +75,11 @@
       (is (= "main/takemeinstead" (:code info)))
       (is (= "http://static.tvtropes.org/logo_blue_small.png" (:image info)))
       (is (.startsWith (:description info) "A character offers"))
-      (is (= 19 (count (:tropes info))))
-      (doseq [trope (:tropes info)]
-        (is (vector? trope))                                ; Every trope refrence returned is a vector
-        (is (keyword? (first trope)))                       ; and it starts with a keyword (for hiccup)
+      (is (= 19 (count (:references info))))
+      (doseq [item (:references info)]
+        (is (vector? (:hiccup item)))                       ; Every trope refrence returned is a vector
+        (is (keyword? (first (:hiccup item))))              ; and it starts with a keyword (for hiccup)
+        (is (not-empty (:links item)))                      ; links contains a non-empty sequence
         )))
   (testing "Invalid code should return nil"
     (let [info (api/tropes-from-node "main/takemeinstead-er")]
@@ -107,10 +108,11 @@
       (is (= "main/takemeinstead" (:code info)))
       (is (= "http://static.tvtropes.org/logo_blue_small.png" (:image info)))
       (is (.startsWith (:description info) "A character offers"))
-      (is (= 19 (count (:tropes info))))
-      (doseq [trope (:tropes info)]
-        (is (vector? trope))                                ; Every trope refrence returned is a vector
-        (is (keyword? (first trope)))                       ; and it starts with a keyword (for hiccup)
+      (is (= 19 (count (:references info))))
+      (doseq [item (:references info)]
+        (is (vector? (:hiccup item)))                       ; Every trope refrence returned is a vector
+        (is (keyword? (first (:hiccup item))))              ; and it starts with a keyword (for hiccup)
+        (is (not-empty (:links item)))                      ; links contains a non-empty sequence
         )))
   )
 

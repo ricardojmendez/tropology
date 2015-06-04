@@ -1,7 +1,10 @@
 <!DOCTYPE html>
-<!--[if IE 8]> <html lang="en" class="ie8"> <![endif]-->  
-<!--[if IE 9]> <html lang="en" class="ie9"> <![endif]-->  
-<!--[if !IE]><!--> <html lang="en"> <!--<![endif]-->  
+<!--[if IE 8]>
+<html lang="en" class="ie8"> <![endif]-->
+<!--[if IE 9]>
+<html lang="en" class="ie9"> <![endif]-->
+<!--[if !IE]><!-->
+<html lang="en"> <!--<![endif]-->
 <head>
     <title>Tropology</title>
     <!-- Meta -->
@@ -85,6 +88,10 @@
                             -->
                         </div>
                         <hr class="divider"/>
+                        <h2 class="heading">Relationship graph</h2>
+                        <div class="item" id="graph-container">
+                        </div>
+                        <hr class="divider"/>
                         <div id="like-list">
                             <!-- Sample item
                             <div class="item row">
@@ -117,6 +124,9 @@
                 <!--//section-inner-->
             </section>
             <!--//section-->
+
+
+
         </div>
         <!--//primary-->
     </div>
@@ -149,7 +159,6 @@
 <script src="/static/lib/sigma.parsers.json.min.js"></script>
 <script src="/static/lib/sigma.renderers.edgeLabels.min.js"></script>
 <script src="/static/lib/sigma.layout.forceAtlas2.min.js"></script>
-<script src="/static/lib/sigma.plugins.neighborhoods.min.js"></script>
 <script src="/static/lib/sigma.canvas.labels.with-override.js"></script>
 <script type="text/javascript">
     var context = "{{servlet-context}}";
