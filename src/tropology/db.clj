@@ -318,19 +318,23 @@
 (defn query-rel-list
   "Returns the list of relationship pairs that are either to or from pages
   where we get the code on the list"
-  [code-list]
-  (->>
-    (let [query (-> (select* links)
-                    (fields :from-code :to-code)
-                    (where (and {:to-code [in code-list]}
-                                {:from-code [in code-list]}))
-                    (modifier "distinct")
-                    )
-          ]
-      ; (println (as-sql query))
-      (->> query
-           select
-           (map rename-db-keywords)
-           ))
-    (prof/p :query-rel-list)
-    ))
+  ([code-list]
+   (query-rel-list code-list :LINKSTO))
+  ([code-list rel]
+   (->>
+     (let [query (-> (select* links)
+                     (fields :from-code :to-code)
+                     (where {:type      (name rel)
+                             :to-code   [in code-list]
+                             :from-code [in code-list]})
+                     (modifier "distinct")
+                     )
+           ]
+       ; (println (as-sql query))
+       (->> query
+            select
+            (map rename-db-keywords)
+            ))
+     (prof/p :query-rel-list)
+     ))
+  )

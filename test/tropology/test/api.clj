@@ -8,8 +8,7 @@
             [tropology.api :as api]
             [tropology.db :as db]))
 
-(deftest test-network-from-node
-  (wipe-test-db)
+(defn create-test-network []
   (let [n1 (create-node! (-> (basic-test-node "TestNode/N1") (assoc :incoming 100)))
         n2 (create-node! (-> (basic-test-node "TestNode/N2") (assoc :incoming 100)))
         n3 (create-node! (-> (basic-test-node "TestNode/N3") (assoc :incoming 100)))
@@ -33,32 +32,81 @@
         _  (relate-nodes! :DIFFREL n1 n3)                   ; To be excluded in tests below
         _  (relate-nodes! :DIFFREL n3 n4)                   ; To be excluded in tests below
         ]
-    ; Test relationships
-    (let [r     (network-from-node "testnode/n1")
-          nodes (:nodes r)
-          edges (:edges r)
-          ]
-      (is nodes)
-      (is edges)
-      (is (= 5 (count nodes)))
-      (are [code] (some #(= (:id %) code) nodes)
-                  "testnode/n1"
-                  "testnode/n2"
-                  "testnode/n3"
-                  "testnode/n5"
-                  "testnode/n6")
-      (is (= 7 (count edges)))
-      (are [source target] (some #(and (= (:target %) target) (= (:source %) source)) edges)
-                           "testnode/n1" "testnode/n2"
-                           "testnode/n1" "testnode/n3"
-                           "testnode/n1" "testnode/n5"
-                           "testnode/n1" "testnode/n6"
-                           "testnode/n2" "testnode/n3"
-                           "testnode/n3" "testnode/n5"
-                           "testnode/n5" "testnode/n6"
-                           ))
+    [n1 n2 n3 n4 n5 n6 n7]
+    )
+  )
 
-    ))
+(deftest test-network-from-node
+  (wipe-test-db)
+  (create-test-network)
+  ; Test relationships
+  (let [r     (network-from-node "testnode/n1")
+        nodes (:nodes r)
+        edges (:edges r)
+        ]
+    (is nodes)
+    (is edges)
+    (is (= 5 (count nodes)))
+    (are [code] (some #(= (:id %) code) nodes)
+                "testnode/n1"
+                "testnode/n2"
+                "testnode/n3"
+                "testnode/n5"
+                "testnode/n6")
+    (is (= 7 (count edges)))
+    (are [source target] (some #(and (= (:target %) target) (= (:source %) source)) edges)
+                         "testnode/n1" "testnode/n2"
+                         "testnode/n1" "testnode/n3"
+                         "testnode/n1" "testnode/n5"
+                         "testnode/n1" "testnode/n6"
+                         "testnode/n2" "testnode/n3"
+                         "testnode/n3" "testnode/n5"
+                         "testnode/n5" "testnode/n6"
+                         ))
+
+  )
+
+(deftest test-node-relationships
+  (wipe-test-db)
+  (create-test-network)
+  ; Verify that we get the right nodes in a simple query
+  (let [r     (node-relationships ["testnode/n1" "testnode/n2" "testnode/n6" "testnode/n7"])
+        nodes (:nodes r)
+        edges (:edges r)
+        ]
+    (is nodes)
+    (is edges)
+    (is (= 4 (count nodes)))
+    (are [code] (some #(= (:id %) code) nodes)
+                "testnode/n1"
+                "testnode/n2"
+                "testnode/n6"
+                "testnode/n7")
+    (is (= 3 (count edges)))
+    (are [source target] (some #(and (= (:target %) target) (= (:source %) source)) edges)
+                         "testnode/n1" "testnode/n2"
+                         "testnode/n1" "testnode/n6"
+                         "testnode/n6" "testnode/n7"))
+  ; Verify DIFFREL isn't used by default
+  (let [r     (node-relationships ["testnode/n1" "testnode/n3" "testnode/n4" "testnode/n6"])
+        nodes (:nodes r)
+        edges (:edges r)
+        ]
+    (is (= 4 (count nodes)))
+    (are [code] (some #(= (:id %) code) nodes)
+                "testnode/n1"
+                "testnode/n3"
+                "testnode/n4"
+                "testnode/n6")
+    (is (= 4 (count edges)))
+    (are [source target] (some #(and (= (:target %) target) (= (:source %) source)) edges)
+                         "testnode/n1" "testnode/n3"
+                         "testnode/n1" "testnode/n6"
+                         "testnode/n3" "testnode/n4"
+                         "testnode/n4" "testnode/n6"))
+  )
+
+
 
 
 (deftest test-tropes-from-node
