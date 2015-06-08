@@ -62,7 +62,6 @@
                          }
 
                         :test-commands
-                        ; {"test" ["phantomjs" "target/test/tropology-tests.js"]}
                         {"test" ["phantomjs" "phantom/unit-test.js" "phantom/unit-test.html"]}
                         }
 

@@ -3,6 +3,7 @@
 ## 0.5.0
 
 * New graph visualization for the concepts the user has liked.
+* ClojureScript tests
 
 ## 0.4.0
 

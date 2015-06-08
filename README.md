@@ -17,7 +17,6 @@ You will need [Leiningen][1] 2.0 or above installed.
 
 [1]: https://github.com/technomancy/leiningen
 
-
 ### PostgreSQL
 
 My current development environment is PostgreSQL 9.4.1. It expects a database called _tropology_ for the dev environment, and _tropology_test_ for the test environment.
@@ -38,6 +37,10 @@ After you have installed PostgreSQL and created the databases, you'll need to ru
 Import into Postgres using psql as usual.
 
 I'm no longer publishing a database version without the contents, since the current visualization and exploration rely on the HTML to extract the reference descriptions.
+
+### Testing
+
+Clojure tests can be run with `lein test`, once the [test database](#postgresql) has been created.  For the ClojureScript tests you'll need to install [PhantomJS 2](http://phantomjs.org/), and run `lein cljsbuild test`.
 
 ## Running
 

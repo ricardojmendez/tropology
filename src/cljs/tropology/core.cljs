@@ -221,10 +221,12 @@
     (if (and (not-empty style)
              (string? style))
       (into [head
-             (assoc attrs :style (->> (split style #"\;")
-                                      (map #(split % #"\:"))
-                                      (into {}))
-                          :onclick nil)]
+             (-> attrs
+                 (assoc :style (->> (split style #"\;")
+                                          (map #(split % #"\:"))
+                                          (into {})))
+                 (dissoc :onclick))
+             ]
             tail)
       element)
     ))
@@ -302,8 +304,7 @@
       display]]
     ]
    [button-item "Remove" "btn-danger pull-right to-bottom no-print" [:remove-like ref] false [:i {:class "fa fa-remove"}]]
-   ]
-  )
+   ])
 
 (defn like-list-display []
   (let [like-list (re-frame/subscribe [:article-data :like-list])]
