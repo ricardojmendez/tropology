@@ -33,10 +33,12 @@
                            [re-frame "0.4.1"]
                            ]
 
+            :source-paths ["src/clj" "src/cljs"]
+
 
             :cljsbuild {:builds
                         {:app
-                         {:source-paths ["src-cljs"]
+                         {:source-paths ["src/cljs"]
                           :compiler
                                         {:output-dir    "resources/public/js/out"
                                          :externs       ["react/externs/react.js" "resources/externs/sigma.js"]
@@ -134,7 +136,7 @@
                           :repl-options {:init-ns tropology.repl}
                           :injections   [(require 'pjstadig.humane-test-output)
                                          (pjstadig.humane-test-output/activate!)]
-                          :source-paths ["env/dev/clj"]
+                          :source-paths ["env/dev/clj" "test/clj"]
                           :cljsbuild    {:builds {:app {:source-paths ["env/dev/cljs"]}}}
                           :env          {:dev             true
                                          :db-name         "tropology_test"
