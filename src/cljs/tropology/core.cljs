@@ -285,13 +285,18 @@
         references  (re-frame/subscribe [:article-data :references])
         remaining   (reaction (count @references))]
     (fn []
-      [:span
-       [:div {:class "desc text-left"}
-        [:p (process-trope (:hiccup @current-ref) [true])]]
-       [button-item "Interesting" "btn-info btn-cta-secondary" [:vote :like] (empty? @current-ref) [:i {:class "fa fa-thumbs-o-up"}]]
-       [button-item "Skip" "btn-default" [:vote :skip] (>= 0 @remaining)]
-       [:p {:class "summary"} (str "(" @remaining " remaining)")]
-       ])
+      [:div {:class "item row"}
+       [:div {:class "col-md-3"}
+        [button-item "Interesting" "btn-info btn-cta-secondary" [:vote :like] (empty? @current-ref) [:i {:class "fa fa-thumbs-o-up"}]]
+        [button-item "Skip" "btn-default" [:vote :skip] (>= 0 @remaining)]
+        [:p {:class "summary"} (str "(" @remaining " remaining)")]
+        ]
+       [:div {:class "col-md-9"}
+        [:div {:class "desc text-left"}
+         [:p (process-trope (:hiccup @current-ref) [true])]]
+        ]
+       ]
+      )
     ))
 
 
