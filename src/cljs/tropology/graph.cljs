@@ -67,7 +67,7 @@
                                  (aset node "showStatus" "t"))
                                (doseq [node (groups false)]
                                  (do
-                                   (aset node "color" "#eee")
+                                   (aset node "color" "#ddd")
                                    (aset node "showStatus" "n"))) ; Never
                                (.forEach edges              ; One idiomatic, one not as much
                                          (fn [edge]
