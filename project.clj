@@ -41,8 +41,6 @@
                          {
                           :source-paths ["src/cljs"]
                           :compiler     {:output-dir    "resources/public/js/"
-                                         :foreign-libs  [{:file     "resources/public/lib/sigma.min.js"
-                                                          :provides ["sigma.js"]}]
                                          :externs       ["react/externs/react.js" "resources/externs/sigma.js"]
                                          :optimizations :none
                                          :output-to     "resources/public/js/core.js"
@@ -54,8 +52,6 @@
                          {
                           :source-paths ["src/cljs" "test/cljs"]
                           :compiler     {:output-to     "target/test/tropology-tests.js"
-                                         :foreign-libs  [{:file     "resources/public/lib/sigma.min.js"
-                                                          :provides ["sigma.js"]}]
                                          :output-dir    "target/test"
                                          :optimizations :whitespace
                                          }}

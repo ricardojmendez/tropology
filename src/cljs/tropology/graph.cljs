@@ -3,7 +3,6 @@
             [goog.object :as gobject]
             [reagent.session :as session]
             [re-frame.core :as re-frame]
-            [sigma.js :as sj]
             [tropology.utils :refer [in-seq?]]))
 
 
