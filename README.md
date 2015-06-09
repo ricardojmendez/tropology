@@ -4,7 +4,7 @@ Tropology crawls TVTropes.org, converts the relationships between pages into a P
 
 This is currently a personal experiment.  Consider it raw, pre-alpha code and likely to change.
 
-This is version 0.4.0.
+This is version 0.5.0.
 
 [You can read more on our site](http://numergent.com/tags/tropology/).
 
@@ -16,7 +16,6 @@ This is version 0.4.0.
 You will need [Leiningen][1] 2.0 or above installed.
 
 [1]: https://github.com/technomancy/leiningen
-
 
 ### PostgreSQL
 
@@ -39,6 +38,16 @@ Import into Postgres using psql as usual.
 
 I'm no longer publishing a database version without the contents, since the current visualization and exploration rely on the HTML to extract the reference descriptions.
 
+### Testing
+
+Clojure tests can be run with `lein test`, once the [test database](#postgresql) has been created.  For the ClojureScript tests you'll need to install [PhantomJS 2](http://phantomjs.org/), and run `lein cljsbuild test`.
+
+## A note on Cursive Clojure
+
+Cursive Clojure does not yet support a way to launch a REPL with specific environment profile. Since the application reads its database connection parameters from the environment configuration, if you start a REPL from Cursive and run the tests against it, you'll be running them against the development database and not the test one.
+
+Make sure you either create a REPL profile specifically for the test settings, or just run the tests via *lein*.
+
 ## Running
 
 To start a web server for the application, run:
@@ -46,51 +55,39 @@ To start a web server for the application, run:
     lein cljsbuild once
     lein ring server
 
-Then go to http://localhost:3000/ and enter "Anime/SamuraiFlamenco" on the text box and press *Graph!*.
-
-## A note on Cursive Clojure
-
-Cursive Clojure does not yet support a way to launch a REPL with specific environment profile. Since the application reads its database connection parameters from the environment configuration, if you start a REPL form Cursive and run the tests against it, you'll be running them against the development database and not the test one.
-
-Make sure you either create a REPL profile specifically for the test settings, or just run the tests via *lein*.
+Then go to http://localhost:3000/  See [Using](#Using) below.
 
 ## Using 
 
-You currently have two exploration options, *Graph* and *Trope text*.
+The core of Tropology is the concept exploration. When you first load it, it will display a random trope reference from the anime series *Samurai Flamenco*. 
 
-### Graph
+You can choose to mark a reference snippet as interesting, which adds it to a list of liked items, or just skip it. If you find a trope mentioned interesting, you can also click on the trope link.  This will load it as the current article to review, as well as add the text snippet to the list of articles you've liked.
 
-The graph view displays a (currently somewhat messy) graph of all nodes and related connections.  Clicking any particular node will highlight only that node and its correlated concepts (concepts that both link to the central one and each other).   Double-clicking a node will make a graph out of that node neighborhood.
+You can also click on *Random Article* in order to load any random page from TV Tropes.
 
-You can also see the raw data by going to: http://localhost:3000/api/network/Anime/SamuraiFlamenco
-
-### Trope text
-
-I'm finding the trope text exploration more interesting. When you enter an article code, it'll display the article's title and summary, along with a random trope mention from the list included on that article. You can choose to mark the snippet as interesting, which adds it to a list of tropes clicked, or skip it.
-
-You will need the full database in order to do text exploration.
-
-**BEWARE: THAR BE SPOILERS**!  I am not yet applying any style that would hide topic spoilers.
-
-If you find a trope mentioned interesting, you can also click on the trope link.  This will load it as the next article being reviewed, as well as add the text snippet to the list of articles you've liked.
+Click on *Show* under *Relationship graph* in order to view the relationship between the items you have liked. Clicking on any of the nodes will show the immediately related concepts, and double clicking will load that article for further exploration.
 
 None of this information is currently saved, since I'm only playing with the trope exploration, but that's on my to do list.
+
+**BEWARE: THAR BE SPOILERS**!  I am not yet applying any style that would hide topic spoilers.
 
 
 ## Next steps
 
-I'm liking the text trope exploration, and will be blending it with the graph display (which by itself doesn't contain that much information).  Next steps are:
+Next steps I'm considering are:
 
-* Show a graph of the pieces the user has liked, the articles referenced on them, and which articles those have in common.
 * Save a set of references we've found interesting during the exploration stage.
-* Pursue occasional _unexpected DOM mutation_ or _invariant violation_ issues from React. I suspect it happens on cases where we get an error displaying some of the scraped HTML.
 * We're currently showing as possible snippets all *twikilink* elements, but some summary articles use that only to link to other sub-sections and don't contain any actual information.  See about filtering them out.
+* Search, to allow you to start your exploration from a preferred topic.
+* Likely a lighter visual theme.
 
 
 ## License
 
-TV Tropes content is licensed under a Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License. 
+Tropology is released under the [Eclipse Public License 1.0](https://tldrlegal.com/license/eclipse-public-license-1.0-(epl-1.0)).
 
-Released under the [Eclipse Public License 1.0](https://tldrlegal.com/license/eclipse-public-license-1.0-(epl-1.0)).
+Includes [Sigma.js](http://sigmajs.org/) for visualization.
+
+TV Tropes content is licensed under a Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License. 
 
 Copyright © 2015 Numergent Limited

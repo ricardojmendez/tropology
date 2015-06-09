@@ -2,6 +2,7 @@
   (:require [clojure.string :refer [lower-case]]
             [goog.object :as gobject]
             [reagent.session :as session]
+            [re-frame.core :as re-frame]
             [tropology.utils :refer [in-seq?]]))
 
 
@@ -24,43 +25,29 @@
                 )))
 
 
-
-(defn refresh-graph [sig centerNodeId]
-  (let [db    (aget sig "db")
-        graph (-> sig .-graph)]
-    (.killForceAtlas2 sig)
-    (-> sig .-camera (.goTo (clj->js {:x 0 :y 0 :angle 0 :ratio 1})))
-    (.clear graph)
-    (.read graph (.neighborhood db centerNodeId))
-    (let [nodes (.nodes graph)
-          len   (.-length nodes)]
-      (map-indexed (fn [i node]
-                     (aset node "x" (Math/cos (/ (* 2 i Math/PI) len)))
-                     (aset node "y" (Math/cos (/ (* 2 i Math/PI) len))))
-                   nodes))
-    (.refresh sig)
-    (.startForceAtlas2 sig {:worker true :barnesHutOptimize false})
-    (js/setTimeout #(.stopForceAtlas2 sig) 2000)
-    (session/put! :sigma sig)
-    )
-  )
-
-(defn create-graph [base-code]
-  (let [code    (lower-case base-code)
-        sig     (js/sigma. (clj->js {:renderer
+(defn create-graph [code-list]
+  (let [sig     (js/sigma. (clj->js {:renderer
                                                {:type      "canvas"
-                                                :container (.getElementById js/document "graph-container")}
+                                                :container (.getElementById js/document "graph-area")}
                                      :settings {:defaultNodeColor "#ec5148"
                                                 :labelSizeRation  2
                                                 :edgeLabelSize    "fixed"
                                                 }}))
-        db      (js/sigma.plugins.neighborhoods.)
+        request (->> (map js/encodeURIComponent code-list)
+                     (map #(str "code-list=" %))
+                     (interpose "&")
+                     (apply str))
         on-done (fn []
                   (do
-                    (.bind sig "doubleClickNode", #((if-not (-> % .-data .-node .-center)
-                                                      (refresh-graph sig (-> % .-data .-node .-id)))))
-                    (refresh-graph sig code)
-                    (.startForceAtlas2 sig {:worker true :barnesHutOptimize false})
+                    (.bind sig "doubleClickNode", #(if-not (-> % .-data .-node .-center)
+                                                    (re-frame/dispatch [:load-article (-> % .-data .-node .-id)])))
+
+                    (.startForceAtlas2 sig
+                                       (clj->js {:worker                         true
+                                                 :barnesHutOptimize              true
+                                                 :adjustSizes                    true
+                                                 :scalingRatio                   10
+                                                 :outboundAttractionDistribution true}))
                     (js/setTimeout #(.stopForceAtlas2 sig) 5000)
                     ; Set the colors
                     (gobject/forEach (-> sig .-graph .nodes)
@@ -76,16 +63,11 @@
                                    nodes-to-keep (-> (.neighbors (.-graph sig) node-id) (.concat node-id))
                                    groups        (group-by #(in-seq? nodes-to-keep (.-id %)) nodes)]
                                (doseq [node (groups true)]
-                                 (do
-                                   (aset node "color" (aget node "originalColor"))
-                                   (aset node "showStatus"
-                                         (if (= node-id code)
-                                           "-"              ; Whatever, use default
-                                           "a"              ; Always
-                                           ))))
+                                 (aset node "color" (aget node "originalColor"))
+                                 (aset node "showStatus" "t"))
                                (doseq [node (groups false)]
                                  (do
-                                   (aset node "color" "#eee")
+                                   (aset node "color" "#ddd")
                                    (aset node "showStatus" "n"))) ; Never
                                (.forEach edges              ; One idiomatic, one not as much
                                          (fn [edge]
@@ -98,16 +80,15 @@
                            )
                     ))
         ]
-    (aset sig "db" db)
     (session/put! :sigma sig)
-    (.load db (str js/context "/api/network/" code) on-done)
+    (js/sigma.parsers.json (str js/context "/api/graph/connections/?" request) sig on-done)
     ))
 
-(defn redraw-graph [trope-code]
-  (let [current (session/get :sigma)]                            ; Must be set by importer on creation
+(defn redraw-graph [code-list]
+  (let [current (session/get :sigma)]                       ; Must be set by importer on creation
     (if current
       (do
         (.kill current)
         (session/put! :sigma nil)))
-    (create-graph trope-code)
+    (create-graph code-list)
     ))

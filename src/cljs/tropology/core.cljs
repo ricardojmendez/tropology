@@ -2,8 +2,9 @@
   (:require [ajax.core :refer [GET POST PUT]]
             [reagent.core :as reagent :refer [atom]]
             [clojure.string :refer [lower-case split trim]]
-            [reagent-forms.core :refer [bind-fields]]
+            [clojure.set :refer [union]]
             [re-frame.core :as re-frame]
+            [clojure.walk :refer [prewalk]]
             [tropology.graph :as graph]
             [tropology.utils :refer [in-seq?]]
             )
@@ -31,7 +32,8 @@
   (fn
     [db _]
     (re-frame/dispatch [:load-article "anime/samuraiflamenco" false])
-    (merge db {:ui-state {:active-section :tropes}})))
+    (merge db {:ui-state {:show-graph?    false
+                          :active-section :references}})))
 
 (re-frame/register-handler
   :navbar-click
@@ -55,11 +57,12 @@
 (re-frame/register-handler
   :load-article-done
   (fn [app-state [_ response]]
+    ; TODO: On load done, move the page up to the top
     (re-frame/dispatch [:clear-errors])
     (re-frame/dispatch [:pick-random-reference])
     (-> app-state
         (assoc-in [:article-data :current-article] response)
-        (assoc-in [:article-data :tropes] (:tropes response)))))
+        (assoc-in [:article-data :references] (:references response)))))
 
 
 (re-frame/register-handler
@@ -70,8 +73,8 @@
         (re-frame/dispatch [:add-like current-ref (get-in app-state [:article-data :current-article])]))
       (re-frame/dispatch [:pick-random-reference])
       (assoc-in app-state
-                [:article-data :tropes]
-                (remove #(= % current-ref) (get-in app-state [:article-data :tropes])))
+                [:article-data :references]
+                (remove #(= % current-ref) (get-in app-state [:article-data :references])))
       )))
 
 
@@ -81,7 +84,8 @@
     (let [like-list (get-in app-state [:article-data :like-list])
           element   {:ref article-ref :code (:code current-article) :display (:display current-article) :image (:image current-article)}
           ]
-      #_ (.log js/console current-article)
+      ; (.log js/console current-article)
+      ; (.log js/console article-ref)
       (if (not (in-seq? like-list element))
         (assoc-in app-state [:article-data :like-list] (conj like-list element))
         app-state)
@@ -91,14 +95,19 @@
   :remove-like
   (fn [app-state [_ article-ref]]
     #_ (.log js/console (str "Removing " article-ref))
-    (assoc-in app-state [:article-data :like-list] (remove #(= article-ref (:ref %)) (get-in app-state [:article-data :like-list])))
+    (let [new-like-list (remove #(= article-ref (:ref %)) (get-in app-state [:article-data :like-list]))
+          no-likes?     (empty? new-like-list)
+          show-graph?   (and (get-in app-state [:ui-state :show-graph?]) (not no-likes?))]
+      (-> app-state
+          (assoc-in [:article-data :like-list] new-like-list)
+          (assoc-in [:ui-state :show-graph?] show-graph?)))
     ))
 
 
 (re-frame/register-handler
   :pick-random-reference
   (fn [app-state [_]]
-    (let [tropes  (get-in app-state [:article-data :tropes])
+    (let [tropes  (get-in app-state [:article-data :references])
           pick    (rand-nth (not-empty tropes))
           element (if (nil? pick) {} pick)]
       (assoc-in app-state [:article-data :current-reference] element))))
@@ -115,10 +124,20 @@
   (fn [app-state [_]]
     (assoc-in app-state [:ui-state :errors] nil)))
 
+
+(re-frame/register-handler
+  :set-show-graph
+  (fn [app-state [_ show?]]
+    (if (and show? (empty? (get-in app-state [:article-data :like-list])))
+      (assoc-in app-state [:ui-state :errors] (cons "Cannot show graph for an empty list" (get-in app-state [:ui-state :errors])))
+      (assoc-in app-state [:ui-state :show-graph?] show?)
+      )
+    ))
+
 (re-frame/register-handler
   :draw-graph
-  (fn [app-state [_ code]]
-    (graph/redraw-graph code)
+  (fn [app-state [_ code-list]]
+    (graph/redraw-graph code-list)
     app-state))
 
 
@@ -146,7 +165,9 @@
 (defn add-key-meta
   "Add a meta with the key to all elements in the vector. It's usually called
    when we are processing a series of :li vectors, since React expects them to
-   have a unique key."
+   have a unique key. Does not consider the possibility that the link might
+   be external - if that's the case, the even handler will just report that it
+   was unable to load the article."
   [elements]
   (loop [remaining elements
          acc       []]
@@ -156,17 +177,34 @@
              (conj acc ^{:key (hash (first remaining))} (first remaining))))))
 
 
-(defn process-a [element extra-params]
+(defn process-a
+  "For an :a element, replace the link with a dispatch command so that we can
+  load the relevant article."
+  [element extra-params]
   (if (= :a (first element))
     (into [] (map #(replace-link-for-dispatch % extra-params) element))
     element))
 
-(defn process-ul [element]
+(defn process-ul
+  "For every li inside a ul element that we are about to render, make sure that
+  we add a key as part of the metadata to avoid raising issues with React."
+  [element]
   (if (= :ul (first element))
     (into [:ul] (add-key-meta (rest element)))
     element))
 
-(defn process-span [element]
+(defn process-span
+  "Handle two cases which could cause trouble with span elements.
+
+  If the element received is a span, and the class for it indicates that it's
+  a note label, discard the element altogether.  These notes are a dispaly
+  peculiarity from TVTropes that we don't particularly case about.
+
+  Also remove any pre-existing onclick attributes, as we don't want to
+  keep any code from TVTropes (should probably consider removing other events
+  as well).
+  "
+  [element]
   (if (= :span (first element))
     (let [attrs (second element)
           tail  (nthrest element 2)]
@@ -178,7 +216,12 @@
     element))
 
 
-(defn process-style [element]
+(defn process-style
+  "Assuming the attributes for an element contain a style key, and the value
+  for this key is a string, it parses the string's values into a map. Otherwise
+  we would get hiccup throwing an error before rendering it, which causes
+  a problem for React."
+  [element]
   (let [head  (first element)
         attrs (second element)
         tail  (nthrest element 2)
@@ -186,10 +229,12 @@
     (if (and (not-empty style)
              (string? style))
       (into [head
-             (assoc attrs :style (->> (split style #"\;")
-                                      (map #(split % #"\:"))
-                                      (into {}))
-                          :onclick nil)]
+             (-> attrs
+                 (assoc :style (->> (split style #"\;")
+                                    (map #(split % #"\:"))
+                                    (into {})))
+                 (dissoc :onclick))
+             ]
             tail)
       element)
     ))
@@ -197,24 +242,22 @@
 
 
 (defn process-element [processor element]
-  "Receives an element as a hiccup structure. If it's a link, then the link
-   is replaced for an action dispatch; for a :ul, it adds a key as meta to all
-   the nested elements; otherwise we return the same structure."
+  "Applies a processor to an element, assuming that if it's a vector it'll be a hiccup structure."
   (if (vector? element)
     (processor element)
     element
     ))
 
 (defn process-trope
-  "Receives the hiccup data for a trope and processes it before display"
+  "Receives the hiccup data for a trope and processes it before display. See
+  the comments on every one of the element processors for details."
   [coll extra-params]
   (let [element-processor (comp #(process-a % extra-params)
                                 process-ul
                                 process-style
                                 process-span)]
-    (clojure.walk/prewalk #(process-element element-processor %) coll)
-    )
-  )
+    (prewalk #(process-element element-processor %) coll)
+    ))
 
 
 ;
@@ -229,51 +272,89 @@
   (let [current-article (re-frame/subscribe [:article-data :current-article])]
     (fn []
       [:span
-       [:img {:class "profile-image img-responsive pull-left" :src (:image @current-article) :alt (:title @current-article)}]
+       [:a {:href (:url @current-article) :target (:code @current-article)}
+        [:img {:class "profile-image img-responsive pull-left" :src (:image @current-article) :alt (:title @current-article)}]]
        [:div {:class "profile-content"}
         [:h1 {:class "name"} (:title @current-article)]
-        [:p (:description @current-article)]]
+        [:p (:description @current-article)]
+        [:small
+         [:a {:href (:url @current-article) :target (:code @current-article)} "View on TVTropes.org"]
+         [:i {:class "fa fa-external-link" :style {"margin-left" "4px"}}]]
+        ]
        [button-item "Random Article" "btn-cta-primary pull-right" [:load-article ""] false [:i {:class "fa fa-paper-plane"}]]
        ]
       )))
 
 (defn reference-display []
   (let [current-ref (re-frame/subscribe [:article-data :current-reference])
-        references  (re-frame/subscribe [:article-data :tropes])
+        references  (re-frame/subscribe [:article-data :references])
         remaining   (reaction (count @references))]
     (fn []
-      [:span
-       [:div {:class "desc text-left"}
-        [:p (process-trope @current-ref [true])]]
-       [button-item "Interesting" "btn-info btn-cta-secondary" [:vote :like] (empty? @current-ref) [:i {:class "fa fa-thumbs-o-up"}]]
-       [button-item "Skip" "btn-default" [:vote :skip] (>= 0 @remaining)]
-       [:p {:class "summary"} (str "(" @remaining " remaining)")]
-       ])
+      [:div {:class "item row"}
+       [:div {:class "col-md-3"}
+        [button-item "Interesting" "btn-info btn-cta-secondary" [:vote :like] (empty? @current-ref) [:i {:class "fa fa-thumbs-o-up"}]]
+        [button-item "Skip" "btn-default" [:vote :skip] (>= 0 @remaining)]
+        [:p {:class "summary"} (str "(" @remaining " remaining)")]
+        ]
+       [:div {:class "col-md-9"}
+        [:div {:class "desc text-left"}
+         [:p (process-trope (:hiccup @current-ref) [true])]]
+        ]
+       ]
+      )
     ))
 
 
-(defn trope-row [{:keys [ref code display image]}]
+(defn trope-reference-row
+  "Receives a map with the information necessary to display atrope reference,
+  and returns a component. Notice that ref is expected to be a hashmap, not an
+  atom.
+  "
+  [{:keys [ref code display image]}]
   [:div {:class "item row"}
    [:a {:class "col-md-2 col-sm-2 col-xs-12" :on-click #(re-frame/dispatch [:load-article code false])}
     [:img {:class "img-responsive project-image" :src image}]]
    [:div {:class "desc col-md-10 col-sm-10 col-xs-12"}
-    [:p (process-trope ref [false])]
+    [:p (process-trope (:hiccup ref) [false])]
     [:p
      [:a {:class "more-link" :on-click #(re-frame/dispatch [:load-article code false])}
       [:li {:class "fa fa-external-link"}]
       display]]
     ]
    [button-item "Remove" "btn-danger pull-right to-bottom no-print" [:remove-like ref] false [:i {:class "fa fa-remove"}]]
-   ]
-  )
+   ])
 
 (defn like-list-display []
   (let [like-list (re-frame/subscribe [:article-data :like-list])]
     (fn []
       [:div
        (for [trope @like-list]
-         ^{:key (hash trope)} [trope-row trope])
+         ^{:key (hash trope)} [trope-reference-row trope])
        ])))
+
+(defn graph-display []
+  (let [show-graph? (re-frame/subscribe [:ui-state :show-graph?])
+        like-list   (re-frame/subscribe [:article-data :like-list])
+        code-list   (reaction (reduce union (map #(into #{(:code %)} (set (get-in % [:ref :links]))) @like-list)))]
+    (fn []
+      [:span
+       [:div {:class "text-left"}
+        [:a {:on-click #(re-frame/dispatch [:set-show-graph (not @show-graph?)])}
+         (if @show-graph? "Hide" "Show")]]
+       (if @show-graph?
+         [:a {:on-click #(re-frame/dispatch [:draw-graph @code-list])}
+          "Refresh"
+          ]
+         )
+       (if @show-graph?
+         [:div {:id "graph-area"}
+          (re-frame/dispatch [:draw-graph @code-list])
+          ])
+       ]
+      )
+    )
+
+  )
 
 (defn error-list-display []
   (let [errors (re-frame/subscribe [:ui-state :errors])]
@@ -284,10 +365,13 @@
           [:h2 {:class "heading"} "There seems to have been a problem..."]
           [:div {:class "content"}
            (for [error @errors]
+             ; We can't do a hash of the message, since we may get the same message more than once.
              ^{:key (rand-int 999999)} [:div [:label {:class "control-label"} error]])
            ]
           ]]
         ))))
+
+
 
 
 (defn init! []
@@ -296,4 +380,5 @@
   (reagent/render [reference-display] (.getElementById js/document "current-reference"))
   (reagent/render [like-list-display] (.getElementById js/document "like-list"))
   (reagent/render [error-list-display] (.getElementById js/document "error-list"))
+  (reagent/render [graph-display] (.getElementById js/document "graph-container"))
   )

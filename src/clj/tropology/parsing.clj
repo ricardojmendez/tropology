@@ -101,7 +101,6 @@
 ; The identifier would be path-of minus /pmwiki/pmwiki.php/
 
 
-
 (defn node-data-from-meta
   "Returns the relevant metadata of a html-resource as a map, including things
   we care about like the node label."
@@ -192,9 +191,9 @@
     ))
 
 (defn process-links
-  "Returns a map with a :res, in where the links included on the
-  received resource are replaced with using a function, and a list
-  of the extracted :links
+  "Given an enlive element, it returns a map containing the element
+  converted into a hiccup structure, a list of links in the element,
+  and a text version.
 
   See https://github.com/cgrand/enlive/wiki/Getting-started#using-at"
   ([element]
@@ -237,6 +236,7 @@
                         (assoc :has-error true :error (.getMessage t)))]
     (timbre/error (str "Exception on " url " : " (.getMessage t)))
     (doall (db/log-error! update-data))))
+
 
 (defn record-page!
   "Attempts to obtain the links from a url and save them.

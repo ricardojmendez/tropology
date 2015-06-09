@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 0.5.0
+
+* New graph visualization for the concepts the user has liked.
+* ClojureScript tests
+
 ## 0.4.0
 
 * New look to help focus on the text exploration.  You can now start off a random article, add references you like, and explore new concepts. Clicking on a link for an article will load its references.

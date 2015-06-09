@@ -167,10 +167,7 @@
 
 
 (defn create-page-and-links!
-  "Creates a page and all its related to links in a single call.
-
-  Any pages it needs to create in order to link to _will not_ have the URL
-  or category set, since I haven't found a way to pass a map yet.
+  "Creates a page and all its related to links in a single transaction.
 
   I considered doing a try-times here so that we can parallelize and retry
   in transient exceptions. It doesn't make any sense to retry and walk into
@@ -252,7 +249,7 @@
 ; Link querying
 ;
 
-(defn query-node-rel
+(defn- query-node-rel
   [^String code rel from to]
   (->> (select pages
                (fields :code :url :title :display :url :category :incoming :outgoing)
@@ -317,3 +314,27 @@
             ))
      (prof/p :query-common-nodes-from)
      )))
+
+(defn query-rel-list
+  "Returns the list of relationship pairs that are either to or from pages
+  where we get the code on the list"
+  ([code-list]
+   (query-rel-list code-list :LINKSTO))
+  ([code-list rel]
+   (->>
+     (let [query (-> (select* links)
+                     (fields :from-code :to-code)
+                     (where {:type      (name rel)
+                             :to-code   [in code-list]
+                             :from-code [in code-list]})
+                     (modifier "distinct")
+                     )
+           ]
+       ; (println (as-sql query))
+       (->> query
+            select
+            (map rename-db-keywords)
+            ))
+     (prof/p :query-rel-list)
+     ))
+  )
