@@ -7,6 +7,7 @@ sigma.graph = {};
 sigma.graph.nodes = function() {};
 sigma.graph.edges = function() {};
 sigma.graph.neighbors = function() {};
+sigma.graph.allNeighborsIndex = {};
 sigma.refresh = function() {};
 sigma.parsers = {};
 sigma.parsers.json = {};
