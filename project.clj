@@ -33,18 +33,38 @@
                            [re-frame "0.4.1"]
                            ]
 
+            :source-paths ["src/clj" "src/cljs"]
+
 
             :cljsbuild {:builds
                         {:app
-                         {:source-paths ["src-cljs"]
-                          :compiler
-                                        {:output-dir    "resources/public/js/out"
+                         {
+                          :source-paths ["src/cljs"]
+                          :compiler     {:output-dir    "resources/public/js/"
+                                         :foreign-libs  [{:file     "resources/public/lib/sigma.min.js"
+                                                          :provides ["sigma.js"]}]
                                          :externs       ["react/externs/react.js" "resources/externs/sigma.js"]
                                          :optimizations :none
                                          :output-to     "resources/public/js/core.js"
                                          :source-map    "resources/public/js/core.js.map"
                                          :pretty-print  true
-                                         }}}}
+                                         }
+                          }
+                         :test
+                         {
+                          :source-paths ["src/cljs" "test/cljs"]
+                          :compiler     {:output-to     "target/test/tropology-tests.js"
+                                         :foreign-libs  [{:file     "resources/public/lib/sigma.min.js"
+                                                          :provides ["sigma.js"]}]
+                                         :output-dir    "target/test"
+                                         :optimizations :whitespace
+                                         }}
+                         }
+
+                        :test-commands
+                        {"test" ["phantomjs" "phantom/unit-test.js" "phantom/unit-test.html"]}
+                        }
+
 
             :clean-targets ^{:protect false} ["resources/public/js" "target"]
 
@@ -59,7 +79,8 @@
                       [lein-cljsbuild "1.0.6"]
                       [lein-environ "1.0.0"]
                       [lein-ancient "0.6.7"]
-                      [clj-sql-up "0.3.7"]]
+                      [clj-sql-up "0.3.7"]
+                      ]
 
 
             :ring {:handler      tropology.handler/app
@@ -85,8 +106,7 @@
                                         :expiration  14
                                         }
                           :hooks       [leiningen.cljsbuild]
-                          :cljsbuild
-                                       {:jar true
+                          :cljsbuild   {:jar true
                                         :builds
                                              {:app
                                               {:source-paths ["env/prod/cljs"]
@@ -134,7 +154,7 @@
                           :repl-options {:init-ns tropology.repl}
                           :injections   [(require 'pjstadig.humane-test-output)
                                          (pjstadig.humane-test-output/activate!)]
-                          :source-paths ["env/dev/clj"]
+                          :source-paths ["test/clj"]
                           :cljsbuild    {:builds {:app {:source-paths ["env/dev/cljs"]}}}
                           :env          {:dev             true
                                          :db-name         "tropology_test"

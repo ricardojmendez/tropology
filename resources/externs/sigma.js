@@ -1,10 +1,10 @@
-var sigma = {}
-sigma.classes = {}
-sigma.classes.graph = {}
+var sigma = {};
+sigma.classes = {};
+sigma.classes.graph = {};
 sigma.classes.graph.addMethod = function() {};
-sigma.graph = {}
+sigma.graph = {};
 sigma.graph.nodes = function() {};
 sigma.graph.edges = function() {};
 sigma.graph.neighbors = function() {};
-sigma.parsers = {}
-sigma.parsers.json = {}
+sigma.parsers = {};
+sigma.parsers.json = {};
