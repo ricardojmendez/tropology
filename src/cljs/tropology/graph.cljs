@@ -81,7 +81,7 @@
                     ))
         ]
     (session/put! :sigma sig)
-    (js/sigma.parsers.json (str js/context "/api/connections/?" request) sig on-done)
+    (js/sigma.parsers.json (str js/context "/api/graph/connections/?" request) sig on-done)
     ))
 
 (defn redraw-graph [code-list]
