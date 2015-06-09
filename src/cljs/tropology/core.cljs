@@ -95,7 +95,12 @@
   :remove-like
   (fn [app-state [_ article-ref]]
     #_ (.log js/console (str "Removing " article-ref))
-    (assoc-in app-state [:article-data :like-list] (remove #(= article-ref (:ref %)) (get-in app-state [:article-data :like-list])))
+    (let [new-like-list (remove #(= article-ref (:ref %)) (get-in app-state [:article-data :like-list]))
+          no-likes?     (empty? new-like-list)
+          show-graph?   (and (get-in app-state [:ui-state :show-graph?]) (not no-likes?))]
+      (-> app-state
+          (assoc-in [:article-data :like-list] new-like-list)
+          (assoc-in [:ui-state :show-graph?] show-graph?)))
     ))
 
 
