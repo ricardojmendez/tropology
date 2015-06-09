@@ -1,1 +1,1 @@
-java -Xms265m -Xmx2048m -Ddb.url=http://neo4j:testneo4j@localhost:7474/db/data/ -Dupdate.cron="0 /1 * * * * *" -Dupdate.size=2 -cp target/tropology.jar clojure.main -m tropology.core
+java -Xms265m -Xmx2048m -Ddb.name=tropology -Ddb.host=192.168.59.103 -Ddb.user=postgres -Ddb.password=testdb -Dupdate.cron="0 /1 * * * * *" -Dupdate.size=2 -cp target/tropology.jar clojure.main -m tropology.core
