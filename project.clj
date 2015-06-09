@@ -3,7 +3,7 @@
             :url "http://numergent.com/tags/tropology/"
 
             :dependencies [[org.clojure/clojure "1.7.0-RC1"]
-                           [org.clojure/clojurescript "0.0-3308" :scope "provided"]
+                           [org.clojure/clojurescript "0.0-3308"]
                            [cljs-ajax "0.3.12"]
                            [ring-server "0.4.0"]
                            [selmer "0.8.2"]
@@ -23,7 +23,7 @@
                            [com.curiosity/urly "2.0.0-alpha6"]
                            [clojure.joda-time "0.4.0"]
                            [http-kit "2.1.19"]
-                           [reagent-forms "0.5.1"]
+                           [reagent "0.5.0"]
                            [reagent-utils "0.1.4"]
                            [liberator "0.13"]
                            [cheshire "5.5.0"]

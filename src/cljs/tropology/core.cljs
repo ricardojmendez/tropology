@@ -3,8 +3,8 @@
             [reagent.core :as reagent :refer [atom]]
             [clojure.string :refer [lower-case split trim]]
             [clojure.set :refer [union]]
-            [reagent-forms.core :refer [bind-fields]]
             [re-frame.core :as re-frame]
+            [clojure.walk :refer [prewalk]]
             [tropology.graph :as graph]
             [tropology.utils :refer [in-seq?]]
             )
@@ -248,7 +248,7 @@
                                 process-ul
                                 process-style
                                 process-span)]
-    (clojure.walk/prewalk #(process-element element-processor %) coll)
+    (prewalk #(process-element element-processor %) coll)
     ))
 
 
