@@ -59,7 +59,6 @@
                         (let [{{{label :category, name :name} :params} :request} request
                               code (lower-case (str label "/" name))]
                           (api/tropes-from-node code)))
-             :last-modified (default-last-modified)
              :handle-ok (fn [request]
                           (select-keys request [:title :description :references :code :display :image :url]))
              :available-media-types ["application/transit+json"
