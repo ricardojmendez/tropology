@@ -272,10 +272,15 @@
   (let [current-article (re-frame/subscribe [:article-data :current-article])]
     (fn []
       [:span
-       [:img {:class "profile-image img-responsive pull-left" :src (:image @current-article) :alt (:title @current-article)}]
+       [:a {:href (:url @current-article) :target (:code @current-article)}
+        [:img {:class "profile-image img-responsive pull-left" :src (:image @current-article) :alt (:title @current-article)}]]
        [:div {:class "profile-content"}
         [:h1 {:class "name"} (:title @current-article)]
-        [:p (:description @current-article)]]
+        [:p (:description @current-article)]
+        [:small
+         [:a {:href (:url @current-article) :target (:code @current-article)} "View on TVTropes.org"]
+         [:i {:class "fa fa-external-link" :style {"margin-left" "4px"}}]]
+        ]
        [button-item "Random Article" "btn-cta-primary pull-right" [:load-article ""] false [:i {:class "fa fa-paper-plane"}]]
        ]
       )))

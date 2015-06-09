@@ -61,7 +61,7 @@
                           (api/tropes-from-node code)))
              :last-modified (default-last-modified)
              :handle-ok (fn [request]
-                          (select-keys request [:title :description :references :code :display :image]))
+                          (select-keys request [:title :description :references :code :display :image :url]))
              :available-media-types ["application/transit+json"
                                      "application/transit+msgpack"
                                      "application/json"])

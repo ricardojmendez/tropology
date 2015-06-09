@@ -142,6 +142,7 @@
        :description (:description node)
        :code        (:code node)
        :display     (:display node)
+       :url         (:url node)
        :references  (map #(hash-map :hiccup (:hiccup %)
                                     :links (map b/code-from-url (:links %)))
                          links)}))
