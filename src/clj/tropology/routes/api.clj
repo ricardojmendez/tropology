@@ -8,6 +8,11 @@
             [tropology.db :as db]
             [io.clojure.liberator-transit]))
 
+
+(def expiration-ms (* 1000 60 60 24))                       ; Graphs expire once a day
+(defn default-last-modified []
+  (* expiration-ms (long (/ (System/currentTimeMillis) expiration-ms))))
+
 (defresource home
              :handle-ok "Hello World!"
              :etag "fixed-etag"
@@ -38,6 +43,7 @@
 
 (defresource network
              :allowed-methods [:get]
+             :last-modified (default-last-modified)
              :handle-ok (fn [request]
                           (let [{{{label :category, name :name} :params} :request} request
                                 code (lower-case (str label "/" name))]
@@ -53,6 +59,7 @@
                         (let [{{{label :category, name :name} :params} :request} request
                               code (lower-case (str label "/" name))]
                           (api/tropes-from-node code)))
+             :last-modified (default-last-modified)
              :handle-ok (fn [request]
                           (select-keys request [:title :description :references :code :display :image]))
              :available-media-types ["application/transit+json"
