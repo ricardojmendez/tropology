@@ -123,7 +123,10 @@
 (re-frame/register-handler
   :set-show-graph
   (fn [app-state [_ show?]]
-    (assoc-in app-state [:ui-state :show-graph?] show?)
+    (if (and show? (empty? (get-in app-state [:article-data :like-list])))
+      (assoc-in app-state [:ui-state :errors] (cons "Cannot show graph for an empty list" (get-in app-state [:ui-state :errors])))
+      (assoc-in app-state [:ui-state :show-graph?] show?)
+      )
     ))
 
 (re-frame/register-handler
@@ -223,8 +226,8 @@
       (into [head
              (-> attrs
                  (assoc :style (->> (split style #"\;")
-                                          (map #(split % #"\:"))
-                                          (into {})))
+                                    (map #(split % #"\:"))
+                                    (into {})))
                  (dissoc :onclick))
              ]
             tail)
