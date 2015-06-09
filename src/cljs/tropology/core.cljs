@@ -95,7 +95,12 @@
   :remove-like
   (fn [app-state [_ article-ref]]
     #_ (.log js/console (str "Removing " article-ref))
-    (assoc-in app-state [:article-data :like-list] (remove #(= article-ref (:ref %)) (get-in app-state [:article-data :like-list])))
+    (let [new-like-list (remove #(= article-ref (:ref %)) (get-in app-state [:article-data :like-list]))
+          no-likes?     (empty? new-like-list)
+          show-graph?   (and (get-in app-state [:ui-state :show-graph?]) (not no-likes?))]
+      (-> app-state
+          (assoc-in [:article-data :like-list] new-like-list)
+          (assoc-in [:ui-state :show-graph?] show-graph?)))
     ))
 
 
@@ -123,7 +128,10 @@
 (re-frame/register-handler
   :set-show-graph
   (fn [app-state [_ show?]]
-    (assoc-in app-state [:ui-state :show-graph?] show?)
+    (if (and show? (empty? (get-in app-state [:article-data :like-list])))
+      (assoc-in app-state [:ui-state :errors] (cons "Cannot show graph for an empty list" (get-in app-state [:ui-state :errors])))
+      (assoc-in app-state [:ui-state :show-graph?] show?)
+      )
     ))
 
 (re-frame/register-handler
@@ -223,8 +231,8 @@
       (into [head
              (-> attrs
                  (assoc :style (->> (split style #"\;")
-                                          (map #(split % #"\:"))
-                                          (into {})))
+                                    (map #(split % #"\:"))
+                                    (into {})))
                  (dissoc :onclick))
              ]
             tail)
