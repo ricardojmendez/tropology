@@ -1,7 +1,8 @@
 (ns tropology.test.test-runner
   (:require
     [cljs.test :as test :refer-macros [run-tests] :refer [report]]
-    [tropology.test.core]))
+    [tropology.test.core]
+    [tropology.test.utils]))
 
 
 (enable-console-print!)
@@ -15,5 +16,6 @@
 (defn runner []
   (run-tests
     (test/empty-env ::test/default)
-    'tropology.test.core))
+    'tropology.test.core
+    'tropology.test.utils))
 

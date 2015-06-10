@@ -33,13 +33,14 @@
                            [re-frame "0.4.1"]
                            ]
 
-            :source-paths ["src/clj" "src/cljs"]
+            :source-paths ["src/clj" "src/cljs" "src/cljc"]
+            :test-paths ["test/clj" "test/cljs" "test/cljc"]
 
 
             :cljsbuild {:builds
                         {:app
                          {
-                          :source-paths ["src/cljs"]
+                          :source-paths ["src/cljs" "src/cljc"]
                           :compiler     {:output-dir    "resources/public/js/"
                                          :externs       ["react/externs/react.js" "resources/externs/sigma.js"]
                                          :optimizations :none
@@ -50,7 +51,7 @@
                           }
                          :test
                          {
-                          :source-paths ["src/cljs" "test/cljs"]
+                          :source-paths ["src/cljs" "test/cljs" "test/cljc"]
                           :compiler     {:output-to     "target/test/tropology-tests.js"
                                          :output-dir    "target/test"
                                          :optimizations :whitespace
