@@ -13,11 +13,6 @@
   [url]
   (str (u/protocol-of url) "://" (u/host-of url) (u/path-of url)))
 
-(defn if-nil
-  "Returns a if not nil, b if otherwise"
-  [a b]
-  (if (nil? a) b a))
-
 (defn if-empty
   "Returns a if neither nil or empty, b if otherwise"
   [a b]

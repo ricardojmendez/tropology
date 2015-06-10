@@ -68,8 +68,8 @@
     color-from :color-from
     color-to   :color-to}]
   (->>
-    (let [edges-from (map #(edge code %1 (ut/if-nil color-from (color-from-code code))) links-from)
-          edges-to   (map #(edge %1 code (ut/if-nil color-to "#0066ff")) links-to)]
+    (let [edges-from (map #(edge code %1 (or color-from (color-from-code code))) links-from)
+          edges-to   (map #(edge %1 code (or color-to "#0066ff")) links-to)]
       (concat edges-from edges-to))
     (prof/p :edge-collection)))
 

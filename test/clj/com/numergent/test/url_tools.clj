@@ -8,15 +8,6 @@
     (is (= (if-empty "" "b")    "b"))
     (is (= (if-empty "a" "b")   "a"))))
 
-
-(deftest if-nil-tests
-  (testing "Test cases for if-nil"
-    (is (= (if-nil nil "b")       "b"))
-    (is (= (if-nil {} {:a 1})     {}))
-    (is (= (if-nil {:a 2} {:a 1}) {:a 2}))
-    (is (= (if-nil nil {:a 1})    {:a 1}))))
-
-
 (deftest host-string-of-tests
   (testing "Basic test cases for host-string-of"
     (is (= (host-string-of "http://tvtropes.org")               "http://tvtropes.org/"))

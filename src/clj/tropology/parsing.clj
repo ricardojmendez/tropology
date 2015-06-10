@@ -119,7 +119,7 @@
      :title       (content-from-meta res "og:title")
      :image       (content-from-meta res "og:image")
      :description (content-from-meta res "og:description")
-     :type        (-> (content-from-meta res "og:type") (ut/if-nil ""))}))
+     :type        (-> (content-from-meta res "og:type") (or ""))}))
 
 (defn node-data-from-url
   "Returns a map with the metadata we can infer about a new from its URL.
