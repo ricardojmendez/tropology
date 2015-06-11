@@ -577,3 +577,18 @@ iframe {
   bottom: 0px;
   right: 0px;
 }
+
+
+.references-enter {
+  opacity: 0;
+  transition: opacity 0.3s ease-out;
+}
+
+.references-leave {
+  opacity: 0;
+  transition: opacity 0.25s ease-out;
+}
+
+.references-enter-active {
+  opacity: 1;
+}

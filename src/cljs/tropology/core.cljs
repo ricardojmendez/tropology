@@ -264,6 +264,9 @@
 ; Components
 ;
 
+(def css-transition-group
+  (reagent/adapt-react-class js/React.addons.CSSTransitionGroup))
+
 (defn button-item [label class dispatch-vals is-disabled? extra-items]
   [:button {:type :button :class (str "btn " class) :disabled is-disabled? :on-click #(re-frame/dispatch dispatch-vals)} extra-items label])
 
@@ -327,7 +330,8 @@
 (defn like-list-display []
   (let [like-list (re-frame/subscribe [:article-data :like-list])]
     (fn []
-      [:div
+      [css-transition-group {:transition-name "references"}
+
        (for [trope @like-list]
          ^{:key (hash trope)} [trope-reference-row trope])
        ])))
