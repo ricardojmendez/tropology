@@ -6,7 +6,7 @@
             [re-frame.core :as re-frame]
             [clojure.walk :refer [prewalk]]
             [tropology.graph :as graph]
-            [tropology.utils :refer [in-seq?]]
+            [numergent.utils :refer [in-seq?]]
             )
   (:require-macros [reagent.ratom :refer [reaction]]))
 

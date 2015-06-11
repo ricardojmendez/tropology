@@ -1,12 +1,7 @@
-(ns com.numergent.test.url-tools
+(ns numergent.test.url-tools
   (:require [clojure.test :refer :all]
-            [com.numergent.url-tools :refer :all]))
+            [numergent.url-tools :refer :all]))
 
-(deftest if-empty-tests
-  (testing "Test cases for if-empty"
-    (is (= (if-empty nil "b")   "b"))
-    (is (= (if-empty "" "b")    "b"))
-    (is (= (if-empty "a" "b")   "a"))))
 
 (deftest host-string-of-tests
   (testing "Basic test cases for host-string-of"

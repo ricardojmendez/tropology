@@ -7,7 +7,7 @@
             [tropology.base :as b]
             [taoensso.timbre.profiling :as prof]
             [environ.core :refer [env]]
-            [tropology.utils :as u]))
+            [numergent.utils :as u]))
 
 
 ;

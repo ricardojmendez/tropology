@@ -3,10 +3,10 @@
              :refer [defresource resource request-method-in]]
             [clojure.string :refer [lower-case]]
             [compojure.core :refer [defroutes GET ANY]]
-            [com.numergent.url-tools :as ut]
             [tropology.api :as api]
             [tropology.db :as db]
-            [io.clojure.liberator-transit]))
+            [io.clojure.liberator-transit]
+            [numergent.utils :as u]))
 
 
 (def expiration-ms (* 1000 60 60 24))                       ; Graphs expire once a day
@@ -26,7 +26,7 @@
                             (->
                               (db/query-by-code id)
                               :data
-                              (ut/if-empty {}))))
+                              (u/if-empty {}))))
              :available-media-types ["application/transit+json"
                                      "application/transit+msgpack"
                                      "application/json"])

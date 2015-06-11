@@ -1,6 +1,6 @@
 (ns tropology.api
   (:require [tropology.db :as db]
-            [com.numergent.url-tools :as ut]
+            [numergent.utils :as u]
             [taoensso.timbre.profiling :as prof]
             [tropology.base :as b]
             [clojure.string :as s]
@@ -129,7 +129,7 @@
         node   (db/query-by-code to-get)
         html   (-> (if (:is-redirect node) (:redirects-to node) to-get)
                    db/get-html
-                   (ut/if-empty ""))
+                   (u/if-empty ""))
         res    (-> html java.io.StringReader. e/html-resource)
         tropes (p/get-tropes res)
         links  (map p/process-links tropes)

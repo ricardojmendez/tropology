@@ -2,7 +2,7 @@
   (:require
     [cljs.test :as test :refer-macros [run-tests] :refer [report]]
     [tropology.test.core]
-    [tropology.test.utils]))
+    [numergent.test.utils]))
 
 
 (enable-console-print!)
@@ -17,5 +17,5 @@
   (run-tests
     (test/empty-env ::test/default)
     'tropology.test.core
-    'tropology.test.utils))
+    'numergent.test.utils))
 

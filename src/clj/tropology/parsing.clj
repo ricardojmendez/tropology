@@ -1,13 +1,13 @@
 (ns tropology.parsing
   (:require [clojure.string :refer [lower-case]]
-            [clojurewerkz.urly.core :as u]
-            [com.numergent.url-tools :as ut]
+            [clojurewerkz.urly.core :as urly]
+            [numergent.url-tools :as ut]
             [net.cgrand.enlive-html :as e]
             [taoensso.timbre :as timbre]
             [tropology.base :as b]
             [tropology.db :as db]
             [taoensso.timbre.profiling :as prof]
-            ))
+            [numergent.utils :as u]))
 
 
 (def ignored-categories (set ["administrivia" "tropers"]))
@@ -148,7 +148,7 @@
      (e/select res [:#wikitext :a.twikilink])
      (remove #(= "nofollow" (get-in % [:attrs :rel])))
      (pmap #(get-in % [:attrs :href]))
-     (pmap #(u/resolve host %))
+     (pmap #(urly/resolve host %))
      (pmap lower-case)
      (distinct)
      (filter is-valid-url?)
@@ -256,7 +256,7 @@
           (save-page-links!))
      (catch Throwable t
        ; (.printStackTrace t)
-       (if (-> t .getMessage (ut/if-empty "") (.contains "TransientError"))
+       (if (-> t .getMessage (u/if-empty "") (.contains "TransientError"))
          (timbre/trace (str "Transient error on " url ", not marking to retry. "))
          (log-node-exception! provenance t))))))
 
