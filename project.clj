@@ -24,7 +24,7 @@
                            [clojure.joda-time "0.4.0"]
                            [http-kit "2.1.19"]
                            [reagent "0.5.0" :exclusions [cljsjs/react]]
-                           [cljsjs/react-with-addons "0.12.2-4"]
+                           [cljsjs/react-with-addons "0.13.3-0"]
                            [reagent-utils "0.1.4"]
                            [liberator "0.13"]
                            [cheshire "5.5.0"]
