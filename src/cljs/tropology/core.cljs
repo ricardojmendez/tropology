@@ -24,6 +24,14 @@
 
 
 ;
+; UI and animation
+;
+
+(defn go-to-top []
+  (.animate (js/jQuery "html,body") (clj->js {:scrollTop (-> (js/jQuery "#top-anchor") .offset .-top )}) "slow"))
+
+
+;
 ; Handlers
 ;
 
@@ -60,6 +68,7 @@
     ; TODO: On load done, move the page up to the top
     (re-frame/dispatch [:clear-errors])
     (re-frame/dispatch [:pick-random-reference])
+    (go-to-top)
     (-> app-state
         (assoc-in [:article-data :current-article] response)
         (assoc-in [:article-data :references] (:references response)))))
@@ -156,9 +165,10 @@
   (if (and (map? attrs)
            (= "twikilink" (:class attrs))
            (:href attrs))
-    (-> attrs
-        (dissoc :href)
-        (assoc :on-click #(re-frame/dispatch (into [] (concat [:load-article (:href attrs)] extra-params)))))
+    (assoc attrs
+      :href nil
+      :on-click #(re-frame/dispatch (into [] (concat [:load-article (:href attrs)] extra-params)))
+      )
     attrs
     ))
 
@@ -282,7 +292,7 @@
         [:p (:description @current-article)]
         [:small
          [:a {:href (:url @current-article) :target (:code @current-article)} "View on TVTropes.org"]
-         [:i {:class "fa fa-external-link" :style {"margin-left" "4px"}}]]
+         [:i {:class "fa fa-external-link" :style {:marginLeft "4px"}}]]
         ]
        [button-item "Random Article" "btn-cta-primary pull-right" [:load-article ""] false [:i {:class "fa fa-paper-plane"}]]
        ]
