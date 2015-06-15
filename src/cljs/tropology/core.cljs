@@ -28,7 +28,7 @@
 ;
 
 (defn go-to-top []
-  (.animate (js/jQuery "html,body") (clj->js {:scrollTop (-> (js/jQuery "#top-anchor") .offset .-top )}) "slow"))
+  (.animate (js/jQuery "html,body") (clj->js {:scrollTop (-> (js/jQuery "#top-anchor") .offset .-top)}) "slow"))
 
 
 ;
@@ -378,9 +378,7 @@
          [:div {:class "section-inner"}
           [:h2 {:class "heading"} "There seems to have been a problem..."]
           [:div {:class "content"}
-           (for [error @errors]
-             ; We can't do a hash of the message, since we may get the same message more than once.
-             ^{:key (rand-int 999999)} [:div [:label {:class "control-label"} error]])
+           (map-indexed (fn [i error] ^{:key i} [:div [:label {:class "control-label"} error]]) @errors)
            ]
           ]]
         ))))
