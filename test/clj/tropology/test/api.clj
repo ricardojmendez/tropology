@@ -117,7 +117,7 @@
           _    (p/record-page! name "http://tvtropes.org/pmwiki/pmwiki.php/Main/TakeMeInstead")
           info (api/tropes-from-node "main/takemeinstead")
           ]
-      (is (= 6 (count info)))
+      (is (= 7 (count info)))
       (is (= "Take Me Instead - TV Tropes" (:title info)))
       (is (= "Main/TakeMeInstead" (:display info)))
       (is (= "main/takemeinstead" (:code info)))
@@ -150,7 +150,7 @@
           ]
       (is (:is-redirect redir))
       (is (= "main/takemeinstead" (:redirects-to redir)))
-      (is (= 6 (count info)))
+      (is (= 7 (count info)))
       (is (= "Take Me Instead - TV Tropes" (:title info)))
       (is (= "Main/TakeMeInstead" (:display info)))
       (is (= "main/takemeinstead" (:code info)))

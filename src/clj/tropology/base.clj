@@ -1,8 +1,8 @@
 (ns tropology.base
   (:require [clojure.string :as s]
             [clojure.string :refer [lower-case]]
-            [com.numergent.url-tools :as ut]
-            [clojurewerkz.urly.core :as u]
+            [numergent.utils :as u]
+            [clojurewerkz.urly.core :as urly]
             [taoensso.timbre.profiling :as prof]))
 
 (def base-path "/pmwiki/pmwiki.php/")
@@ -29,10 +29,10 @@
   [^String id]
   (if (nil? id)
     "Unknown"
-    (-> id (s/split #"/") first (ut/if-empty "Unknown"))))
+    (-> id (s/split #"/") first (u/if-empty "Unknown"))))
 
 (defn display-from-url [^String url]
-  (when url (-> (u/path-of url) (ut/if-nil "") (s/replace base-path ""))))
+  (when url (-> (urly/path-of url) (or "") (s/replace base-path ""))))
 
 (defn code-from-url [^String url]
   (when url (-> url display-from-url lower-case)))

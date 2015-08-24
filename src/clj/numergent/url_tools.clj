@@ -1,4 +1,4 @@
-(ns com.numergent.url-tools
+(ns numergent.url-tools
   (:require [clojurewerkz.urly.core :as u]))
 
 
@@ -13,16 +13,4 @@
   [url]
   (str (u/protocol-of url) "://" (u/host-of url) (u/path-of url)))
 
-(defn if-nil
-  "Returns a if not nil, b if otherwise"
-  [a b]
-  (if (nil? a) b a))
-
-(defn if-empty
-  "Returns a if neither nil or empty, b if otherwise"
-  [a b]
-  (if (or (nil? a) (empty? a)) b a))
-
-(defn in-seq? [s x]
-  (some? (some #{x} s)))
 

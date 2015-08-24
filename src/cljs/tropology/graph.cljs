@@ -3,7 +3,7 @@
             [goog.object :as gobject]
             [reagent.session :as session]
             [re-frame.core :as re-frame]
-            [tropology.utils :refer [in-seq?]]))
+            [numergent.utils :refer [in-seq?]]))
 
 
 

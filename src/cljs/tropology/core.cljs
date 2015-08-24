@@ -6,7 +6,7 @@
             [re-frame.core :as re-frame]
             [clojure.walk :refer [prewalk]]
             [tropology.graph :as graph]
-            [tropology.utils :refer [in-seq?]]
+            [numergent.utils :refer [in-seq?]]
             )
   (:require-macros [reagent.ratom :refer [reaction]]))
 
@@ -21,6 +21,14 @@
 
 (re-frame/register-sub :ui-state general-query)
 (re-frame/register-sub :article-data general-query)
+
+
+;
+; UI and animation
+;
+
+(defn go-to-top []
+  (.animate (js/jQuery "html,body") (clj->js {:scrollTop (-> (js/jQuery "#top-anchor") .offset .-top)}) "slow"))
 
 
 ;
@@ -60,6 +68,7 @@
     ; TODO: On load done, move the page up to the top
     (re-frame/dispatch [:clear-errors])
     (re-frame/dispatch [:pick-random-reference])
+    (go-to-top)
     (-> app-state
         (assoc-in [:article-data :current-article] response)
         (assoc-in [:article-data :references] (:references response)))))
@@ -156,9 +165,10 @@
   (if (and (map? attrs)
            (= "twikilink" (:class attrs))
            (:href attrs))
-    (-> attrs
-        (dissoc :href)
-        (assoc :on-click #(re-frame/dispatch (into [] (concat [:load-article (:href attrs)] extra-params)))))
+    (assoc attrs
+      :href nil
+      :on-click #(re-frame/dispatch (into [] (concat [:load-article (:href attrs)] extra-params)))
+      )
     attrs
     ))
 
@@ -264,6 +274,9 @@
 ; Components
 ;
 
+(def css-transition-group
+  (reagent/adapt-react-class js/React.addons.CSSTransitionGroup))
+
 (defn button-item [label class dispatch-vals is-disabled? extra-items]
   [:button {:type :button :class (str "btn " class) :disabled is-disabled? :on-click #(re-frame/dispatch dispatch-vals)} extra-items label])
 
@@ -279,7 +292,7 @@
         [:p (:description @current-article)]
         [:small
          [:a {:href (:url @current-article) :target (:code @current-article)} "View on TVTropes.org"]
-         [:i {:class "fa fa-external-link" :style {"margin-left" "4px"}}]]
+         [:i {:class "fa fa-external-link" :style {:marginLeft "4px"}}]]
         ]
        [button-item "Random Article" "btn-cta-primary pull-right" [:load-article ""] false [:i {:class "fa fa-paper-plane"}]]
        ]
@@ -327,7 +340,8 @@
 (defn like-list-display []
   (let [like-list (re-frame/subscribe [:article-data :like-list])]
     (fn []
-      [:div
+      [css-transition-group {:transition-name "references"}
+
        (for [trope @like-list]
          ^{:key (hash trope)} [trope-reference-row trope])
        ])))
@@ -364,9 +378,7 @@
          [:div {:class "section-inner"}
           [:h2 {:class "heading"} "There seems to have been a problem..."]
           [:div {:class "content"}
-           (for [error @errors]
-             ; We can't do a hash of the message, since we may get the same message more than once.
-             ^{:key (rand-int 999999)} [:div [:label {:class "control-label"} error]])
+           (map-indexed (fn [i error] ^{:key i} [:div [:label {:class "control-label"} error]]) @errors)
            ]
           ]]
         ))))

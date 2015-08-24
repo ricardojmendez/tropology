@@ -1,4 +1,4 @@
-(defproject tropology "0.5.0"
+(defproject tropology "1.0.0"
             :description "Tropology - Crawling and Visualizing TVTropes"
             :url "http://numergent.com/tags/tropology/"
 
@@ -23,7 +23,8 @@
                            [com.curiosity/urly "2.0.0-alpha6"]
                            [clojure.joda-time "0.4.0"]
                            [http-kit "2.1.19"]
-                           [reagent "0.5.0"]
+                           [reagent "0.5.0" :exclusions [cljsjs/react]]
+                           [cljsjs/react-with-addons "0.13.3-0"]
                            [reagent-utils "0.1.4"]
                            [liberator "0.13"]
                            [cheshire "5.5.0"]
@@ -33,13 +34,14 @@
                            [re-frame "0.4.1"]
                            ]
 
-            :source-paths ["src/clj" "src/cljs"]
+            :source-paths ["src/clj" "src/cljs" "src/cljc"]
+            :test-paths ["test/clj" "test/cljs" "test/cljc"]
 
 
             :cljsbuild {:builds
                         {:app
                          {
-                          :source-paths ["src/cljs"]
+                          :source-paths ["src/cljs" "src/cljc"]
                           :compiler     {:output-dir    "resources/public/js/"
                                          :externs       ["react/externs/react.js" "resources/externs/sigma.js"]
                                          :optimizations :none
@@ -50,7 +52,7 @@
                           }
                          :test
                          {
-                          :source-paths ["src/cljs" "test/cljs"]
+                          :source-paths ["src/cljs" "test/cljs" "test/cljc"]
                           :compiler     {:output-to     "target/test/tropology-tests.js"
                                          :output-dir    "target/test"
                                          :optimizations :whitespace
