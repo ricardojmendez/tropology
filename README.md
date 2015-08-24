@@ -2,9 +2,9 @@
 
 Tropology crawls TVTropes.org, converts the relationships between pages into a PostgreSQL database, and helps you visualize relationships between concepts, tropes, creators and material.
 
-This is currently a personal experiment.  Consider it raw, pre-alpha code and likely to change.
+This is currently a personal experiment. It'll change, as experiments do, but maybe you'll find use in it as a testing playground.
 
-This is version 0.6.0-SNAPSHOT.
+This is version 1.0.0.
 
 [You can read more on our site](http://numergent.com/tags/tropology/).
 
@@ -77,8 +77,8 @@ None of this information is currently saved, since I'm only playing with the tro
 Next steps I'm considering are:
 
 * Save a set of references we've found interesting during the exploration stage.
-* We're currently showing as possible snippets all *twikilink* elements, but some summary articles use that only to link to other sub-sections and don't contain any actual information.  See about filtering them out.
-* Search, to allow you to start your exploration from a preferred topic.
+* We're currently showing as possible snippets all *twikilink* elements, but some summary articles use that only to link to other sub-sections and don't contain any actual information.  Consider filtering them out, see if can easily differentiate between those that have content and those that don't.
+* Search, to allow you to start your exploration from a preferred topic.  Need to decide if this will happen from a topic title or if I want to add full text search (which would significantly increase the database size).
 * Likely a lighter visual theme.
 
 
