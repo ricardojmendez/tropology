@@ -4,7 +4,7 @@ Tropology crawls TVTropes.org, converts the relationships between pages into a P
 
 This is currently a personal experiment. It'll change, as experiments do, but maybe you'll find use in it as a testing playground.
 
-This is version 1.0.0.
+This is version 1.0.1.
 
 [You can read more on our site](http://numergent.com/tags/tropology/).
 

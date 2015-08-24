@@ -1,9 +1,9 @@
-(defproject tropology "1.0.0"
+(defproject tropology "1.0.1"
             :description "Tropology - Crawling and Visualizing TVTropes"
             :url "http://numergent.com/tags/tropology/"
 
-            :dependencies [[org.clojure/clojure "1.7.0-RC1"]
-                           [org.clojure/clojurescript "0.0-3308"]
+            :dependencies [[org.clojure/clojure "1.7.0"]
+                           [org.clojure/clojurescript "1.7.48"]
                            [cljs-ajax "0.3.12"]
                            [ring-server "0.4.0"]
                            [selmer "0.8.2"]
@@ -43,7 +43,7 @@
                          {
                           :source-paths ["src/cljs" "src/cljc"]
                           :compiler     {:output-dir    "resources/public/js/"
-                                         :externs       ["react/externs/react.js" "resources/externs/sigma.js"]
+                                         :externs       ["react/externs/react.js" "resources/externs/sigma.js" "resources/externs/jquery-1.9.js"]
                                          :optimizations :none
                                          :output-to     "resources/public/js/core.js"
                                          :source-map    "resources/public/js/core.js.map"
