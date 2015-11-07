@@ -3,7 +3,8 @@
             [goog.object :as gobject]
             [reagent.session :as session]
             [re-frame.core :as re-frame]
-            [numergent.utils :refer [in-seq?]]))
+            [numergent.utils :refer [in-seq?]]
+            [sigma]))
 
 
 

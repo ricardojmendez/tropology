@@ -40,7 +40,7 @@ I'm no longer publishing a database version without the contents, since the curr
 
 ### Testing
 
-Clojure tests can be run with `lein test`, once the [test database](#postgresql) has been created.  For the ClojureScript tests you'll need to install [PhantomJS 2](http://phantomjs.org/), and run `lein cljsbuild test`.
+Clojure tests can be run with `lein test`, once the [test database](#postgresql) has been created.  For the ClojureScript tests you'll need to install [PhantomJS 2](http://phantomjs.org/), and run `lein doo phantom` (which can be used to continually run the tests as you work).
 
 ## A note on Cursive Clojure
 
