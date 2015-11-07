@@ -3,35 +3,35 @@
             :url "http://numergent.com/tags/tropology/"
 
             :dependencies [[org.clojure/clojure "1.7.0"]
-                           [org.clojure/clojurescript "1.7.48"]
-                           [cljs-ajax "0.3.12"]
+                           [org.clojure/clojurescript "1.7.170"]
+                           [cljs-ajax "0.5.1"]
                            [ring-server "0.4.0"]
-                           [selmer "0.8.2"]
                            [com.taoensso/timbre "3.4.0"]
+                           [selmer "0.9.4"]
                            [com.taoensso/tower "3.0.2"]
-                           [markdown-clj "0.9.66"]
-                           [environ "1.0.0"]
+                           [markdown-clj "0.9.78"]
+                           [environ "1.0.1"]
                            [im.chit/cronj "1.4.3"]
-                           [compojure "1.3.4"]
+                           [compojure "1.4.0"]
                            [ring/ring-defaults "0.1.5"]
                            [ring/ring-session-timeout "0.1.0"]
-                           [ring-middleware-format "0.5.0"]
+                           [ring-middleware-format "0.7.0"]
                            [noir-exception "0.2.5"]
                            [bouncer "0.3.3"]
                            [prone "0.8.2"]
-                           [enlive "1.1.5"]
+                           [enlive "1.1.6"]
                            [com.curiosity/urly "2.0.0-alpha6"]
-                           [clojure.joda-time "0.4.0"]
+                           [clojure.joda-time "0.6.0"]
                            [http-kit "2.1.19"]
-                           [reagent "0.5.0" :exclusions [cljsjs/react]]
-                           [cljsjs/react-with-addons "0.13.3-0"]
-                           [reagent-utils "0.1.4"]
+                           [reagent "0.5.1" :exclusions [cljsjs/react]]
+                           [cljsjs/react-with-addons "0.14.0-1"]
+                           [reagent-utils "0.1.5"]
                            [liberator "0.13"]
                            [cheshire "5.5.0"]
                            [korma "0.4.2"]
                            [org.postgresql/postgresql "9.4-1201-jdbc41"]
                            [io.clojure/liberator-transit "0.3.0"]
-                           [re-frame "0.4.1"]
+                           [re-frame "0.5.0"]
                            ]
 
             :source-paths ["src/clj" "src/cljs" "src/cljc"]
@@ -74,7 +74,7 @@
             :main tropology.core
 
             :plugins [[lein-ring "0.9.1"]
-                      [lein-cljsbuild "1.0.6"]
+                      [lein-cljsbuild "1.1.1"]
                       [lein-environ "1.0.0"]
                       [lein-ancient "0.6.7"]
                       [clj-sql-up "0.3.7"]
@@ -121,10 +121,10 @@
                           :aot  :all
                           }
              :dev        {:dependencies [[ring-mock "0.1.5"]
-                                         [ring/ring-devel "1.3.2"]
+                                         [ring/ring-devel "1.4.0"]
                                          [pjstadig/humane-test-output "0.7.0"]
-                                         [leiningen "2.5.1"]
-                                         [figwheel "0.3.3" :exclusions [org.clojure/clojure]]
+                                         [leiningen "2.5.3"]
+                                         [figwheel "0.4.1" :exclusions [org.clojure/clojure]]
                                          ]
                           :plugins      [[lein-figwheel "0.3.3"]]
 
@@ -148,7 +148,7 @@
                                          :expiration      14
                                          }}
              :test       {:dependencies [[pjstadig/humane-test-output "0.7.0"]
-                                         [leiningen "2.5.1"]]
+                                         [leiningen "2.5.3"]]
                           :repl-options {:init-ns tropology.repl}
                           :injections   [(require 'pjstadig.humane-test-output)
                                          (pjstadig.humane-test-output/activate!)]
