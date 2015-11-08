@@ -3,7 +3,7 @@
   :url "http://numergent.com/tags/tropology/"
 
   :dependencies [[org.clojure/clojure "1.7.0"]
-                 [org.clojure/clojurescript "1.7.170"]
+                 [org.clojure/clojurescript "1.7.122"]
                  [cljs-ajax "0.5.1"]
                  [ring-server "0.4.0"]
                  [com.taoensso/timbre "3.4.0"]
@@ -69,7 +69,7 @@
   :doo {:build "test"}
 
   :plugins [[lein-ring "0.9.7"]
-            [lein-cljsbuild "1.1.1"]
+            [lein-cljsbuild "1.1.0"]
             [lein-environ "1.0.1"]
             [lein-ancient "0.6.8"]
             [clj-sql-up "0.3.7"]
