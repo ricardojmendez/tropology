@@ -66,7 +66,6 @@
 (re-frame/register-handler
   :load-article-done
   (fn [app-state [_ response]]
-    ; TODO: On load done, move the page up to the top
     (re-frame/dispatch [:clear-errors])
     (re-frame/dispatch [:pick-random-reference])
     (go-to-top)
