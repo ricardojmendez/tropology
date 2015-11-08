@@ -68,10 +68,10 @@
 
   :doo {:build "test"}
 
-  :plugins [[lein-ring "0.9.1"]
+  :plugins [[lein-ring "0.9.7"]
             [lein-cljsbuild "1.1.1"]
-            [lein-environ "1.0.0"]
-            [lein-ancient "0.6.7"]
+            [lein-environ "1.0.1"]
+            [lein-ancient "0.6.8"]
             [clj-sql-up "0.3.7"]
             [lein-doo "0.1.6-SNAPSHOT"]
             ]
