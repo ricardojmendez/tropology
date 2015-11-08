@@ -122,7 +122,7 @@
                                [leiningen "2.5.3"]
                                [figwheel "0.4.1" :exclusions [org.clojure/clojure]]
                                ]
-                :plugins      [[lein-figwheel "0.3.3"]]
+                :plugins      [[lein-figwheel "0.4.1"]]
 
                 :figwheel     {:http-server-root "public"
                                :server-port      3449
