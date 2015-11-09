@@ -1,4 +1,4 @@
-(defproject tropology "1.0.2-SNAPSHOT"
+(defproject tropology "1.0.2"
   :description "Tropology - Crawling and Visualizing TVTropes"
   :url "http://numergent.com/tags/tropology/"
 
