@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## 1.0.2
+
+Moved tests to doo
+
+## 1.0.0
+
+First major release.
+
 ## 0.5.0
 
 * New graph visualization for the concepts the user has liked.

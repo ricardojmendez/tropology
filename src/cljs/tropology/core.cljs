@@ -6,6 +6,7 @@
             [re-frame.core :as re-frame]
             [clojure.walk :refer [prewalk]]
             [tropology.graph :as graph]
+            [cljsjs.react]
             [numergent.utils :refer [in-seq?]]
             )
   (:require-macros [reagent.ratom :refer [reaction]]))
@@ -65,7 +66,6 @@
 (re-frame/register-handler
   :load-article-done
   (fn [app-state [_ response]]
-    ; TODO: On load done, move the page up to the top
     (re-frame/dispatch [:clear-errors])
     (re-frame/dispatch [:pick-random-reference])
     (go-to-top)
@@ -93,8 +93,6 @@
     (let [like-list (get-in app-state [:article-data :like-list])
           element   {:ref article-ref :code (:code current-article) :display (:display current-article) :image (:image current-article)}
           ]
-      ; (.log js/console current-article)
-      ; (.log js/console article-ref)
       (if (not (in-seq? like-list element))
         (assoc-in app-state [:article-data :like-list] (conj like-list element))
         app-state)
@@ -103,7 +101,6 @@
 (re-frame/register-handler
   :remove-like
   (fn [app-state [_ article-ref]]
-    #_ (.log js/console (str "Removing " article-ref))
     (let [new-like-list (remove #(= article-ref (:ref %)) (get-in app-state [:article-data :like-list]))
           no-likes?     (empty? new-like-list)
           show-graph?   (and (get-in app-state [:ui-state :show-graph?]) (not no-likes?))]

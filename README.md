@@ -4,7 +4,7 @@ Tropology crawls TVTropes.org, converts the relationships between pages into a P
 
 This is currently a personal experiment. It'll change, as experiments do, but maybe you'll find use in it as a testing playground.
 
-This is version 1.0.1.
+This is version 1.0.2.
 
 [You can read more on our site](http://numergent.com/tags/tropology/).
 
@@ -40,7 +40,7 @@ I'm no longer publishing a database version without the contents, since the curr
 
 ### Testing
 
-Clojure tests can be run with `lein test`, once the [test database](#postgresql) has been created.  For the ClojureScript tests you'll need to install [PhantomJS 2](http://phantomjs.org/), and run `lein cljsbuild test`.
+Clojure tests can be run with `lein test`, once the [test database](#postgresql) has been created.  For the ClojureScript tests you'll need to install [PhantomJS 2](http://phantomjs.org/), and run `lein doo phantom` (which can be used to continually run the tests as you work).
 
 ## A note on Cursive Clojure
 
