@@ -10,7 +10,7 @@
             [ring.middleware.defaults :refer [site-defaults]]
             [compojure.route :as route]
             [taoensso.timbre :as timbre]
-            [taoensso.timbre.appenders.rotor :as rotor]
+            [taoensso.timbre.appenders.3rd-party.rotor :as rotor]
             [selmer.parser :as parser]
             [environ.core :refer [env]]
             [cronj.core :as cronj]
@@ -80,18 +80,15 @@
 
   (timbre/info "Initializing...")
 
-  (timbre/set-config!
-    [:appenders :rotor]
-    {:min-level             :info
-     :enabled?              true
-     :async?                false                           ; should be always false for rotor
-     :max-message-per-msecs nil
-     :fn                    rotor/appender-fn})
-
-  (timbre/set-config!
-    [:shared-appender-config :rotor]
-    {:path "tropology.log" :max-size (* 512 1024) :backlog 10})
-
+  (timbre/merge-config!
+    {:min-level :info
+     :enabled?  true
+     :async?    false                                                 ; should be always false for rotor
+     :appenders {:rotor (rotor/rotor-appender
+                          {:path     "tropology.log"
+                           :max-size (* 512 1024)
+                           :backlog  10})}
+     })
 
   (timbre/info (str "Updating " (:update-size env) " using " (:update-cron env)))
 

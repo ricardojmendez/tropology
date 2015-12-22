@@ -6,7 +6,7 @@
                  [org.clojure/clojurescript "1.7.170"]
                  [cljs-ajax "0.5.2"]
                  [ring-server "0.4.0"]
-                 [com.taoensso/timbre "3.4.0"]
+                 [com.taoensso/timbre "4.1.4"]
                  [selmer "0.9.6"]
                  [com.taoensso/tower "3.0.2"]
                  [markdown-clj "0.9.82"]
