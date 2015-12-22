@@ -8,7 +8,8 @@
             [clojure.string :as s]
             [tropology.db :as db]
             [tropology.parsing :as p]
-            [tropology.test.parsing :as tp]))
+            [tropology.test.parsing :as tp]
+            [tropology.s3 :as s3]))
 
 (defn wipe-test-db []
   (delete contents)
@@ -80,7 +81,8 @@
 (deftest test-create-page
   (wipe-test-db)
   ; Test single page creation
-  (let [_    (create-page-and-links! (basic-test-node "TestNode/First"))
+  (let [_    (create-page-and-links! (assoc (basic-test-node "TestNode/First")
+                                       :html "Basic test node"))
         all  (get-all-articles)
         item (first all)]
     (is (= 1 (count all)))
@@ -93,6 +95,7 @@
                ; Review defaults
                :category nil
                :image nil
+               :size 15
                :has-error false
                :is-redirect false))
   ; Test creating linked nodes
@@ -143,11 +146,12 @@
                        )))
 
 
-(deftest test-get-html
-  (wipe-test-db)
-  (insert contents (values {:code "test-code" :html "Some HTML message that isn't very long"}))
-  (is (= 38 (count (get-html "test-code"))))
-  (is (nil? (get-html "invalid-code"))))
+(deftest test-get-string
+  (s3/put-string! "test-code" "Some HTML message that isn't very long")
+  (is (= 38 (count (s3/get-string "test-code"))))
+  (is (nil? (s3/get-string "invalid-code")))
+  (println "Yes, we were supposed to get an AmazonS3Exception exception logged up there. ⤴")
+  )
 
 
 (deftest test-query-nodes-when-empty
@@ -169,6 +173,7 @@
                       :type        "Test"
                       :title       (str "Test node " i)
                       :is-redirect is-redirect
+                      :size        (inc i)                  ; Add a fake size
                       :has-error   false})))))
 
 (defn create-contents!
@@ -177,16 +182,15 @@
   ([n file-path base-n]
    (let [html (slurp (str tp/test-file-path file-path))]
      (dotimes [s n]
-       (db/save-page-contents! {:code (str "TestNode/" (+ s base-n))
-                                :html html})
-       ))))
+       (s3/put-string! (str "TestNode/" (+ s base-n)) html)
+       )
+     )))
 
 
 (deftest test-fetch-random-code
   (wipe-test-db)
   (create-nodes! 50 false)
   (create-contents! 10 "TakeMeInstead-pruned.html")
-  (is (= 10 (count (get-all-contents))))
   (is (= 50 (count (get-all-articles))))
   (dotimes [_ 100]
     ; Run this a few times to ensure we can always get a random code

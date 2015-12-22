@@ -33,6 +33,7 @@
                  [io.clojure/liberator-transit "0.3.0"]
                  [re-frame "0.6.0"]
                  [lein-doo "0.1.6"]
+                 [amazonica "0.3.41"]
                  ]
 
   :source-paths ["src/clj" "src/cljs" "src/cljc"]
@@ -116,7 +117,8 @@
                        :expiration  14}
                 :aot  :all
                 }
-   :dev        {:dependencies [[ring-mock "0.1.5"]
+   :dev        [:proj/dev :profiles/dev]
+   :proj/dev   {:dependencies [[ring-mock "0.1.5"]
                                [ring/ring-devel "1.4.0"]
                                [pjstadig/humane-test-output "0.7.1"]
                                [leiningen "2.5.3"]
@@ -142,8 +144,13 @@
                                :update-size     5
                                :update-disabled true
                                :expiration      14
+                               :s3              {:bucket-name "tropology-dev"
+                                                 :access-key  "add access key on profiles.clj"
+                                                 :secret-key  "add secret key on profiles.clj"
+                                                 :endpoint    "add endpoint on profiles.clj"}
                                }}
-   :test       {:dependencies [[pjstadig/humane-test-output "0.7.1"]
+   :test       [:proj/test :profiles/test]
+   :proj/test  {:dependencies [[pjstadig/humane-test-output "0.7.1"]
                                [leiningen "2.5.3"]]
                 :repl-options {:init-ns tropology.repl}
                 :injections   [(require 'pjstadig.humane-test-output)
@@ -169,4 +176,9 @@
                                :update-size     5
                                :update-disabled true
                                :expiration      10
+                               :s3              {:bucket-name "tropology-test"
+                                                 :access-key  "add access key on profiles.clj"
+                                                 :secret-key  "add secret key on profiles.clj"
+                                                 :endpoint    "add endpoint on profiles.clj"}
+
                                }}})

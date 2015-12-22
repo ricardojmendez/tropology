@@ -4,7 +4,7 @@ Tropology crawls TVTropes.org, converts the relationships between pages into a P
 
 This is currently a personal experiment. It'll change, as experiments do, but maybe you'll find use in it as a testing playground.
 
-This is version 1.1-SNAPSHOT.
+This is version 1.1-SNAPSHOT. **This version is very much a work in progress**, as I am making some fundamental changes to use AWS.
 
 [You can read more on our site](http://numergent.com/tags/tropology/).
 
@@ -30,6 +30,23 @@ After you have installed PostgreSQL and created the databases, you'll need to ru
     ENV=test lein clj-sql-up migrate
     lein clj-sql-up migrate
 
+### AWS
+
+I'm in the process of migrating the data storage to AWS. Currently the documents crawled are stored on a S3 bucket. 
+
+You'll need to configure your environment to add values for the S3 access key, secret key and endpoint. You can also create a `profiles.clj` with these values.  
+
+```clojure
+{:profiles/dev  {:env {:s3 {:access-key "..."
+                            :secret-key "..."
+                            :endpoint   "us-west-2"}}}
+ :profiles/test {:env {:s3 {:access-key "..."
+                            :secret-key "..."
+                            :endpoint   "us-west-1"}}}}
+```
+
+
+
 ### Sample database
 
 [Here you can find a pg_dump'd copy of the fully scanned site](https://mega.co.nz/#!EhZxhBhK!lT38KiMhGxTbjGKD6tJuimc48Tay4ILkEt70evgeM7c). It's 3.22GBs, and includes the entire CC-licensed pages for those matching our crawl settings.
@@ -37,6 +54,8 @@ After you have installed PostgreSQL and created the databases, you'll need to ru
 Import into Postgres using psql as usual.
 
 I'm no longer publishing a database version without the contents, since the current visualization and exploration rely on the HTML to extract the reference descriptions.
+
+I intend to replace that with an S3 bucket dump once the new version is live.
 
 ### Testing
 

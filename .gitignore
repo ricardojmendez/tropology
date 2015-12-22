@@ -12,3 +12,4 @@ pom.xml.asc
 *~
 *.log
 resources/public/js/
+profiles.clj

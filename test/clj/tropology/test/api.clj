@@ -62,9 +62,7 @@
                          "testnode/n2" "testnode/n3"
                          "testnode/n3" "testnode/n5"
                          "testnode/n5" "testnode/n6"
-                         ))
-
-  )
+                         )))
 
 (deftest test-node-relationships
   (wipe-test-db)
@@ -131,20 +129,23 @@
         )))
   (testing "Invalid code should return nil"
     (let [info (api/tropes-from-node "main/takemeinstead-er")]
-      (is (nil? info))))
+      (is (nil? info))
+      (println "Yes, we were supposed to get an AmazonS3Exception exception logged up there. ⤴")
+      ))
   (testing "Receiving a slash as the code return a random trope"
     (let [info (api/tropes-from-node "/")]
       (is (:code info))))
   (testing "Receiving empty string as the code returns nil"
     (is (nil? (api/tropes-from-node "")))
-    (is (nil? (api/tropes-from-node nil))))
+    (is (nil? (api/tropes-from-node nil)))
+    )
   )
 
 (deftest test-tropes-from-redirect-node
   (wipe-test-db)
   (testing "When requesting the tropes for a redirector, we get the tropes for the one it redirects to"
     (let [name  (str tp/test-file-path "TakeMeInstead-retrieve-tropes.html")
-          _     (p/record-page! name "http://tvtropes.org/pmwiki/pmwiki.php/Main/RedirectMe")
+          _     @(p/record-page! name "http://tvtropes.org/pmwiki/pmwiki.php/Main/RedirectMe")
           redir (db/query-by-code "main/redirectme")
           info  (api/tropes-from-node "main/redirectme")
           ]

@@ -7,7 +7,8 @@
             [tropology.parsing :refer :all]
             [tropology.db :as db]
             [tropology.base :as b]
-            [clojure.string :as s]))
+            [clojure.string :as s]
+            [tropology.s3 :as s3]))
 
 
 ;
@@ -47,7 +48,7 @@
           _     (record-page! path "http://tvtropes.org/pmwiki/pmwiki.php/Anime/CowboyBebop")
           saved (tdb/get-all-articles)
           rels  (tdb/get-all-article-rels)
-          html  (db/get-html "anime/cowboybebop")
+          html  (s3/get-string "anime/cowboybebop")
           item  (db/query-by-code "anime/cowboybebop")]
       (is (= 317565 (count html)))
       (is (= 650 (count saved)))
@@ -123,7 +124,7 @@
                       :provenance "http://tvtropes.org/pmwiki/pmwiki.php/Main/AmericanSeries"}
                      ]
           ; We can't pmap these yet, as transactions abort while waiting on a lock
-          _         (doall (map #(record-page! (:url %) (:provenance %)) to-import))
+          futures   (doall (map #(record-page! (:url %) (:provenance %)) to-import))
           all-nodes (tdb/get-all-articles)
           all-rels  (tdb/get-all-article-rels)
           to-review (db/query-for-codes ["Main/Manga" "Funny/Film" "Main/HumorDissonance" "Creator/TomokazuSugita"])
@@ -138,8 +139,12 @@
                                     "funny/film" 0 1543
                                     "main/humordissonance" 1 0
                                     "creator/tomokazusugita" 1 0)
-      (is (= 10 (count (tdb/get-all-contents))))
-      (are [code len] (= len (count (db/get-html code)))
+      ;; Above we got a list of futures for the contents, so we'll wait
+      ;; on them before running the next test
+      (doall (pmap deref futures))
+      (are [code len] (= len
+                         (count (s3/get-string code))
+                         (:size (first (filter #(= code (:code %)) all-nodes))))
                       "main/manga" 411644
                       "main/anime" 442350
                       "funny/film" 433272
@@ -273,12 +278,12 @@
         _     (record-page! path "http://tvtropes.org/pmwiki/pmwiki.php/Main/TakeMeInstead")
         again (tdb/get-all-articles)
         links (select db/links (where {:from-code "main/takemeinstead"}))
-        html  (first (tdb/get-all-contents))
+        html  (s3/get-string "main/takemeinstead")
         ]
     (is (= 5 (count saved)))                                ; There's only five links on the file
     (is (= 5 (count again)))                                ; Same number of links is returned the second time
     (is (= 4 (count links)))                                ; No duplicated links are created
-    (is (= 9381 (count (:html html))))
+    (is (= 9381 (count html)))
     ))
 
 (deftest test-record-page-with-redirect

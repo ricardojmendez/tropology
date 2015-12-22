@@ -128,7 +128,7 @@
   (let [to-get (if (= code "/") (db/fetch-random-contents-code) code)
         node   (db/query-by-code to-get)
         html   (-> (if (:is-redirect node) (:redirects-to node) to-get)
-                   db/get-html
+                   tropology.s3/get-string
                    (u/if-empty ""))
         res    (-> html java.io.StringReader. e/html-resource)
         tropes (p/get-tropes res)

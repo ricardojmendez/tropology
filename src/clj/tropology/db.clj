@@ -5,6 +5,7 @@
             [korma.core :refer :all]
             [korma.db :as kdb]
             [tropology.base :as b]
+            [tropology.s3 :as s3]
             [taoensso.timbre.profiling :as prof]
             [environ.core :refer [env]]
             [numergent.utils :as u]))
@@ -58,16 +59,6 @@
       )
     (prof/p :save-page)))
 
-(defn save-page-contents!
-  "Saves a page contents record, or updates an existing one."
-  [record]
-  (->>
-    (let [code (lower-case (:code record))]
-      (delete contents (where {:code code}))                ; Let's not even retrieve it
-      (insert contents (values record)))
-    (prof/p :save-contents)))
-
-
 ;
 ; Timestamp functions
 ;
@@ -116,8 +107,9 @@
 
 
 (defn fetch-random-contents-code []
-  (->> (select contents
+  (->> (select pages
                (fields :code)
+               (where (> :size 0))
                (order (raw "random()"))
                (limit 1))
        (map rename-db-keywords)
@@ -166,8 +158,20 @@
          first)))
 
 
+(defn save-page-contents!
+  "Saves a page contents record, or updates an existing one."
+  [{:keys [code html]}]
+  (prof/p :save-contents
+          (update pages
+                  (where {:code (lower-case code)})
+                  (set-fields {:size (count html)}))
+          (s3/put-string! (lower-case code) html)
+          )
+  )
+
 (defn create-page-and-links!
   "Creates a page and all its related to links in a single transaction.
+  Returns a future to the action where we're saving their contents
 
   I considered doing a try-times here so that we can parallelize and retry
   in transient exceptions. It doesn't make any sense to retry and walk into
@@ -184,10 +188,14 @@
    (let [code       (lower-case (:code node))
          link-codes (map :code links)
          html       (:html node)
+         upload     (future (save-page-contents! {:code code :html html}))
          all-codes  (conj link-codes (:code node))]
+
      (kdb/transaction
-       (save-page! (-> node timestamp-next-update (dissoc :html)))
-       (save-page-contents! {:code code :html html})
+       (save-page! (-> node
+                       timestamp-next-update
+                       (dissoc :html)
+                       (assoc :size (count html))))
        (create-all-unknown! links)
        (create-relationships! code link-codes rel)
        (update pages
@@ -200,8 +208,9 @@
          (-> redirector
              timestamp-update
              (assoc :is-redirect true :redirects-to code)
-             save-page!))
-       ))
+             save-page!)))
+       upload
+     )
     ))
 
 
@@ -234,16 +243,6 @@
                   (limit node-limit))
           (pmap :url))
      '())))
-
-
-(defn get-html
-  "Returns the HTML for a code, or nil"
-  [code]
-  (->>
-    (select contents (where {:code code}) (fields :html))
-    first
-    :html
-    (prof/p :get-html)))
 
 ;
 ; Link querying
