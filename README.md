@@ -19,7 +19,7 @@ You will need [Leiningen][1] 2.0 or above installed.
 
 ### PostgreSQL
 
-My current development environment is PostgreSQL 9.4.1. It expects a database called _tropology_ for the dev environment, and _tropology_test_ for the test environment.
+My current development environment is PostgreSQL 9.4.5. It expects a database called _tropology_ for the dev environment, and _tropology_test_ for the test environment.
 
 There are migration scripts included, but they act only upon the tables and do not create the databases.
 

@@ -1,3 +1,2 @@
-boot2docker start
-$(boot2docker shellinit)
+eval "$(docker-machine env default)"
 docker start tropology-test-pg

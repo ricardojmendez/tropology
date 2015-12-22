@@ -82,8 +82,8 @@
          :destroy      tropology.handler/destroy
          :uberwar-name "tropology.war"}
 
-  :clj-sql-up {:database-test "jdbc:postgresql://192.168.59.103:5432/tropology_test?user=postgres&password=testdb"
-               :database      "jdbc:postgresql://192.168.59.103:5432/tropology?user=postgres&password=testdb"
+  :clj-sql-up {:database-test "jdbc:postgresql://192.168.99.100:5432/tropology_test?user=postgres&password=testdb"
+               :database      "jdbc:postgresql://192.168.99.100:5432/tropology?user=postgres&password=testdb"
                :deps          [[org.postgresql/postgresql "9.4-1201-jdbc41"]]
                }
 
@@ -135,7 +135,7 @@
                 :cljsbuild    {:builds {:app {:source-paths ["env/dev/cljs"]}}}
                 :env          {:dev             true
                                :db-name         "tropology"
-                               :db-host         "192.168.59.103"
+                               :db-host         "192.168.99.100"
                                :db-user         "postgres"
                                :db-password     "testdb"
                                :update-cron     "0 /2 * * * * *"
@@ -162,7 +162,7 @@
                                         }}
                 :env          {:dev             true
                                :db-name         "tropology_test"
-                               :db-host         "192.168.59.103"
+                               :db-host         "192.168.99.100"
                                :db-user         "postgres"
                                :db-password     "testdb"
                                :update-cron     "0 /2 * * * * *"
