@@ -59,9 +59,6 @@
   (->> (select links)
        (map db/rename-db-keywords)))
 
-(defn get-all-contents []
-  (select contents))
-
 ;
 ; Tests
 ;
