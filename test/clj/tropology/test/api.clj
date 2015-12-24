@@ -36,33 +36,6 @@
     )
   )
 
-(deftest test-network-from-node
-  (wipe-test-db)
-  (create-test-network)
-  ; Test relationships
-  (let [r     (network-from-node "testnode/n1")
-        nodes (:nodes r)
-        edges (:edges r)
-        ]
-    (is nodes)
-    (is edges)
-    (is (= 5 (count nodes)))
-    (are [code] (some #(= (:id %) code) nodes)
-                "testnode/n1"
-                "testnode/n2"
-                "testnode/n3"
-                "testnode/n5"
-                "testnode/n6")
-    (is (= 7 (count edges)))
-    (are [source target] (some #(and (= (:target %) target) (= (:source %) source)) edges)
-                         "testnode/n1" "testnode/n2"
-                         "testnode/n1" "testnode/n3"
-                         "testnode/n1" "testnode/n5"
-                         "testnode/n1" "testnode/n6"
-                         "testnode/n2" "testnode/n3"
-                         "testnode/n3" "testnode/n5"
-                         "testnode/n5" "testnode/n6"
-                         )))
 
 (deftest test-node-relationships
   (wipe-test-db)

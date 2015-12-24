@@ -269,6 +269,7 @@
   (->> (query-node-rel code rel :links.from-code :links.to-code)
        (prof/p :query-from)))
 
+
 (defn query-to
   "Retrieves the list of nodes that links to a node.
   Yes, the parameter order is the opposite from query-links-from,
@@ -277,44 +278,6 @@
   (->> (query-node-rel code rel :links.to-code :links.from-code)
        (prof/p :query-to)))
 
-(defn query-common-nodes-from
-  "Given a starting node code (common-code) and a list of node codes-from
-  to query from, it returns the information for all nodes that code-from
-  links out to that are also related to the starting node code in any
-  direction."
-  ([^String common-code]
-   (query-common-nodes-from common-code :LINKSTO 1000))
-  ([^String common-code rel incoming-link-limit]
-   (->>
-     (let [code  (lower-case common-code)
-           query (-> (select* links)
-                     (join :inner [pages :p1] (= :links.to-code :p1.code))
-                     (join :inner [pages :p2] (= :links.from-code :p2.code))
-                     (join :inner [links :l1] (or (and (= :l1.to-code :p1.code)
-                                                       (= :l1.from-code code))
-                                                  (and (= :l1.from-code :p1.code)
-                                                       (= :l1.to-code code))))
-                     (join :inner [links :l2] (or (and (= :l2.to-code :p2.code)
-                                                       (= :l2.from-code code))
-                                                  (and (= :l2.from-code :p2.code)
-                                                       (= :l2.to-code code))))
-                     (fields :from-code :to-code)
-                     (modifier "distinct")
-                     (where {:type        (name rel)
-                             :p1.incoming [< incoming-link-limit]
-                             :p2.incoming [< incoming-link-limit]
-                             :l1.type     (name rel)
-                             :l2.type     (name rel)
-                             })
-                     )
-           ]
-       ; (println (as-sql query))
-       (->> query
-            select
-            (map rename-db-keywords)
-            ))
-     (prof/p :query-common-nodes-from)
-     )))
 
 (defn query-rel-list
   "Returns the list of relationship pairs that are either to or from pages

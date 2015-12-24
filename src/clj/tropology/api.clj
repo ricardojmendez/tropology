@@ -94,35 +94,6 @@
     ))
 
 
-(defn network-from-node
-  "Returns a network of nodes around a code, including: the node, all
-  the nodes that either reference it or that it references, and the
-  relationships between them.
-
-  The node code is case sensitive."
-  [code]
-  (->>
-    (let [node       (-> (db/query-by-code code) (transform-node 0 0))
-          nodes-from (db/query-from code :LINKSTO)
-          nodes-to   (db/query-to :LINKSTO code)
-          node-set   (set (concat nodes-from nodes-to))
-          related    (->> (db/query-common-nodes-from code :LINKSTO 1000)
-                          (b/group-pairs)
-                          (pmap #(hash-map :code (key %) :links-from (val %) :color-from "#00ffc7"))
-                          )
-          with-base  (conj related {:code code :links-from (pmap :code nodes-from) :links-to (pmap :code nodes-to)})]
-      {:nodes (conj
-                (pmap #(transform-node %1 (rand-range 50) (rand-range 50)) node-set)
-                node)
-       :edges (->>
-                (pmap edge-collection with-base)
-                flatten
-                (map-indexed #(assoc %2 :id %1))
-                )}
-      )
-    (prof/profile :trace :network-from-node)))
-
-
 (defn tropes-from-node
   [code]
   (let [to-get (if (= code "/") (db/fetch-random-contents-code) code)

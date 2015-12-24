@@ -18,18 +18,6 @@
              :etag "fixed-etag"
              :available-media-types ["text/plain"])
 
-(defresource node
-             :allowed-methods [:get]
-             :handle-ok (fn [request]
-                          (let [{{{category :category, name :name} :params} :request} request
-                                id (str category "/" name)]
-                            (->
-                              (db/query-by-code id)
-                              :data
-                              (u/if-empty {}))))
-             :available-media-types ["application/transit+json"
-                                     "application/transit+msgpack"
-                                     "application/json"])
 
 (defresource connections
              :allowed-methods [:get]
@@ -39,16 +27,6 @@
                             )
                           )
              ; Will be read by sigma, so don't return transit+json
-             :available-media-types ["application/json"])
-
-(defresource network
-             :allowed-methods [:get]
-             :last-modified (default-last-modified)
-             :handle-ok (fn [request]
-                          (let [{{{label :category, name :name} :params} :request} request
-                                code (lower-case (str label "/" name))]
-                            (api/network-from-node code)))
-             ; Network does not return transit+json because sigma wouldn't know what to do with it
              :available-media-types ["application/json"])
 
 
@@ -68,8 +46,6 @@
 
 (defroutes api-routes
            (ANY "/api/graph/connections/" request connections)
-           (ANY "/api/graph/network/:category/:name" [category name] network)
-           (ANY "/api/node/:category/:name" [category name] node)
            (ANY "/api/tropes/" [] tropes)
            (ANY "/api/tropes/:category/:name" [category name] tropes)
            (ANY "/api/home" request home))
