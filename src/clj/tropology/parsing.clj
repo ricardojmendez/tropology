@@ -250,10 +250,10 @@
    (record-page! url url))
   ([url provenance]
    (try
-     (->> (->
-            (load-resource-url url)
-            (assoc :url provenance))
-          (save-page-links!))
+     (->
+       (load-resource-url url)
+       (assoc :url provenance)
+       save-page-links!)
      (catch Throwable t
        ; (.printStackTrace t)
        (if (-> t .getMessage (u/if-empty "") (.contains "TransientError"))

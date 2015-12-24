@@ -137,12 +137,14 @@
   )
 
 (defn create-relationships! [code links-to rel]
-  (if (not-empty links-to)
-    (do (->> (delete links (where {:from-code code :type (name rel)}))
-             (prof/p :delete-links))
-        (->> (insert links
-                     (values (pmap #(hash-map :from-code code :to-code % :type (name rel)) links-to)))
-             (prof/p :create-links))))
+  (when (not-empty links-to)
+    (prof/p
+      :delete-links
+      (delete links (where {:from-code code :type (name rel)})))
+    (prof/p
+      :create-links
+      (insert links
+              (values (pmap #(hash-map :from-code code :to-code % :type (name rel)) links-to)))))
   )
 
 
