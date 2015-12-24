@@ -93,12 +93,13 @@
   :profiles
   {
    :uberjar    {:omit-source true
-                :env         {:production  true
-                              :db-name     "tropology"
-                              :db-host     "localhost"
-                              :update-cron "0 /3 * * * * *"
-                              :update-size 3
-                              :expiration  14
+                :env         {:production     true
+                              :db-name        "tropology"
+                              :db-host        "localhost"
+                              :update-cron    "0 /3 * * * * *"
+                              :update-size    3
+                              :expiration     14
+                              :update-enabled true
                               }
                 :hooks       [leiningen.cljsbuild]
                 :cljsbuild   {:jar true
@@ -108,15 +109,6 @@
                                      :compiler     {:optimizations :advanced :pretty-print false}}}}
 
                 :aot         :all}
-   :production {:ring {:open-browser? false
-                       :stacktraces?  false
-                       :auto-reload?  false}
-                :env  {:db-url      "http://neo4j:testneo4j@localhost:7474/db/data/"
-                       :update-cron "0 /3 * * * * *"
-                       :update-size 10
-                       :expiration  14}
-                :aot  :all
-                }
    :dev        [:proj/dev :profiles/dev]
    :proj/dev   {:dependencies [[ring-mock "0.1.5"]
                                [ring/ring-devel "1.4.0"]
@@ -135,19 +127,18 @@
                                (pjstadig.humane-test-output/activate!)]
                 :source-paths ["env/dev/clj"]
                 :cljsbuild    {:builds {:app {:source-paths ["env/dev/cljs"]}}}
-                :env          {:dev             true
-                               :db-name         "tropology"
-                               :db-host         "192.168.99.100"
-                               :db-user         "postgres"
-                               :db-password     "testdb"
-                               :update-cron     "0 /2 * * * * *"
-                               :update-size     5
-                               :update-disabled true
-                               :expiration      14
-                               :s3              {:bucket-name "tropology-dev"
-                                                 :access-key  "add access key on profiles.clj"
-                                                 :secret-key  "add secret key on profiles.clj"
-                                                 :endpoint    "add endpoint on profiles.clj"}
+                :env          {:dev         true
+                               :db-name     "tropology"
+                               :db-host     "192.168.99.100"
+                               :db-user     "postgres"
+                               :db-password "testdb"
+                               :update-cron "0 /2 * * * * *"
+                               :update-size 5
+                               :expiration  14
+                               :s3          {:bucket-name "tropology-dev"
+                                             :access-key  "add access key on profiles.clj"
+                                             :secret-key  "add secret key on profiles.clj"
+                                             :endpoint    "add endpoint on profiles.clj"}
                                }}
    :test       [:proj/test :profiles/test]
    :proj/test  {:dependencies [[pjstadig/humane-test-output "0.7.1"]
@@ -167,18 +158,17 @@
                                                                               :provides ["sigma"]}]
                                                              }}
                                         }}
-                :env          {:dev             true
-                               :db-name         "tropology_test"
-                               :db-host         "192.168.99.100"
-                               :db-user         "postgres"
-                               :db-password     "testdb"
-                               :update-cron     "0 /2 * * * * *"
-                               :update-size     5
-                               :update-disabled true
-                               :expiration      10
-                               :s3              {:bucket-name "tropology-test"
-                                                 :access-key  "add access key on profiles.clj"
-                                                 :secret-key  "add secret key on profiles.clj"
-                                                 :endpoint    "add endpoint on profiles.clj"}
+                :env          {:dev         true
+                               :db-name     "tropology_test"
+                               :db-host     "192.168.99.100"
+                               :db-user     "postgres"
+                               :db-password "testdb"
+                               :update-cron "0 /2 * * * * *"
+                               :update-size 5
+                               :expiration  10
+                               :s3          {:bucket-name "tropology-test"
+                                             :access-key  "add access key on profiles.clj"
+                                             :secret-key  "add secret key on profiles.clj"
+                                             :endpoint    "add endpoint on profiles.clj"}
 
                                }}})

@@ -94,11 +94,11 @@
 
 
   ; TODO: Make crawling a separate process we can start
-  (if (:update-disabled env)
-    (timbre/warn "AUTO-UPDATES ARE DISABLED")
+  (if (:update-enabled env)
     (do
       (seed-database)
-      (cronj/start! cj)))
+      (cronj/start! cj))
+    (timbre/warn "AUTO-UPDATES ARE DISABLED"))
 
 
   (if (env :dev) (parser/cache-off!))
