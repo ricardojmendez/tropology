@@ -95,6 +95,14 @@
 
 
 (defn tropes-from-node
+  "Returns the trope information from a code, by parsing the original page
+  so that it can also return a list of references that includes the
+  hiccup code for the links.
+
+  This hiccup vector will be used on the front end for display.
+
+  We can't just get it from the link list right now, since we're not
+  saving the entire link description yet."
   [code]
   (let [to-get (if (= code "/") (db/fetch-random-contents-code) code)
         node   (db/query-by-code to-get)
@@ -106,8 +114,7 @@
         links  (map p/process-links tropes)
         node   (p/node-data-from-meta res)
         ]
-    (if (empty? html)
-      nil
+    (when-not (empty? html)
       {:title       (:title node)
        :image       (:image node)
        :description (:description node)
